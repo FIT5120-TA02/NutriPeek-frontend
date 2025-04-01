@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+/* Base palette */
+:root {
+  /* Primary colors palette */
+  --color-primary: 137, 190, 99; /* #89BE63 - Primary green */
+  --color-primary-light: 175, 204, 169; /* #AFCCA9 - Light green */
+  --color-secondary: 207, 237, 238; /* #CFEDEE - Light blue */
+  --color-secondary-light: 236, 249, 242; /* #ECF9F2 - Lightest blue-green */
+  
+  /* Neutral/grayscale colors for text, borders, etc */
+  --color-neutral-50: 245, 245, 245; /* #F5F5F5 - Lightest gray */
+  --color-neutral-200: 222, 222, 222; /* #DEDEDE - Light gray */
+  --color-neutral-300: 199, 199, 199; /* #C7C7C7 - Medium gray */
+  --color-neutral-400: 176, 176, 176; /* #B0B0B0 - Darker gray */
+  --color-neutral-800: 51, 51, 51; /* #333333 - Dark gray for text */
+  
+  /* Functional theme variables */
+  --background: var(--color-neutral-50);
+  --foreground: var(--color-neutral-800); /* Dark gray for text */
+  
+  --primary: var(--color-primary);
+  --primary-foreground: 255, 255, 255; /* White text on primary */
+  
+  --secondary: var(--color-secondary);
+  --secondary-foreground: var(--color-primary); /* Primary green text on secondary */
+  
+  --accent: var(--color-primary-light);
+  --accent-foreground: var(--color-neutral-800); /* Dark text on accent */
+  
+  --muted: var(--color-neutral-200);
+  --muted-foreground: 115, 115, 115; /* Gray text for muted areas */
+  
+  --card: 255, 255, 255; /* White background for cards */
+  --card-foreground: var(--color-neutral-800); /* Dark text on cards */
+  
+  --border: var(--color-neutral-200);
+  --input: var(--color-neutral-300);
+  
+  --destructive: 220, 38, 38; /* Red for destructive actions */
+  --destructive-foreground: 255, 255, 255; /* White text on destructive */
+  
+  --radius: 0.5rem; /* Border radius */
+}
+
+/* Utility classes for opacity variations */
+.bg-primary-90 { background-color: rgba(var(--color-primary), 0.9); }
+.bg-primary-80 { background-color: rgba(var(--color-primary), 0.8); }
+.bg-primary-70 { background-color: rgba(var(--color-primary), 0.7); }
+.bg-primary-60 { background-color: rgba(var(--color-primary), 0.6); }
+.bg-primary-50 { background-color: rgba(var(--color-primary), 0.5); }
+.bg-primary-40 { background-color: rgba(var(--color-primary), 0.4); }
+.bg-primary-30 { background-color: rgba(var(--color-primary), 0.3); }
+.bg-primary-20 { background-color: rgba(var(--color-primary), 0.2); }
+.bg-primary-10 { background-color: rgba(var(--color-primary), 0.1); }
+
+.bg-secondary-90 { background-color: rgba(var(--color-secondary), 0.9); }
+.bg-secondary-80 { background-color: rgba(var(--color-secondary), 0.8); }
+.bg-secondary-70 { background-color: rgba(var(--color-secondary), 0.7); }
+.bg-secondary-60 { background-color: rgba(var(--color-secondary), 0.6); }
+.bg-secondary-50 { background-color: rgba(var(--color-secondary), 0.5); }
+.bg-secondary-40 { background-color: rgba(var(--color-secondary), 0.4); }
+.bg-secondary-30 { background-color: rgba(var(--color-secondary), 0.3); }
+.bg-secondary-20 { background-color: rgba(var(--color-secondary), 0.2); }
+.bg-secondary-10 { background-color: rgba(var(--color-secondary), 0.1); }
