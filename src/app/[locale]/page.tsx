@@ -4,13 +4,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
 type Props = {
-  params: {
-    locale: string;
-  };
+  params: Promise<{ locale: string }>;
 };
 
 export default function WelcomePage({ params }: Props) {
-  const { locale } = params;
+  const { locale } = await params;
   const emojis = [
     "🍎", "🥑", "🍪", "🍜", "🥗", "🍓", "🍊", "🍞",
     "🥥", "🥛", "🥦", "🍇", "🧃", "🍲", "🍗", "🥬",
