@@ -203,3 +203,4 @@ npm run lint
 
 [Your License Here]
 # retry deploy
+# fix key permission
