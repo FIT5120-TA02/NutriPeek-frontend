@@ -33,7 +33,7 @@ export default async function WelcomePage({ params }: Props) {
 
       <Link href={`/${locale}/homepage`}>
         <Button
-          className="text-lg px-8 py-5 rounded-full bg-green-500 hover:bg-green-600 text-white font-semibold transition-all"
+          className="text-lg px-8 py-5 rounded-full bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg font-semibold transition-all"
         >
           Get Started Now
         </Button>
