@@ -27,13 +27,18 @@ export default async function WelcomePage({ params }: Props) {
 
       <div className="flex flex-wrap justify-center gap-3 mb-6 max-w-xl">
         {emojis.map((emoji, index) => (
-          <span key={index} className="text-2xl md:text-3xl">{emoji}</span>
+          <span
+            key={index}
+            className="text-2xl md:text-3xl animate-bounce hover:scale-125 transition-transform duration-300 ease-in-out"
+          >
+            {emoji}
+          </span>
         ))}
       </div>
 
       <Link href={`/${locale}/homepage`}>
         <Button
-          className="text-lg px-8 py-5 rounded-full bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg font-semibold transition-all"
+          className="text-lg px-8 py-5 rounded-full bg-green-200 text-green-800 hover:bg-green-300 shadow-md hover:shadow-lg font-semibold transition-all duration-300 ease-in-out"
         >
           Get Started Now
         </Button>
