@@ -3,11 +3,14 @@ import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 
-export default async function Home(props: {
-  children: React.ReactNode;
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await props.params;
+type Props = {
+  params: Promise<{ locale: string }>
+}
+
+export default async function Home({
+  params
+}: Props) {
+  const { locale } = await params;
   const t = await getTranslations({
     locale,
     namespace: 'HomePage',

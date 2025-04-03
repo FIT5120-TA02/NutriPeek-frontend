@@ -2,11 +2,14 @@ import { getTranslations } from 'next-intl/server';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
-export default async function AboutPage(props: {
-  children: React.ReactNode;
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await props.params;
+type Props = {
+  params: Promise<{ locale: string }>
+}
+
+export default async function AboutPage({
+  params
+}: Props) {
+  const { locale } = await params;
   const t = await getTranslations({
     locale,
     namespace: 'About',
