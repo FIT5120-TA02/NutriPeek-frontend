@@ -199,7 +199,6 @@ npm run lint
 2. Make your changes following the development guidelines
 3. Ensure all linting checks pass
 4. Submit a pull request
-5. Trigger deploy for CI/CD test
 ## License
 
 [Your License Here]
