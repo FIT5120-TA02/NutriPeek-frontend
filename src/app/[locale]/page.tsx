@@ -7,7 +7,7 @@ type Props = {
   params: Promise<{ locale: string }>;
 };
 
-export default function WelcomePage({ params }: Props) {
+export default async function WelcomePage({ params }: Props) {
   const { locale } = await params;
   const emojis = [
     "🍎", "🥑", "🍪", "🍜", "🥗", "🍓", "🍊", "🍞",
