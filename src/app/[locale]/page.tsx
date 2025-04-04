@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
-export default async function WelcomePage({ params }: { params: { locale: string } }) {
+export default async function WelcomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
 
   const emojis = [
