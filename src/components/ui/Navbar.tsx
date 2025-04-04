@@ -16,10 +16,10 @@ export default function Navbar() {
   };
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-white shadow-md">
+    <header className="relative flex items-center justify-between px-6 py-4 bg-white shadow-md">
+      {/* Logo */}
       <div className="flex items-center space-x-2">
         <Link href="/" className="flex items-center space-x-2">
-
           <Image
             src={nutriPeekLogo}
             alt="NutriPeek Logo"
@@ -32,11 +32,12 @@ export default function Navbar() {
         </Link>
       </div>
 
+      {/* Only show navigation if not on homepage */}
       {!isHomePage && (
         <>
-          {/* Desktop */}
+          {/* Desktop Menu */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/homepage" className="text-gray-600 hover:text-green-600 transition-colors">Nutrition</Link>
+            <Link href="/ChildInfo" className="text-gray-600 hover:text-green-600 transition-colors">Child Info</Link>
             <Link href="/aware-child" className="text-gray-600 hover:text-green-600 transition-colors">Aware Child</Link>
             <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">Profile</Link>
             <Link
@@ -47,7 +48,7 @@ export default function Navbar() {
             </Link>
           </nav>
 
-          {/* Mobile */}
+          {/* Mobile Hamburger Button */}
           <div className="md:hidden flex items-center">
             <button onClick={toggleMobileMenu} className="text-gray-600 hover:text-green-600 focus:outline-none">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,6 +56,22 @@ export default function Navbar() {
               </svg>
             </button>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {isMobileMenuOpen && (
+            <div className="absolute top-16 left-0 w-full bg-white shadow-md flex flex-col items-center py-4 space-y-4 md:hidden z-50">
+              <Link href="/ChildInfo" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Child Info</Link>
+              <Link href="/aware-child" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Aware Child</Link>
+              <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
+              <Link
+                href="/start"
+                className="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Start Now
+              </Link>
+            </div>
+          )}
         </>
       )}
     </header>

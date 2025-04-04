@@ -11,7 +11,7 @@ interface ChildProfile {
   allergies: string[];
 }
 
-export default function HomePage() {
+export default function ChildInfoPage() {
   const [childName, setChildName] = useState<string>('');
   const [age, setAge] = useState<string>('');
   const [gender, setGender] = useState<string>('');
