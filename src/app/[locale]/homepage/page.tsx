@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import storageService from "@/libs/StorageService";
+import Dropdown from "@/components/ui/Dropdown";
 
 interface ChildProfile {
   name: string;
@@ -20,7 +21,7 @@ export default function HomePage() {
   const CHILDREN_KEY = "user_children";
 
   useEffect(() => {
-    // Nothing to load initially, just keep the form empty
+
   }, []);
 
   const handleSave = () => {
@@ -73,6 +74,7 @@ export default function HomePage() {
       <h1 className="text-3xl font-bold text-center mb-6">Child Information</h1>
 
       <div className="space-y-4">
+        {/* Child Name Input */}
         <div>
           <label className="block mb-1 font-semibold">Child Name</label>
           <input
@@ -84,34 +86,36 @@ export default function HomePage() {
           />
         </div>
 
+        {/* Age Dropdown */}
         <div>
           <label className="block mb-1 font-semibold">Age</label>
-          <select
+          <Dropdown
             value={age}
-            onChange={(e) => setAge(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
-          >
-            <option value="">Select Age</option>
-            {[5,6,7,8,9,10,11,12].map((num) => (
-              <option key={num} value={String(num)}>{num} years</option>
-            ))}
-          </select>
+            onChange={setAge}
+            placeholder="Select Age"
+            options={[5,6,7,8,9,10,11,12].map(num => ({
+              label: `${num} years`,
+              value: String(num),
+            }))}
+          />
         </div>
 
+        {/* Gender Dropdown */}
         <div>
           <label className="block mb-1 font-semibold">Gender</label>
-          <select
+          <Dropdown
             value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
-          >
-            <option value="">Select Gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
+            onChange={setGender}
+            placeholder="Select Gender"
+            options={[
+              { label: "Male", value: "male" },
+              { label: "Female", value: "female" },
+              { label: "Other", value: "other" },
+            ]}
+          />
         </div>
 
+        {/* Allergy Selection */}
         <div>
           <label className="block mb-1 font-semibold">Allergies</label>
           <div className="flex flex-wrap gap-2">
@@ -130,6 +134,7 @@ export default function HomePage() {
             ))}
           </div>
 
+          {/* Other Allergy Input */}
           <input
             type="text"
             value={otherAllergy}
@@ -139,6 +144,7 @@ export default function HomePage() {
           />
         </div>
 
+        {/* Save Button */}
         <button
           onClick={handleSave}
           className="mt-6 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 w-full"
