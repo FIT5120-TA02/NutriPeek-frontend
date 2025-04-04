@@ -13,7 +13,7 @@ interface ChildProfile {
 }
 
 // Main component for managing child information form
-export default function ChildInfoPage() {
+export default async function ChildInfoPage() {
   // State variables to manage form input fields
   const [childName, setChildName] = useState<string>('');
   const [age, setAge] = useState<string>('');
