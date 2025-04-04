@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
-export default async function WelcomePage({ params }: { params: { locale: string } }) {
-  const { locale } = params;
+export default async function WelcomePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
 
   const emojis = [
     "🍇", "🍎", "🍪", "🍕", "🍣", "🍤", "🥑", "🍞",
@@ -38,7 +38,7 @@ export default async function WelcomePage({ params }: { params: { locale: string
 
       {/* Get Started Button */}
       <div className="mt-6">
-        <Link href={`/${locale}/homepage`}>
+        <Link href={`/${locale}/ChildInfo`}>
           <Button
             className="text-lg px-8 py-5 rounded-full bg-green-200 text-green-800 hover:bg-green-300 shadow-md hover:shadow-lg font-semibold transition-all duration-300 ease-in-out"
           >

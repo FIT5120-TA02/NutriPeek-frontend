@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import storageService from "@/libs/StorageService";
 import Dropdown from "@/components/ui/Dropdown";
 
+// Define the structure of a child's profile
 interface ChildProfile {
   name: string;
   age: string;
@@ -11,19 +12,23 @@ interface ChildProfile {
   allergies: string[];
 }
 
-export default function ChildInfoPage() {
+// Main component for managing child information form
+export default async function ChildInfoPage() {
+  // State variables to manage form input fields
   const [childName, setChildName] = useState<string>('');
   const [age, setAge] = useState<string>('');
   const [gender, setGender] = useState<string>('');
   const [allergies, setAllergies] = useState<string[]>([]);
   const [otherAllergy, setOtherAllergy] = useState<string>('');
 
+  // LocalStorage key
   const CHILDREN_KEY = "user_children";
 
   useEffect(() => {
-
+    // Placeholder for any side effects on mount (currently empty)
   }, []);
 
+  // Save child information into localStorage
   const handleSave = () => {
     const newChild: ChildProfile = {
       name: childName.trim(),
@@ -32,23 +37,27 @@ export default function ChildInfoPage() {
       allergies: otherAllergy.trim() ? [...allergies, otherAllergy.trim()] : allergies,
     };
 
+    // Basic form validation
     if (!newChild.name || !newChild.age || !newChild.gender) {
       alert("Please complete all required fields.");
       return;
     }
 
+    // Retrieve existing children profiles from localStorage
     const existingChildren = storageService.getLocalItem<ChildProfile[]>({
       key: CHILDREN_KEY,
       defaultValue: [],
     }) || [];
 
+    // Update the list with the new child
     const updatedChildren = [...existingChildren, newChild];
 
+    // Save updated list back to localStorage
     storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
 
     alert("Child information saved!");
 
-    // Clear the form
+    // Clear form fields after saving
     setChildName('');
     setAge('');
     setGender('');
@@ -56,11 +65,13 @@ export default function ChildInfoPage() {
     setOtherAllergy('');
   };
 
+  // Predefined allergy options
   const allergyOptions = [
     "Peanut", "Milk", "Egg", "Soy", 
     "Wheat", "Fish", "Shellfish", "Tree nuts", "Chicken", "Celery"
   ];
 
+  // Toggle selected allergy
   const toggleAllergy = (value: string) => {
     if (allergies.includes(value)) {
       setAllergies(allergies.filter(item => item !== value));
@@ -71,6 +82,7 @@ export default function ChildInfoPage() {
 
   return (
     <div className="p-8 max-w-lg mx-auto space-y-6">
+      {/* Page Title */}
       <h1 className="text-3xl font-bold text-center mb-6">Child Information</h1>
 
       <div className="space-y-4">
@@ -86,7 +98,7 @@ export default function ChildInfoPage() {
           />
         </div>
 
-        {/* Age Dropdown */}
+        {/* Age Selection using Dropdown */}
         <div>
           <label className="block mb-1 font-semibold">Age</label>
           <Dropdown
@@ -100,7 +112,7 @@ export default function ChildInfoPage() {
           />
         </div>
 
-        {/* Gender Dropdown */}
+        {/* Gender Selection using Dropdown */}
         <div>
           <label className="block mb-1 font-semibold">Gender</label>
           <Dropdown
@@ -115,7 +127,7 @@ export default function ChildInfoPage() {
           />
         </div>
 
-        {/* Allergy Selection */}
+        {/* Allergy Multi-Select */}
         <div>
           <label className="block mb-1 font-semibold">Allergies</label>
           <div className="flex flex-wrap gap-2">
@@ -134,7 +146,7 @@ export default function ChildInfoPage() {
             ))}
           </div>
 
-          {/* Other Allergy Input */}
+          {/* Manual Input for Other Allergy */}
           <input
             type="text"
             value={otherAllergy}
@@ -144,7 +156,7 @@ export default function ChildInfoPage() {
           />
         </div>
 
-        {/* Save Button */}
+        {/* Submit Button */}
         <button
           onClick={handleSave}
           className="mt-6 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 w-full"
