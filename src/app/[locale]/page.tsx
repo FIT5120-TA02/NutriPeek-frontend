@@ -19,12 +19,11 @@ export default async function WelcomePage({ params }: Props) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-green-50 flex flex-col items-center justify-center text-center px-4">
       <h1 className="text-5xl font-extrabold font-serif mb-4 text-black">
-        LUNCHMATE
+        NutriPeek
       </h1>
 
       <p className="text-xl font-medium text-black leading-loose mb-10">
         plan healthy<br />
-        and fun<br />
         lunches for<br />
         your<br />
         children
