@@ -1,18 +1,12 @@
 'use client';
 
-import { useEffect } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/Button";
-import { motion } from "framer-motion";
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 
-export default function WelcomePage({ params }: { params: { locale: string } }) {
-  const { locale } = params;
-
-  const emojis = [
-    "🍇", "🍎", "🍪", "🍕", "🍣", "🍤", "🥑", "🍞",
-    "🍔", "🍟", "🍉", "🍍", "🍚", "🥗", "🥛", "🍗",
-    "🍑", "🥒", "🍓", "🍊"
-  ];
+export default function WelcomePage() {
+  const router = useRouter();
 
   useEffect(() => {
     document.body.className = "min-h-screen flex flex-col bg-gradient-to-b from-green-200 via-blue-200 to-purple-200";
@@ -20,6 +14,12 @@ export default function WelcomePage({ params }: { params: { locale: string } }) 
       document.body.className = "min-h-screen flex flex-col bg-gradient-to-b from-white to-green-50";
     };
   }, []);
+
+  const emojis = [
+    "🍇", "🍎", "🍪", "🍕", "🍣", "🍤", "🥑", "🍞",
+    "🍔", "🍟", "🍉", "🍍", "🍚", "🥗", "🥛", "🍗",
+    "🍑", "🥒", "🍓", "🍊"
+  ];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
@@ -36,11 +36,11 @@ export default function WelcomePage({ params }: { params: { locale: string } }) 
         Peek inside your fridge. Pack smarter lunches.
       </p>
 
-      <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto mt-4">
+      <div className="flex flex-wrap justify-center gap-4 max-w-2xl mx-auto mt-6">
         {emojis.map((emoji, index) => (
           <motion.span
             key={index}
-            className="text-2xl md:text-3xl"
+            className="text-3xl md:text-4xl"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05 }}
@@ -51,16 +51,16 @@ export default function WelcomePage({ params }: { params: { locale: string } }) 
       </div>
 
       <motion.div 
-        className="mt-6"
+        className="mt-10"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        <Link href={`/${locale}/ChildInfo`}>
+        <Link href={`/ChildInfo`}>
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className="mt-6 bg-gradient-to-r from-green-400 to-green-600 text-white py-3 px-6 rounded-full shadow-lg hover:shadow-2xl text-lg font-semibold transition-all duration-300 ease-in-out"
+            className="bg-gradient-to-r from-green-400 to-green-600 text-white py-3 px-8 rounded-full shadow-lg hover:shadow-2xl text-lg font-semibold transition-all duration-300 ease-in-out"
           >
             Get Started Now
           </motion.button>
