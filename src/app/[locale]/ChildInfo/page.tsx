@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import storageService from "@/libs/StorageService";
 import Dropdown from "@/components/ui/Dropdown";
 
-// Define the structure of a child's profile
 interface ChildProfile {
   name: string;
   age: string;
@@ -12,23 +12,15 @@ interface ChildProfile {
   allergies: string[];
 }
 
-// Main component for managing child information form
-export default async function ChildInfoPage() {
-  // State variables to manage form input fields
-  const [childName, setChildName] = useState<string>('');
-  const [age, setAge] = useState<string>('');
-  const [gender, setGender] = useState<string>('');
+export default function ChildInfoPage() {
+  const [childName, setChildName] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('');
   const [allergies, setAllergies] = useState<string[]>([]);
-  const [otherAllergy, setOtherAllergy] = useState<string>('');
+  const [otherAllergy, setOtherAllergy] = useState('');
 
-  // LocalStorage key
   const CHILDREN_KEY = "user_children";
 
-  useEffect(() => {
-    // Placeholder for any side effects on mount (currently empty)
-  }, []);
-
-  // Save child information into localStorage
   const handleSave = () => {
     const newChild: ChildProfile = {
       name: childName.trim(),
@@ -37,27 +29,21 @@ export default async function ChildInfoPage() {
       allergies: otherAllergy.trim() ? [...allergies, otherAllergy.trim()] : allergies,
     };
 
-    // Basic form validation
     if (!newChild.name || !newChild.age || !newChild.gender) {
-      alert("Please complete all required fields.");
+      toast.error("Please complete all required fields.");
       return;
     }
 
-    // Retrieve existing children profiles from localStorage
     const existingChildren = storageService.getLocalItem<ChildProfile[]>({
       key: CHILDREN_KEY,
       defaultValue: [],
     }) || [];
 
-    // Update the list with the new child
     const updatedChildren = [...existingChildren, newChild];
-
-    // Save updated list back to localStorage
     storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
 
-    alert("Child information saved!");
+    toast.success("Child information saved successfully!");
 
-    // Clear form fields after saving
     setChildName('');
     setAge('');
     setGender('');
@@ -65,13 +51,11 @@ export default async function ChildInfoPage() {
     setOtherAllergy('');
   };
 
-  // Predefined allergy options
   const allergyOptions = [
     "Peanut", "Milk", "Egg", "Soy", 
     "Wheat", "Fish", "Shellfish", "Tree nuts", "Chicken", "Celery"
   ];
 
-  // Toggle selected allergy
   const toggleAllergy = (value: string) => {
     if (allergies.includes(value)) {
       setAllergies(allergies.filter(item => item !== value));
@@ -82,11 +66,9 @@ export default async function ChildInfoPage() {
 
   return (
     <div className="p-8 max-w-lg mx-auto space-y-6">
-      {/* Page Title */}
       <h1 className="text-3xl font-bold text-center mb-6">Child Information</h1>
 
       <div className="space-y-4">
-        {/* Child Name Input */}
         <div>
           <label className="block mb-1 font-semibold">Child Name</label>
           <input
@@ -98,7 +80,6 @@ export default async function ChildInfoPage() {
           />
         </div>
 
-        {/* Age Selection using Dropdown */}
         <div>
           <label className="block mb-1 font-semibold">Age</label>
           <Dropdown
@@ -112,7 +93,6 @@ export default async function ChildInfoPage() {
           />
         </div>
 
-        {/* Gender Selection using Dropdown */}
         <div>
           <label className="block mb-1 font-semibold">Gender</label>
           <Dropdown
@@ -127,7 +107,6 @@ export default async function ChildInfoPage() {
           />
         </div>
 
-        {/* Allergy Multi-Select */}
         <div>
           <label className="block mb-1 font-semibold">Allergies</label>
           <div className="flex flex-wrap gap-2">
@@ -146,7 +125,6 @@ export default async function ChildInfoPage() {
             ))}
           </div>
 
-          {/* Manual Input for Other Allergy */}
           <input
             type="text"
             value={otherAllergy}
@@ -156,7 +134,6 @@ export default async function ChildInfoPage() {
           />
         </div>
 
-        {/* Submit Button */}
         <button
           onClick={handleSave}
           className="mt-6 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 w-full"
