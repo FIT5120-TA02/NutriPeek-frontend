@@ -14,10 +14,14 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@t3-oss/env-nextjs": "^0.12.0",
     "autoprefixer": "^10.4.21",
+    "framer-motion": "^12.6.3",
     "next": "15.2.4",
     "next-intl": "^4.0.2",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sonner": "^2.0.3"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.11.0",

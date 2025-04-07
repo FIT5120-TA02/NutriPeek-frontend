@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { showConfirmDialog } from "@/components/ui/ConfirmDialog";
 import storageService from "@/libs/StorageService";
 import Card from "@/components/ui/Card";
 import Dropdown from "@/components/ui/Dropdown";
@@ -24,12 +26,16 @@ export default function ProfilePage() {
     if (saved) setChildren(saved);
   }, []);
 
-  const handleClear = () => {
-    if (confirm("Are you sure you want to clear all saved child profiles?")) {
-      storageService.removeLocalItem(CHILDREN_KEY);
-      setChildren([]);
-      alert("All child profiles have been cleared.");
-    }
+  const handleClearAll = async () => {
+    const confirmed = await showConfirmDialog({
+      message: "Are you sure you want to clear all saved child profiles?",
+      header: "Clear All Profiles",
+      onConfirm: () => {
+        storageService.removeLocalItem(CHILDREN_KEY);
+        setChildren([]);
+        toast.success("All child profiles have been cleared successfully!");
+      }
+    });
   };
 
   const handleEdit = (index: number) => {
@@ -45,12 +51,27 @@ export default function ProfilePage() {
       storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
       setEditingIndex(null);
       setEditChild(null);
+      toast.success("Child profile updated successfully!");
     }
   };
 
   const handleCancel = () => {
     setEditingIndex(null);
     setEditChild(null);
+  };
+
+  const handleDelete = async (index: number) => {
+    const confirmed = await showConfirmDialog({
+      message: "Are you sure you want to delete this child's profile?",
+      header: "Delete Child",
+      onConfirm: () => {
+        const updatedChildren = [...children];
+        updatedChildren.splice(index, 1);
+        setChildren(updatedChildren);
+        storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
+        toast.success("Child profile deleted successfully!");
+      }
+    });
   };
 
   const allergyOptions = [
@@ -115,8 +136,12 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="flex gap-4 mt-4">
-                    <button onClick={handleSave} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Save</button>
-                    <button onClick={handleCancel} className="text-gray-600 hover:underline">Cancel</button>
+                    <button onClick={handleSave} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                      Save
+                    </button>
+                    <button onClick={handleCancel} className="text-gray-600 hover:underline">
+                      Cancel
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -142,12 +167,21 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleEdit(index)}
-                    className="mt-4 text-sm text-blue-600 hover:underline"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex gap-4 mt-4">
+                    <button
+                      onClick={() => handleEdit(index)}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(index)}
+                      className="text-sm text-red-500 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </>
               )}
             </Card>
@@ -158,7 +192,7 @@ export default function ProfilePage() {
       )}
 
       <button
-        onClick={handleClear}
+        onClick={handleClearAll}
         className="bg-red-500 text-white font-semibold py-3 px-8 rounded-full hover:bg-red-600 transition-all duration-300 text-lg"
       >
         Clear All Profiles
