@@ -14,7 +14,7 @@ export const ConfirmDialogProvider = () => {
       rejectClassName="bg-gray-300 border-none hover:bg-gray-400 text-black px-4 py-2 rounded-full text-base shadow-md transition-all duration-300"
       acceptLabel="Yes, Confirm"
       rejectLabel="Cancel"
-      position="top-center"
+      position="center"
     />
   );
 };
