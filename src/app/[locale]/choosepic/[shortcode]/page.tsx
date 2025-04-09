@@ -30,7 +30,7 @@ export default function UploadPage() {
 
       toast.success('Upload successful!', { id: 'upload' });
 
-      router.push(`/locale/result/${shortcode}`);
+      router.push(`/locale/NutriResult/${shortcode}`);
     } catch (error) {
       console.error(error);
       toast.error('Failed to upload', { id: 'upload' });
