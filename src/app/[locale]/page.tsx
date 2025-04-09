@@ -56,7 +56,7 @@ export default function WelcomePage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        <Link href={`/ChildInfo`}>
+        <Link href={`/PasswordGate`}>
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
