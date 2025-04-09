@@ -19,7 +19,7 @@ export default function UploadPage() {
 
       toast.loading('Uploading...', { id: 'upload' });
 
-      const response = await fetch(`http://52.64.79.147:8000/api/v1/upload/${shortcode}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/upload/${shortcode}`, {
         method: 'POST',
         body: formData,
       });
