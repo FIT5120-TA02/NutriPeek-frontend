@@ -22,24 +22,20 @@ export default function NutriScanPage() {
 
   const generateQrCode = async () => {
     try {
-      const response = await fetch('https://nutripeek.pro/api/v1/generate_upload_qr', {
-        method: 'POST'
+      const response = await fetch('http://127.0.0.1:8000/api/v1/generate_upload_qr', {
+        method: 'POST',
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Server error:', errorText);
         throw new Error(`Server error during QR code generation: ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('Generated QR Upload URL:', data.upload_url);
-
       setQrCodeUrl(`data:image/png;base64,${data.qrcode_base64}`);
       setUploadUrl(data.upload_url);
       toast.success('QR Code generated successfully!');
     } catch (error) {
-      console.error(error);
       toast.error('Failed to generate QR Code.');
     }
   };
@@ -65,33 +61,28 @@ export default function NutriScanPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Server error:', errorText);
         throw new Error(`Server error during upload: ${errorText}`);
       }
 
       const data = await response.json();
       toast.success('Scan completed!', { id: 'scan' });
 
-      console.log('Server response:', data);
-
       if (data.detected_items || data.label) {
         const items = encodeURIComponent(JSON.stringify(data.detected_items || data.label));
         router.push(`/NutriResult?items=${items}`);
       }
     } catch (error) {
-      console.error(error);
       toast.error('Failed to process the image!', { id: 'scan' });
     }
   };
 
-  // Automatically generate QR code on page load
   useEffect(() => {
     generateQrCode();
   }, []);
 
   return (
     <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6">
-      <motion.h1 
+      <motion.h1
         className="text-4xl font-bold mb-6 text-gray-800"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -104,7 +95,7 @@ export default function NutriScanPage() {
         Upload a photo of your fridge or scan the QR code to analyze the nutritional contents!
       </p>
 
-      {/* Local Image Upload Section */}
+      {/* Upload Local Image Section */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6 w-full sm:w-80 max-w-md">
         <h2 className="text-xl font-semibold mb-4 text-center">Upload Local Image</h2>
         <input
@@ -122,12 +113,10 @@ export default function NutriScanPage() {
         </button>
       </div>
 
-      {/* QR Code Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 w-full sm:w-80 max-w-md">
+      {/* QR Code Section (Desktop Only) */}
+      <div className="hidden md:block bg-white rounded-lg shadow-md p-6 w-full sm:w-80 max-w-md">
         <h2 className="text-xl font-semibold mb-4 text-center">Scan QR Code</h2>
-        <div 
-          className="flex flex-col items-center justify-center bg-gray-100 rounded-lg p-4 mb-4"
-        >
+        <div className="flex flex-col items-center justify-center bg-gray-100 rounded-lg p-4 mb-4">
           {qrCodeUrl ? (
             <img src={qrCodeUrl} alt="Generated QR Code" className="w-48 h-48 object-contain" />
           ) : (
@@ -140,13 +129,13 @@ export default function NutriScanPage() {
       </div>
 
       {/* Link to Start Page */}
-      <motion.div 
+      <motion.div
         className="mt-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        <Link href={`/start`}>
+        <Link href="/start">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
