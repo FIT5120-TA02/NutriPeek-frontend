@@ -1,71 +1,43 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
-export default function WelcomePage() {
+
+export default function PasswordPage() {
+  const [password, setPassword] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    document.body.className = "min-h-screen flex flex-col bg-gradient-to-b from-green-200 via-blue-200 to-purple-200";
-    return () => {
-      document.body.className = "min-h-screen flex flex-col bg-gradient-to-b from-white to-green-50";
-    };
-  }, []);
-
-  const emojis = [
-    "🍇", "🍎", "🍪", "🍕", "🍣", "🍤", "🥑", "🍞",
-    "🍔", "🍟", "🍉", "🍍", "🍚", "🥗", "🥛", "🍗",
-    "🍑", "🥒", "🍓", "🍊"
-  ];
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === 'nutri123') {
+      localStorage.setItem('authenticated', 'true');
+      toast.success('Password correct!');
+      router.push('/Welcome'); 
+    } else {
+      toast.error('Incorrect password!');
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <motion.h1 
-        className="text-5xl font-extrabold mb-4 text-black drop-shadow-lg"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        NUTRIPEEK
-      </motion.h1>
-
-      <p className="text-xl font-semibold text-gray-700 leading-relaxed">
-        Peek inside your fridge. Pack smarter lunches.
-      </p>
-
-      <div className="flex flex-wrap justify-center gap-4 max-w-2xl mx-auto mt-6">
-        {emojis.map((emoji, index) => (
-          <motion.span
-            key={index}
-            className="text-3xl md:text-4xl"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            {emoji}
-          </motion.span>
-        ))}
-      </div>
-
-      <motion.div 
-        className="mt-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-      >
-        <Link href={`/ChildInfo`}>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-green-400 to-green-600 text-white py-3 px-8 rounded-full shadow-lg hover:shadow-2xl text-lg font-semibold transition-all duration-300 ease-in-out"
-          >
-            Get Started Now
-          </motion.button>
-        </Link>
-      </motion.div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-white to-green-50">
+      <form onSubmit={handleSubmit} className="flex flex-col space-y-4 w-80">
+        <h1 className="text-2xl font-bold mb-6 text-center">Enter Password</h1>
+        <input
+          type="password"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="p-3 border rounded-md"
+        />
+        <button
+          type="submit"
+          className="bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
+        >
+          Submit
+        </button>
+      </form>
     </div>
   );
 }

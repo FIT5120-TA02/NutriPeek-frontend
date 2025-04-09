@@ -1,35 +1,48 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
 export default function NutriScanPage() {
   const router = useRouter();
   const [image, setImage] = useState<File | null>(null);
-  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [uploadUrl, setUploadUrl] = useState<string | null>(null);
 
-  // Handle file input change (image upload)
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files ? event.target.files[0] : null;
+    const file = event.target.files?.[0] ?? null;
     if (file) {
       setImage(file);
       toast.success('Image selected successfully!');
     }
   };
 
-  // Handle QR code scanning (pseudo logic for future development)
-  const handleQrScan = (scannedCode: string) => {
-    setQrCode(scannedCode);
-    toast.success('QR Code scanned successfully!');
+  const generateQrCode = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/v1/generate_upload_qr', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server error during QR code generation: ${errorText}`);
+      }
+
+      const data = await response.json();
+      setQrCodeUrl(`data:image/png;base64,${data.qrcode_base64}`);
+      setUploadUrl(data.upload_url);
+      toast.success('QR Code generated successfully!');
+    } catch (error) {
+      toast.error('Failed to generate QR Code.');
+    }
   };
 
-  // Handle scan process: send image to backend and get predictions
   const handleScan = async () => {
-    if (!image && !qrCode) {
-      toast.error('Please upload an image or scan a QR code first!');
+    if (!image && !uploadUrl) {
+      toast.error('Please upload an image or wait for QR code generation!');
       return;
     }
 
@@ -41,29 +54,35 @@ export default function NutriScanPage() {
         formData.append('file', image);
       }
 
-      const response = await fetch('http://127.0.0.1:8000/food/predict', {
+      const response = await fetch(uploadUrl!, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Server error during prediction');
+        const errorText = await response.text();
+        throw new Error(`Server error during upload: ${errorText}`);
       }
 
       const data = await response.json();
       toast.success('Scan completed!', { id: 'scan' });
 
-      // Navigate to result page with predictions passed as query
-      router.push(`/NutriResult?predictions=${data.predictions.join(',')}`);
+      if (data.detected_items || data.label) {
+        const items = encodeURIComponent(JSON.stringify(data.detected_items || data.label));
+        router.push(`/NutriResult?items=${items}`);
+      }
     } catch (error) {
-      console.error(error);
       toast.error('Failed to process the image!', { id: 'scan' });
     }
   };
 
+  useEffect(() => {
+    generateQrCode();
+  }, []);
+
   return (
     <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6">
-      <motion.h1 
+      <motion.h1
         className="text-4xl font-bold mb-6 text-gray-800"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -94,32 +113,29 @@ export default function NutriScanPage() {
         </button>
       </div>
 
-      {/* Scan QR Code Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 w-full sm:w-80 max-w-md">
+      {/* QR Code Section (Desktop Only) */}
+      <div className="hidden md:block bg-white rounded-lg shadow-md p-6 w-full sm:w-80 max-w-md">
         <h2 className="text-xl font-semibold mb-4 text-center">Scan QR Code</h2>
-        <div 
-          className="bg-gray-200 w-full h-48 flex justify-center items-center rounded-lg border-2 border-gray-300 mb-4"
-          onClick={() => handleQrScan('sample_qr_code')}
-        >
-          <p className="text-gray-500">Click to scan QR Code</p>
+        <div className="flex flex-col items-center justify-center bg-gray-100 rounded-lg p-4 mb-4">
+          {qrCodeUrl ? (
+            <img src={qrCodeUrl} alt="Generated QR Code" className="w-48 h-48 object-contain" />
+          ) : (
+            <p className="text-gray-500 text-center">Generating QR Code...</p>
+          )}
         </div>
-        {qrCode && <p className="text-gray-500 text-sm">Scanned QR Code: {qrCode}</p>}
-        <button
-          onClick={handleScan}
-          className="w-full bg-blue-500 text-white py-3 rounded-lg mt-4 hover:bg-blue-600 transition"
-        >
-          Scan & Analyze
-        </button>
+        {uploadUrl && (
+          <p className="text-xs text-center text-gray-400 break-words">{uploadUrl}</p>
+        )}
       </div>
 
-      {/* Link back to Start */}
-      <motion.div 
+      {/* Link to Start Page */}
+      <motion.div
         className="mt-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
-        <Link href={`/start`}>
+        <Link href="/start">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
@@ -132,3 +148,4 @@ export default function NutriScanPage() {
     </div>
   );
 }
+

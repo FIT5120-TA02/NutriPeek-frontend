@@ -1,35 +1,61 @@
 'use client';
 
-import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 
-export default function NutriResultPage() {
-  const searchParams = useSearchParams();
-  const predictions = searchParams.get('predictions')?.split(',') || [];
+export default function ResultPage() {
+  const { shortcode } = useParams<{ shortcode: string }>();
+  const [prediction, setPrediction] = useState<{ label: string; confidence: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchResult = async () => {
+      try {
+        const response = await fetch(`http://52.64.79.147:8000/api/v1/result/${shortcode}`);
+        if (!response.ok) {
+          throw new Error('Result not found');
+        }
+        const data = await response.json();
+        setPrediction(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResult();
+  }, [shortcode]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!prediction) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p>No prediction found. Please try again.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-green-100 to-blue-100 p-6">
-      <motion.h1 
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-green-50 to-white p-4">
+      <motion.h1
         className="text-4xl font-bold mb-6 text-gray-800"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        NutriScan Results
+        Detection Result
       </motion.h1>
-
-      {predictions.length > 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-6 w-full sm:w-96 max-w-md">
-          <h2 className="text-2xl font-semibold mb-4 text-center text-gray-700">Detected Items</h2>
-          <ul className="list-disc list-inside text-gray-600">
-            {predictions.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <p className="text-gray-500">No predictions found. Please scan again.</p>
-      )}
+      <p className="text-2xl text-gray-700">Food: {prediction.label}</p>
+      <p className="text-lg text-gray-500 mt-2">Confidence: {(prediction.confidence * 100).toFixed(2)}%</p>
     </div>
   );
 }
