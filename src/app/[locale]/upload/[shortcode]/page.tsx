@@ -13,6 +13,7 @@ export default function UploadPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+
     try {
       const formData = new FormData();
       formData.append('file', file);
