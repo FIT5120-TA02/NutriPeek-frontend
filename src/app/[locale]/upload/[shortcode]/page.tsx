@@ -23,7 +23,8 @@ export default function UploadPage() {
         method: 'POST',
         body: formData,
       });
-  
+
+
       if (!uploadResponse.ok) {
         throw new Error('Upload failed');
       }
