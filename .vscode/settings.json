@@ -31,7 +31,6 @@
   // Auto fix with ESLint on save
   "editor.codeActionsOnSave": [
     "source.addMissingImports",
-    "source.fixAll.eslint"
   ],
 
   // Enable eslint for all supported languages
