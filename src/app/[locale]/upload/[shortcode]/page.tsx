@@ -12,28 +12,40 @@ export default function UploadPage() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
+  
     try {
       const formData = new FormData();
       formData.append('file', file);
-
+  
       toast.loading('Uploading...', { id: 'upload' });
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/upload/${shortcode}`, {
+  
+·      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/upload/${shortcode}`, {
         method: 'POST',
         body: formData,
       });
-
-      if (!response.ok) {
+  
+      if (!uploadResponse.ok) {
         throw new Error('Upload failed');
       }
-
+  
       toast.success('Upload successful!', { id: 'upload' });
-
-      router.push(`/locale/NutriResult/${shortcode}`);
+  
+      if (isMobileDevice()) {
+        toast.success('Upload successful! Please view results on a computer.');
+      } else {
+        const resultResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/result/${shortcode}`);
+        if (!resultResponse.ok) {
+          throw new Error('Failed to fetch result');
+        }
+  
+        const resultData = await resultResponse.json();
+        const items = encodeURIComponent(JSON.stringify(resultData.detected_items || resultData.label));
+  
+        router.push(`/locale/NutriResult?items=${items}`);
+      }
     } catch (error) {
       console.error(error);
-      toast.error('Failed to upload', { id: 'upload' });
+      toast.error('Failed to upload or fetch result', { id: 'upload' });
     }
   };
 

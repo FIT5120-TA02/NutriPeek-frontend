@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import Link from "next/link";
-import { motion } from "framer-motion";
+
 
 export default function NutriScanPage() {
   const router = useRouter();
@@ -49,29 +48,43 @@ export default function NutriScanPage() {
     toast.loading('Processing your scan...', { id: 'scan' });
 
     try {
-      const formData = new FormData();
       if (image) {
+        const formData = new FormData();
         formData.append('image', image);
-      }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/food-detection/detect`, {
-        method: 'POST',
-        body: formData,
-      });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/food-detection/detect`, {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server error during upload: ${errorText}`);
-      }
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Server error during upload: ${errorText}`);
+        }
 
-      const data = await response.json();
-      toast.success('Scan completed!', { id: 'scan' });
+        const data = await response.json();
+        toast.success('Scan completed!', { id: 'scan' });
 
-      if (data.detected_items || data.label) {
-        const items = encodeURIComponent(JSON.stringify(data.detected_items || data.label));
+        if (data.detected_items || data.label) {
+          const items = encodeURIComponent(JSON.stringify(data.detected_items || data.label));
+          router.push(`/NutriResult?items=${items}`);
+        }
+      } else if (uploadUrl) {
+        const shortcode = uploadUrl.split('/').pop();
+        const resultResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/result/${shortcode}`);
+
+        if (!resultResponse.ok) {
+          throw new Error('Failed to fetch result');
+        }
+
+        const resultData = await resultResponse.json();
+        toast.success('Scan completed!', { id: 'scan' });
+
+        const items = encodeURIComponent(JSON.stringify(resultData.detected_items || resultData.label));
         router.push(`/NutriResult?items=${items}`);
       }
     } catch (error) {
+      console.error(error);
       toast.error('Failed to process the image!', { id: 'scan' });
     }
   };
@@ -82,14 +95,9 @@ export default function NutriScanPage() {
 
   return (
     <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6">
-      <motion.h1
-        className="text-4xl font-bold mb-6 text-gray-800"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
+      <h1 className="text-4xl font-bold mb-6 text-gray-800">
         Start Your NutriScan
-      </motion.h1>
+      </h1>
 
       <p className="text-lg font-semibold text-gray-600 mb-6 text-center">
         Upload a photo of your fridge or scan the QR code to analyze the nutritional contents!
@@ -113,7 +121,7 @@ export default function NutriScanPage() {
         </button>
       </div>
 
-      {/* QR Code Section (Desktop Only) */}
+      {/* QR Code Section */}
       <div className="hidden md:block bg-white rounded-lg shadow-md p-6 w-full sm:w-80 max-w-md">
         <h2 className="text-xl font-semibold mb-4 text-center">Scan QR Code</h2>
         <div className="flex flex-col items-center justify-center bg-gray-100 rounded-lg p-4 mb-4">
@@ -127,24 +135,6 @@ export default function NutriScanPage() {
           <p className="text-xs text-center text-gray-400 break-words">{uploadUrl}</p>
         )}
       </div>
-
-      {/* Link to Start Page */}
-      <motion.div
-        className="mt-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-      >
-        <Link href="/start">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="mt-6 bg-gradient-to-r from-green-400 to-green-600 text-white py-3 px-6 rounded-full shadow-lg hover:shadow-2xl text-lg font-semibold transition-all duration-300 ease-in-out"
-          >
-            Start Now
-          </motion.button>
-        </Link>
-      </motion.div>
     </div>
   );
 }
