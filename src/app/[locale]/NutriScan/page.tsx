@@ -22,7 +22,9 @@ export default function NutriScanPage() {
 
   const generateQrCode = async () => {
     try {
-      const response = await fetch('http://52.64.79.147:8000/api/v1/generate_upload_qr', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/generate_upload_qr`, {
+
+
         method: 'POST',
       });
 
