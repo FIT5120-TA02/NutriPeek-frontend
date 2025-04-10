@@ -44,3 +44,6 @@ local
 # cursor rules
 .cursorrules
 .cursor/*.mdc
+
+# env
+/env
