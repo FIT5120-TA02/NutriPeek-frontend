@@ -23,7 +23,7 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white/70 backdrop-blur-md shadow-md">
       <div className="flex items-center space-x-2">
-        <Link href="/" className="flex items-center space-x-2">
+        <Link href="/Welcome" className="flex items-center space-x-2">
           <Image
             src={nutriPeekLogo}
             alt="NutriPeek Logo"
@@ -39,12 +39,6 @@ export default function Navbar() {
       {!isHomePage && (
         <>
           <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/Guide" className="flex items-center space-x-1 text-gray-600 hover:text-green-600 transition-colors">
-              <NavigationArrow size={20} />
-              <span>Guide</span>
-            </Link>
-            <Link href="/ChildInfo" className="text-gray-600 hover:text-green-600 transition-colors">Child Info</Link>
-            <Link href="/NutriScan" className="text-gray-600 hover:text-green-600 transition-colors">NutriScan</Link>
             <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">Profile</Link>
             <Link
               href="/NutriScan"
@@ -64,12 +58,6 @@ export default function Navbar() {
 
           {isMobileMenuOpen && (
             <div className="absolute top-16 left-0 w-full bg-white shadow-md flex flex-col items-center py-4 space-y-4 md:hidden z-50">
-              <Link href="/Guide" className="flex items-center space-x-1 text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
-                <NavigationArrow size={20} />
-                <span>Guide</span>
-              </Link>
-              <Link href="/ChildInfo" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Child Info</Link>
-              <Link href="/NutriScan" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>NutriScan</Link>
               <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
               <Link
                 href="/NutriScan"

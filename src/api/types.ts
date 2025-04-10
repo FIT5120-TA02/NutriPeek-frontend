@@ -56,8 +56,13 @@ export interface FoodNutrientSummary {
   dietary_fibre_g?: number | null;
 }
 
+export interface FoodItemQuantity {
+  nutrient_data: FoodNutrientSummary;
+  quantity: number; // Quantity of the food item detected
+}
+
 export interface FoodMappingResponse {
-  mapped_items: Record<string, FoodNutrientSummary>;
+  mapped_items: Record<string, FoodItemQuantity>;
   unmapped_items?: string[];
 }
 
