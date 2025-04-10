@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useDetectFoodItems, useQRCodeFlow } from "../../../api";
-import { FoodItemDetection, FoodMappingRequest, FoodNutrientSummary } from "../../../api/types";
+import { FoodItemDetection, FoodMappingRequest } from "../../../api/types";
 import { nutripeekApi } from "../../../api/nutripeekApi";
 import ScanningSection from "../../../components/NutriScan/ScanningSection";
 import ResultsSection from "../../../components/NutriScan/ResultsSection";
@@ -20,19 +20,16 @@ export default function NutriScanPage() {
   const [processingStep, setProcessingStep] = useState<'idle' | 'detecting' | 'mapping' | 'complete'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  
-  // Use the API hooks
+
   const { execute: detectFoodItems, isLoading: isDetecting } = useDetectFoodItems();
-  
-  // Use the QR code flow hook for desktop
-  const { 
-    qrData, 
-    initializeQRCode, 
+  const {
+    qrData,
+    initializeQRCode,
     uploadStatus,
     resultData,
     errorMessage,
     isLoading: isQrProcessing,
-    reset: resetQrFlow
+    reset: resetQrFlow,
   } = useQRCodeFlow();
 
   // Process detected food items
@@ -145,18 +142,13 @@ export default function NutriScanPage() {
   
   // Detect if the user is on a mobile device
   useEffect(() => {
-    // Only detect mobile once on initial render
     const checkMobile = () => {
       const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       setIsMobile(isMobileDevice);
     };
-    
     checkMobile();
-    // No event listener to avoid unnecessary re-renders
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Initialize QR code on desktop
   useEffect(() => {
     // Only run on initial render for desktop devices
     const shouldGenerateQR = !isMobile && !qrData && !isQrProcessing && !showResults;
@@ -169,13 +161,11 @@ export default function NutriScanPage() {
           toast.error('Failed to generate QR Code');
         }
       };
-      
       generateQR();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile, showResults]);
 
-  // Monitor QR upload status changes
   useEffect(() => {
     if (uploadStatus === 'uploaded') {
       setProcessingStep('detecting');
@@ -224,6 +214,7 @@ export default function NutriScanPage() {
       cameraInputRef.current.click();
     }
   };
+
 
   const handleScan = async () => {
     if (!image) {
