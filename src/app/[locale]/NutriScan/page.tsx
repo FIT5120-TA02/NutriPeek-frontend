@@ -75,6 +75,7 @@ export default function NutriScanPage() {
     }
   };
 
+
   const handleScan = async () => {
     if (!image) {
       toast.error('Please upload an image or take a photo first!');
