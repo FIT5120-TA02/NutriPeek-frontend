@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useDetectFoodItems, useQRCodeFlow } from "../../../api";
+
 
 export default function NutriScanPage() {
   const router = useRouter();
@@ -86,9 +86,7 @@ export default function NutriScanPage() {
     }
   };
 
-  const handleCameraCapture = () => {
-    if (cameraInputRef.current) {
-      cameraInputRef.current.click();
+
     }
   };
 
@@ -118,29 +116,10 @@ export default function NutriScanPage() {
     }
   };
 
-  // Function to regenerate QR code
-  const regenerateQRCode = useCallback(() => {
-    // Prevent regeneration if already in progress
-    if (isQrProcessing) return;
-    
-    const regenerate = async () => {
-      try {
-        // First reset the current QR flow
-        resetQrFlow();
-        // Then generate a new one
-        await initializeQRCode(300);
-      } catch (error) {
-        toast.error('Failed to regenerate QR Code');
-      }
-    };
-    
-    regenerate();
-  }, [initializeQRCode, resetQrFlow, isQrProcessing]);
 
-  const isLoading = isDetecting || isQrProcessing;
 
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6">
+    <div className="w-full flex flex-col items-center justify-center min-h-screen p-6">
       <h1 className="text-4xl font-bold mb-6 text-gray-800">
         Start Your NutriScan
       </h1>
@@ -149,41 +128,7 @@ export default function NutriScanPage() {
         Upload a photo of your food to analyze the nutritional contents!
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
-        {/* Upload Local Image Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 w-full">
-          <h2 className="text-xl font-semibold mb-4 text-center">Upload Image</h2>
-          
-          {/* Hidden file input for regular uploads */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-            disabled={isLoading}
-          />
-          
-          {/* Hidden camera input for mobile devices */}
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFileChange}
-            className="hidden"
-            disabled={isLoading}
-          />
-          
-          {image && (
-            <div className="mb-4">
-              <p className="text-gray-500 text-sm mb-2">File selected: {image.name}</p>
-              <img 
-                src={URL.createObjectURL(image)} 
-                alt="Preview" 
-                className="w-full h-40 object-contain rounded border"
-              />
-            </div>
+
           )}
           
           <div className="flex flex-col sm:flex-row gap-2">
