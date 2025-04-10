@@ -1,7 +1,7 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function UploadPage() {
@@ -13,46 +13,54 @@ export default function UploadPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      toast.loading('Uploading...', { id: 'upload' });
+    toast.loading('Uploading...', { id: 'upload' });
 
-      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/upload/${shortcode}`, {
+    const uploadResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/upload/${shortcode}`,
+      {
         method: 'POST',
         body: formData,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error('Upload failed');
       }
+    );
 
-      toast.success('Upload successful!', { id: 'upload' });
+    if (!uploadResponse.ok) {
+      throw new Error('Upload failed');
+    }
 
-      if (isMobileDevice()) {
-        toast.success('Upload successful! Please view results on a computer.');
-      } else {
-        const resultResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/result/${shortcode}`);
-        if (!resultResponse.ok) {
-          throw new Error('Failed to fetch result');
-        }
+    toast.success('Upload successful!', { id: 'upload' });
 
-        const resultData = await resultResponse.json();
-        const items = encodeURIComponent(JSON.stringify(resultData.detected_items || resultData.label));
-
-        router.push(`/locale/NutriResult?items=${items}`);
+    // Retry to fetch detection result
+    let retries = 10;
+    let resultData = null;
+    while (retries > 0) {
+      const resultResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/result/${shortcode}`
+      );
+      if (resultResponse.ok) {
+        resultData = await resultResponse.json();
+        break;
       }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      retries--;
+    }
+
+    if (!resultData) {
+      throw new Error('Failed to fetch result after retries');
+    }
+
+    const items = encodeURIComponent(
+      JSON.stringify(resultData.detected_items || resultData.label)
+    );
+    router.push(`/locale/NutriResult?items=${items}`);
+      
     } catch (error) {
       console.error(error);
       toast.error('Failed to upload or fetch result', { id: 'upload' });
     }
-  };
-
-  const isMobileDevice = () => {
-    if (typeof window === 'undefined') return false;
-    return /Mobi|Android/i.test(window.navigator.userAgent);
   };
 
   return (
