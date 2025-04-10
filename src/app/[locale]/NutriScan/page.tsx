@@ -23,8 +23,6 @@ export default function NutriScanPage() {
   const generateQrCode = async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/generate_upload_qr`, {
-
-
         method: 'POST',
       });
 
@@ -53,10 +51,10 @@ export default function NutriScanPage() {
     try {
       const formData = new FormData();
       if (image) {
-        formData.append('file', image);
+        formData.append('image', image);
       }
 
-      const response = await fetch(uploadUrl!, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/food-detection/detect`, {
         method: 'POST',
         body: formData,
       });

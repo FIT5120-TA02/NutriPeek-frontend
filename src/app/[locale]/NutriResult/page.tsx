@@ -1,61 +1,44 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 export default function ResultPage() {
-  const { shortcode } = useParams<{ shortcode: string }>();
-  const [prediction, setPrediction] = useState<{ label: string; confidence: number } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const [prediction, setPrediction] = useState<any>(null);
 
   useEffect(() => {
-    const fetchResult = async () => {
+    const itemsParam = searchParams.get('items');
+    if (itemsParam) {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/result/${shortcode}`);
-        if (!response.ok) {
-          throw new Error('Result not found');
-        }
-        const data = await response.json();
-        setPrediction(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
+        const parsedItems = JSON.parse(decodeURIComponent(itemsParam));
+        setPrediction(parsedItems);
+      } catch (err) {
+        console.error('Failed to parse items', err);
       }
-    };
-
-    fetchResult();
-  }, [shortcode]);
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p>Loading...</p>
-      </div>
-    );
-  }
+    }
+  }, [searchParams]);
 
   if (!prediction) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <p>No prediction found. Please try again.</p>
+        <p>Loading or No prediction found...</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-green-50 to-white p-4">
-      <motion.h1
-        className="text-4xl font-bold mb-6 text-gray-800"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        Detection Result
+      <motion.h1 className="text-4xl font-bold mb-6 text-gray-800">
+        Nutrition Analysis Results
       </motion.h1>
-      <p className="text-2xl text-gray-700">Food: {prediction.label}</p>
-      <p className="text-lg text-gray-500 mt-2">Confidence: {(prediction.confidence * 100).toFixed(2)}%</p>
+      {prediction.map((item: any, index: number) => (
+        <div key={index} className="bg-white rounded-lg shadow-md p-4 w-80 mb-4">
+          <p className="text-lg font-semibold">Detected: {item.class_name}</p>
+          <p className="text-gray-600">Confidence: {(item.confidence * 100).toFixed(2)}%</p>
+        </div>
+      ))}
     </div>
   );
 }
