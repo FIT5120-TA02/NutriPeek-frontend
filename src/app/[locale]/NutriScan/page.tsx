@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-
 export default function NutriScanPage() {
   const router = useRouter();
   const [image, setImage] = useState<File | null>(null);
@@ -19,7 +18,7 @@ export default function NutriScanPage() {
     }
   };
 
-  const generateQrCode = async () => {
+  const generateQrCode = async (showToast = false) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/generate_upload_qr`, {
         method: 'POST',
@@ -33,7 +32,10 @@ export default function NutriScanPage() {
       const data = await response.json();
       setQrCodeUrl(`data:image/png;base64,${data.qrcode_base64}`);
       setUploadUrl(data.upload_url);
-      toast.success('QR Code generated successfully!');
+
+      if (showToast) {
+        toast.success('QR Code generated successfully!');
+      }
     } catch (error) {
       toast.error('Failed to generate QR Code.');
     }
@@ -90,11 +92,11 @@ export default function NutriScanPage() {
   };
 
   useEffect(() => {
-    generateQrCode();
+    generateQrCode(false); // do not show toast on page load
   }, []);
 
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6">
+    <div className="w-full flex flex-col items-center justify-center min-h-screen p-6">
       <h1 className="text-4xl font-bold mb-6 text-gray-800">
         Start Your NutriScan
       </h1>
@@ -103,7 +105,6 @@ export default function NutriScanPage() {
         Upload a photo of your fridge or scan the QR code to analyze the nutritional contents!
       </p>
 
-      {/* Upload Local Image Section */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6 w-full sm:w-80 max-w-md">
         <h2 className="text-xl font-semibold mb-4 text-center">Upload Local Image</h2>
         <input
@@ -121,7 +122,6 @@ export default function NutriScanPage() {
         </button>
       </div>
 
-      {/* QR Code Section */}
       <div className="hidden md:block bg-white rounded-lg shadow-md p-6 w-full sm:w-80 max-w-md">
         <h2 className="text-xl font-semibold mb-4 text-center">Scan QR Code</h2>
         <div className="flex flex-col items-center justify-center bg-gray-100 rounded-lg p-4 mb-4">
