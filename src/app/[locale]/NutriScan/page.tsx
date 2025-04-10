@@ -1,14 +1,23 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { useDetectFoodItems, useQRCodeFlow } from '../../../api';
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useDetectFoodItems, useQRCodeFlow } from "../../../api";
+import { FoodItemDetection, FoodMappingRequest } from "../../../api/types";
+import { nutripeekApi } from "../../../api/nutripeekApi";
+import ScanningSection from "../../../components/NutriScan/ScanningSection";
+import ResultsSection from "../../../components/NutriScan/ResultsSection";
+import { FoodItemDisplay } from "../../../components/NutriScan/types";
 
 export default function NutriScanPage() {
   const router = useRouter();
   const [image, setImage] = useState<File | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [detectedItems, setDetectedItems] = useState<FoodItemDisplay[]>([]);
+  const [showResults, setShowResults] = useState(false);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [processingStep, setProcessingStep] = useState<'idle' | 'detecting' | 'mapping' | 'complete'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -23,6 +32,115 @@ export default function NutriScanPage() {
     reset: resetQrFlow,
   } = useQRCodeFlow();
 
+  // Process detected food items
+  const processDetectedFood = useCallback(async (detectedItems: FoodItemDetection[]) => {
+    try {
+      // Extract class names
+      const detectedNames = detectedItems.map(item => item.class_name);
+      
+      // First, set the detecting state and update UI
+      setProcessingStep('detecting');
+      toast.loading('Detecting food items...', { id: 'processing' });
+      
+      // Prepare for mapping nutrients (second step)
+      setProcessingStep('mapping');
+      toast.loading('Mapping nutrients...', { id: 'processing' });
+      
+      // Call the map-nutrients API
+      const mappingRequest: FoodMappingRequest = {
+        detected_items: detectedNames
+      };
+      
+      const mappingResult = await nutripeekApi.mapFoodToNutrients(mappingRequest);
+      
+      // Count occurrences of each food item
+      const foodCounts: Record<string, number> = {};
+      detectedNames.forEach(name => {
+        foodCounts[name] = (foodCounts[name] || 0) + 1;
+      });
+      
+      // Group items by their class name for consolidated display
+      const groupedItems: Record<string, FoodItemDisplay> = {};
+      
+      // Process each detected item
+      detectedItems.forEach(item => {
+        const mappedFood = mappingResult.mapped_items[item.class_name];
+        
+        if (mappedFood) {
+          // Check if we already have this food in our grouped items
+          if (!groupedItems[item.class_name]) {
+            // Create a new item with the mapped data
+            const nutrientData = mappedFood.nutrient_data;
+            const quantity = mappedFood.quantity;
+            
+            groupedItems[item.class_name] = {
+              id: nutrientData.id,
+              name: nutrientData.food_name,
+              confidence: item.confidence, // We'll average this later
+              quantity: quantity, // Use the quantity from the API
+              nutrients: {
+                ...(nutrientData.energy_with_fibre_kj != null && { 'Energy (kJ)': nutrientData.energy_with_fibre_kj * quantity }),
+                ...(nutrientData.protein_g != null && { 'Protein (g)': nutrientData.protein_g * quantity }),
+                ...(nutrientData.total_fat_g != null && { 'Total Fat (g)': nutrientData.total_fat_g * quantity }),
+                ...(nutrientData.carbs_with_sugar_alcohols_g != null && { 'Carbs (g)': nutrientData.carbs_with_sugar_alcohols_g * quantity }),
+                ...(nutrientData.dietary_fibre_g != null && { 'Dietary Fibre (g)': nutrientData.dietary_fibre_g * quantity })
+              }
+            };
+          } else {
+            // Just accumulate confidence for averaging later
+            groupedItems[item.class_name].confidence += item.confidence;
+          }
+        } else {
+          // If no mapping found, add as a standalone item
+          const itemKey = `unmapped-${item.class_name}`;
+          if (!groupedItems[itemKey]) {
+            groupedItems[itemKey] = {
+              name: item.class_name,
+              confidence: item.confidence,
+              quantity: foodCounts[item.class_name],
+              nutrients: {}
+            };
+          } else {
+            groupedItems[itemKey].confidence += item.confidence;
+          }
+        }
+      });
+      
+      // Convert the grouped items to an array and apply quantity formatting
+      const displayItems: FoodItemDisplay[] = Object.values(groupedItems).map(item => {
+        const quantity = item.quantity || 1;
+        const avgConfidence = item.confidence / quantity; // Average confidence
+        
+        return {
+          ...item,
+          confidence: avgConfidence,
+          quantity // Keep the quantity for later use
+        };
+      });
+      
+      // Process is complete
+      setProcessingStep('complete');
+      toast.success('Food analysis complete!', { id: 'processing' });
+      
+      return displayItems;
+    } catch (error) {
+      console.error('Error mapping nutrients:', error);
+      toast.error('Failed to map nutrients', { id: 'processing' });
+      throw error;
+    }
+  }, []);
+
+  // Convert FoodItemDetection to FoodItemDisplay
+  const mapDetectionToDisplay = useCallback((items: FoodItemDetection[]): FoodItemDisplay[] => {
+    // Basic mapping without nutrients (used only as fallback)
+    return items.map(item => ({
+      name: item.class_name,
+      confidence: item.confidence,
+      nutrients: {}
+    }));
+  }, []);
+  
+  // Detect if the user is on a mobile device
   useEffect(() => {
     const checkMobile = () => {
       const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -32,7 +150,9 @@ export default function NutriScanPage() {
   }, []);
 
   useEffect(() => {
-    const shouldGenerateQR = !isMobile && !qrData && !isQrProcessing;
+    // Only run on initial render for desktop devices
+    const shouldGenerateQR = !isMobile && !qrData && !isQrProcessing && !showResults;
+    
     if (shouldGenerateQR) {
       const generateQR = async () => {
         try {
@@ -43,28 +163,48 @@ export default function NutriScanPage() {
       };
       generateQR();
     }
-  }, [isMobile, qrData, isQrProcessing, initializeQRCode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile, showResults]);
 
   useEffect(() => {
     if (uploadStatus === 'uploaded') {
-      toast.success('Image uploaded! Processing...');
+      setProcessingStep('detecting');
+      toast.loading('Food detection in progress...', { id: 'qr-processing' });
     } else if (uploadStatus === 'processed' && resultData) {
-      toast.success('Food detection completed!');
+      // QR processed, now map nutrients
       if (resultData.detected_items && resultData.detected_items.length > 0) {
-        const items = encodeURIComponent(JSON.stringify(resultData.detected_items));
-        router.push(`/NutriResult?items=${items}`);
+        setProcessingStep('mapping');
+        toast.loading('Mapping nutrients...', { id: 'qr-processing' });
+        
+        // Process the detected items with nutrient mapping
+        processDetectedFood(resultData.detected_items || [])
+          .then(mappedItems => {
+            setDetectedItems(mappedItems);
+            setShowResults(true);
+            setProcessingStep('complete');
+            toast.success('Food analysis complete!', { id: 'qr-processing' });
+          })
+          .catch(error => {
+            toast.error('Failed to map nutrients', { id: 'qr-processing' });
+            // Fallback to basic mapping without nutrients
+            setDetectedItems(mapDetectionToDisplay(resultData.detected_items || []));
+            setShowResults(true);
+          });
       } else {
-        toast.error('No food items detected in the uploaded image');
+        toast.error('No food items detected in the uploaded image', { id: 'qr-processing' });
+        setProcessingStep('idle');
       }
     } else if (uploadStatus === 'error') {
-      toast.error(errorMessage || 'An error occurred');
+      toast.error(errorMessage || 'An error occurred', { id: 'qr-processing' });
+      setProcessingStep('idle');
     }
-  }, [uploadStatus, resultData, errorMessage, router]);
+  }, [uploadStatus, resultData, errorMessage, mapDetectionToDisplay, processDetectedFood]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     if (file) {
       setImage(file);
+      setImagePreviewUrl(URL.createObjectURL(file));
       toast.success('Image selected successfully!');
     }
   };
@@ -83,141 +223,118 @@ export default function NutriScanPage() {
     }
 
     const toastId = 'scan';
-    toast.loading('Processing your scan...', { id: toastId });
+    setProcessingStep('detecting');
+    toast.loading('Detecting food items...', { id: toastId });
 
     try {
-      const data = await detectFoodItems(image);
-      toast.success('Scan completed!', { id: toastId });
-
-      if (data.detected_items && data.detected_items.length > 0) {
-        const items = encodeURIComponent(JSON.stringify(data.detected_items));
-        router.push(`/NutriResult?items=${items}`);
+      // Step 1: Detect food items
+      const detectionData = await detectFoodItems(image);
+      
+      if (detectionData.detected_items && detectionData.detected_items.length > 0) {
+        setProcessingStep('mapping');
+        toast.loading('Mapping nutrients...', { id: toastId });
+        
+        // Step 2: Map nutrients to detected items
+        try {
+          const mappedItems = await processDetectedFood(detectionData.detected_items);
+          setDetectedItems(mappedItems);
+          setShowResults(true);
+          setProcessingStep('complete');
+          toast.success('Food analysis complete!', { id: toastId });
+        } catch (error) {
+          console.error('Nutrient mapping failed, falling back to basic display', error);
+          toast.error('Nutrient mapping failed, displaying basic results', { id: toastId });
+          // Fallback to basic mapping without nutrients
+          setDetectedItems(mapDetectionToDisplay(detectionData.detected_items));
+          setShowResults(true);
+          setProcessingStep('idle');
+        }
       } else {
         toast.error('No food items detected in the image', { id: toastId });
+        setProcessingStep('idle');
       }
     } catch (error) {
       console.error(error);
       toast.error('Failed to process the image!', { id: toastId });
+      setProcessingStep('idle');
     }
   };
 
+  // Function to regenerate QR code
   const regenerateQRCode = useCallback(() => {
+    // Prevent regeneration if already in progress
     if (isQrProcessing) return;
-
+    
     const regenerate = async () => {
       try {
+        // First reset the current QR flow
         resetQrFlow();
+        // Then generate a new one
         await initializeQRCode(300);
       } catch (error) {
         toast.error('Failed to regenerate QR Code');
       }
     };
-
+    
     regenerate();
   }, [initializeQRCode, resetQrFlow, isQrProcessing]);
 
-  const isLoading = isDetecting || isQrProcessing;
+  // Function to reset the scanning process
+  const handleReset = () => {
+    setShowResults(false);
+    setDetectedItems([]);
+    setImage(null);
+    setProcessingStep('idle');
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+      setImagePreviewUrl(null);
+    }
+    
+    // If on desktop, generate a new QR code
+    if (!isMobile) {
+      regenerateQRCode();
+    }
+  };
+
+  const isLoading = isDetecting || isQrProcessing || processingStep !== 'idle';
 
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-screen p-6">
-      <h1 className="text-4xl font-bold mb-6 text-gray-800">Start Your NutriScan</h1>
+    <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6">
+      <h1 className="text-4xl font-bold mb-6 text-gray-800">
+        {showResults ? 'NutriScan Results' : 'Start Your NutriScan'}
+      </h1>
+
       <p className="text-lg font-semibold text-gray-600 mb-6 text-center">
-        Upload a photo of your food to analyze the nutritional contents!
+        {showResults 
+          ? 'Here are the ingredients detected in your food'
+          : 'Upload a photo of your food to analyze the nutritional contents!'}
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
-        {/* Upload section */}
-        <div className="bg-white rounded-lg shadow-md p-6 w-full">
-          <h2 className="text-xl font-semibold mb-4 text-center">Upload Image</h2>
-
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={isLoading} />
-          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" disabled={isLoading} />
-
-          <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              Browse Files
-            </button>
-            {isMobile && (
-              <button
-                onClick={handleCameraCapture}
-                className="flex-1 bg-indigo-500 text-white py-3 rounded-lg hover:bg-indigo-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
-                disabled={isLoading}
-              >
-                Take Photo
-              </button>
-            )}
-          </div>
-
-          <button
-            onClick={handleScan}
-            className="w-full bg-green-500 text-white py-3 rounded-lg mt-4 hover:bg-green-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
-            disabled={isLoading || !image}
-          >
-            {isLoading ? 'Processing...' : 'Analyze Image'}
-          </button>
-        </div>
-
-        {/* QR code section */}
-        {!isMobile && (
-          <div className="bg-white rounded-lg shadow-md p-6 w-full">
-            <h2 className="text-xl font-semibold mb-2 text-center">Scan with Phone</h2>
-            <div className="flex flex-col items-center">
-              <div className={`mb-4 p-4 rounded-lg ${uploadStatus === 'uploaded' ? 'bg-blue-50' : uploadStatus === 'processed' ? 'bg-green-50' : 'bg-gray-50'}`}>
-                {isQrProcessing && !qrData && (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <p className="text-gray-500 text-center mb-2">Generating QR Code...</p>
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  </div>
-                )}
-                {errorMessage && (
-                  <div className="py-6">
-                    <p className="text-red-500 text-center">{errorMessage}</p>
-                    <button
-                      onClick={regenerateQRCode}
-                      className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                )}
-                {qrData && (
-                  <div className="flex flex-col items-center">
-                    <div className="bg-white p-3 rounded-lg border-2 border-gray-200 shadow-sm">
-                      <img src={`data:image/png;base64,${qrData.qrcode_base64}`} alt="Generated QR Code" className="w-48 h-48 object-contain" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {qrData && (
-                <div className="text-center mt-2">
-                  <h3 className="font-medium text-gray-700 mb-2">How to use:</h3>
-                  <ol className="text-left text-sm text-gray-600 space-y-2 mb-4">
-                    <li>Open your phone's camera app</li>
-                    <li>Point it at the QR code above</li>
-                    <li>Take a photo of your food when prompted</li>
-                    <li>Results will appear automatically</li>
-                  </ol>
-                  <div className="text-xs text-gray-400 mb-1">
-                    QR code expires in {qrData.expires_in_seconds} seconds
-                  </div>
-                  <button
-                    onClick={regenerateQRCode}
-                    className="text-sm text-blue-500 hover:text-blue-700"
-                    disabled={isQrProcessing}
-                  >
-                    {isQrProcessing ? 'Generating...' : 'Generate New QR Code'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      {showResults ? (
+        <ResultsSection 
+          detectedItems={detectedItems}
+          imagePreviewUrl={imagePreviewUrl}
+          handleReset={handleReset}
+        />
+      ) : (
+        <ScanningSection
+          image={image}
+          isMobile={isMobile}
+          isLoading={isLoading}
+          processingStep={processingStep}
+          imagePreviewUrl={imagePreviewUrl}
+          fileInputRef={fileInputRef}
+          cameraInputRef={cameraInputRef}
+          qrData={qrData}
+          uploadStatus={uploadStatus}
+          errorMessage={errorMessage || null}
+          isQrProcessing={isQrProcessing}
+          regenerateQRCode={regenerateQRCode}
+          handleFileChange={handleFileChange}
+          handleCameraCapture={handleCameraCapture}
+          handleScan={handleScan}
+        />
+      )}
     </div>
   );
 }
