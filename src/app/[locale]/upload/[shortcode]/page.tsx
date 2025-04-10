@@ -10,7 +10,7 @@ export default function UploadPage() {
   const [image, setImage] = useState<File | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+      const file = e.target.files?.[0];
     if (!file) return;
   
     try {
