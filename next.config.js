@@ -29,15 +29,11 @@ const nextConfig = {
       },
     ];
   },
-<<<<<<< HEAD
+
+
   eslint: {
    ignoreDuringBuilds: true,
   },
 };
 
 module.exports = withNextIntl(nextConfig);
-=======
-};
-
-module.exports = withNextIntl(nextConfig);
->>>>>>> 6d97d02bb0e3e6d7b6542f3a5b20492d23cc701f
