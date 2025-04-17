@@ -1,11 +1,5 @@
 'use client';
 
-<<<<<<< HEAD
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-
-=======
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -15,15 +9,12 @@ import { nutripeekApi } from "../../../api/nutripeekApi";
 import ScanningSection from "../../../components/NutriScan/ScanningSection";
 import ResultsSection from "../../../components/NutriScan/ResultsSection";
 import { FoodItemDisplay } from "../../../components/NutriScan/types";
->>>>>>> 6d97d02bb0e3e6d7b6542f3a5b20492d23cc701f
+
 
 export default function NutriScanPage() {
   const router = useRouter();
   const [image, setImage] = useState<File | null>(null);
-<<<<<<< HEAD
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const [uploadUrl, setUploadUrl] = useState<string | null>(null);
-=======
+
   const [isMobile, setIsMobile] = useState(false);
   const [detectedItems, setDetectedItems] = useState<FoodItemDisplay[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -210,21 +201,19 @@ export default function NutriScanPage() {
       setProcessingStep('idle');
     }
   }, [uploadStatus, resultData, errorMessage, mapDetectionToDisplay, processDetectedFood]);
->>>>>>> 6d97d02bb0e3e6d7b6542f3a5b20492d23cc701f
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     if (file) {
       setImage(file);
-<<<<<<< HEAD
-=======
+
       setImagePreviewUrl(URL.createObjectURL(file));
->>>>>>> 6d97d02bb0e3e6d7b6542f3a5b20492d23cc701f
       toast.success('Image selected successfully!');
     }
   };
 
-<<<<<<< HEAD
+
   const generateQrCode = async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/generate_upload_qr`, {
@@ -298,7 +287,7 @@ export default function NutriScanPage() {
   useEffect(() => {
     generateQrCode();
   }, []);
-=======
+
   const handleCameraCapture = () => {
     if (cameraInputRef.current) {
       cameraInputRef.current.click();
@@ -387,12 +376,12 @@ export default function NutriScanPage() {
   };
 
   const isLoading = isDetecting || isQrProcessing || processingStep !== 'idle';
->>>>>>> 6d97d02bb0e3e6d7b6542f3a5b20492d23cc701f
+
 
   return (
     <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6">
       <h1 className="text-4xl font-bold mb-6 text-gray-800">
-<<<<<<< HEAD
+
         Start Your NutriScan
       </h1>
 
@@ -436,7 +425,7 @@ export default function NutriScanPage() {
   );
 }
 
-=======
+
         {showResults ? 'NutriScan Results' : 'Start Your NutriScan'}
       </h1>
 
@@ -474,4 +463,4 @@ export default function NutriScanPage() {
     </div>
   );
 }
->>>>>>> 6d97d02bb0e3e6d7b6542f3a5b20492d23cc701f
+
