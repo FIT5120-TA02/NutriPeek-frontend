@@ -1,14 +1,21 @@
 'use client';
 
+<<<<<<< HEAD
 
 import { useEffect, useState, useRef } from "react";
 
+=======
+import { useEffect, useState, useRef } from "react";
+>>>>>>> fix/merge-conflicts-cleanup
 import { toast } from "sonner";
 import { showConfirmDialog } from "@/components/ui/ConfirmDialog";
 import storageService from "@/libs/StorageService";
 import Card from "@/components/ui/Card";
 import Dropdown from "@/components/ui/Dropdown";
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/merge-conflicts-cleanup
 import { motion } from "framer-motion";
 
 
@@ -23,7 +30,10 @@ export default function ProfilePage() {
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editChild, setEditChild] = useState<ChildProfile | null>(null);
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/merge-conflicts-cleanup
   const [mounted, setMounted] = useState(false);
   
   // New child form state
