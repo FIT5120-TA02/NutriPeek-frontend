@@ -1,0 +1,70 @@
+{
+  "RootLayout": {
+    "home_link": "Home",
+    "about_link": "About",
+    "counter_link": "Counter",
+    "portfolio_link": "Portfolio",
+    "sign_in_link": "Sign in",
+    "sign_up_link": "Sign up"
+  },
+  "HomePage": {
+    "title": "Nurturing Healthy Kids",
+    "description": "Supporting the health and wellbeing of children through sustainable development goals.",
+    "learn_more": "Learn More",
+    "get_started": "Get Started",
+    "focus_areas": "Our Focus Areas",
+    "health": {
+      "title": "Health",
+      "subtitle": "Promoting physical and mental wellbeing",
+      "description": "Ensuring children have access to proper nutrition, healthcare, and opportunities for physical activity."
+    },
+    "education": {
+      "title": "Education",
+      "subtitle": "Supporting learning and development",
+      "description": "Providing resources and opportunities for quality education and developmental support."
+    },
+    "community": {
+      "title": "Community",
+      "subtitle": "Building supportive environments",
+      "description": "Creating safe and nurturing communities where children can thrive and develop."
+    },
+    "join_mission": {
+      "title": "Join Our Mission",
+      "description": "Help us make a positive impact on children's health and wellbeing around the world. Together, we can create a brighter future for the next generation.",
+      "cta": "Get Involved"
+    }
+  },
+  "BaseTemplate": {
+    "description": "Supporting the health and wellbeing of children through sustainable development goals",
+    "copyright": "© Copyright",
+    "footer_slogan": "Supporting the health and wellbeing of children worldwide"
+  },
+  "About": {
+    "meta_title": "About",
+    "about_paragraph": "Welcome to our About page! We are a team of passionate individuals dedicated to creating amazing software.",
+    "mission": {
+      "title": "Our Mission",
+      "statement": "To promote and support the health and wellbeing of children worldwide through sustainable development initiatives, education, and community engagement."
+    },
+    "vision": {
+      "title": "Our Vision",
+      "description": "A world where every child has access to the resources, support, and opportunities they need to lead healthy, fulfilling lives."
+    },
+    "values": {
+      "title": "Our Values",
+      "list": [
+        "Compassion",
+        "Inclusivity",
+        "Sustainability",
+        "Innovation",
+        "Collaboration"
+      ]
+    },
+    "contact": {
+      "title": "Get In Touch",
+      "description": "We'd love to hear from you! Reach out to learn more about our programs or how you can get involved.",
+      "contact_btn": "Contact Us",
+      "newsletter_btn": "Join Our Newsletter"
+    }
+  }
+}

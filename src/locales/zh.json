@@ -1,0 +1,70 @@
+{
+  "RootLayout": {
+    "home_link": "首页",
+    "about_link": "关于",
+    "counter_link": "计数器",
+    "portfolio_link": "作品集",
+    "sign_in_link": "登录",
+    "sign_up_link": "注册"
+  },
+  "HomePage": {
+    "title": "培育健康儿童",
+    "description": "通过可持续发展目标支持儿童的健康和福祉。",
+    "learn_more": "了解更多",
+    "get_started": "开始使用",
+    "focus_areas": "我们的重点领域",
+    "health": {
+      "title": "健康",
+      "subtitle": "促进身心健康",
+      "description": "确保儿童获得适当的营养、医疗保健和体育活动机会。"
+    },
+    "education": {
+      "title": "教育",
+      "subtitle": "支持学习和发展",
+      "description": "提供优质教育和发展支持的资源和机会。"
+    },
+    "community": {
+      "title": "社区",
+      "subtitle": "建设支持性环境",
+      "description": "创建安全和有爱的社区，让儿童能够茁壮成长和发展。"
+    },
+    "join_mission": {
+      "title": "加入我们的使命",
+      "description": "帮助我们对全球儿童的健康和福祉产生积极影响。共同为下一代创造更美好的未来。",
+      "cta": "参与其中"
+    }
+  },
+  "BaseTemplate": {
+    "description": "通过可持续发展目标支持儿童的健康和福祉",
+    "copyright": "© 版权所有",
+    "footer_slogan": "支持全球儿童的健康和福祉"
+  },
+  "About": {
+    "meta_title": "关于我们",
+    "about_paragraph": "欢迎来到我们的关于页面！我们是一支致力于创造令人惊叹的软件的充满激情的团队。",
+    "mission": {
+      "title": "我们的使命",
+      "statement": "通过可持续发展倡议、教育和社区参与，促进和支持全球儿童的健康和福祉。"
+    },
+    "vision": {
+      "title": "我们的愿景",
+      "description": "一个每个儿童都能获得所需资源、支持和机会，过上健康、充实生活的世界。"
+    },
+    "values": {
+      "title": "我们的价值观",
+      "list": [
+        "同情心",
+        "包容性",
+        "可持续性",
+        "创新",
+        "协作"
+      ]
+    },
+    "contact": {
+      "title": "联系我们",
+      "description": "我们很乐意听取您的意见！联系我们了解更多关于我们的项目或如何参与其中。",
+      "contact_btn": "联系我们",
+      "newsletter_btn": "订阅我们的通讯"
+    }
+  }
+} 
