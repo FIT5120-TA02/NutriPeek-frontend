@@ -130,7 +130,7 @@ export default function ProfilePage() {
     
     toast.success("Child profile added successfully!");
   };
->>>>>>> 6d97d02bb0e3e6d7b6542f3a5b20492d23cc701f
+
 
   const allergyOptions = [
     "Peanut", "Milk", "Egg", "Soy", "Wheat", "Fish", "Shellfish", "Tree nuts", "Chicken", "Celery"
