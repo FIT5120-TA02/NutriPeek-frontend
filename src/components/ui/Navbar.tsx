@@ -39,7 +39,6 @@ export default function Navbar() {
       {!isHiddenPage && (
         <>
           <nav className="hidden md:flex items-center space-x-6">
-
             <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">Profile</Link>
             <Link
               href="/NutriScan"
