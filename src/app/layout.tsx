@@ -5,6 +5,10 @@ import '@/styles/global.css';
 import Navbar from '@/components/ui/Navbar';
 import { Toaster } from 'sonner';
 import { ConfirmDialogProvider } from '@/components/ui/ConfirmDialog';
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
 import { NutritionProvider } from '@/contexts/NutritionContext';
 
 
@@ -32,5 +36,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 }
 
 
+<<<<<<< HEAD
+=======
 
 
+>>>>>>> fix/merge-conflicts-cleanup

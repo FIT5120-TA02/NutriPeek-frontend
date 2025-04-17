@@ -1,6 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -22,10 +26,18 @@ export default function WelcomePage() {
     return () => {
       document.body.className = "";
       clearTimeout(timer);
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
     };
   }, []);
 
   const emojis = [
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
     "🍇", "🍎", "🍪", "🍕", "🍣", "🥑", "🍞",
     "🍔", "🍉", "🍍", "🥗", "🥛", "🍗",
     "🍑", "🥒", "🍓", "🍊", "🥦", "🥝", "🍌",
@@ -346,5 +358,9 @@ export default function WelcomePage() {
         </nav>
       </motion.header>
     </>
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
   );
 }

@@ -4,11 +4,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+<<<<<<< HEAD
+
 import { NavigationArrow } from 'phosphor-react';
+
+=======
+import { NavigationArrow } from 'phosphor-react';
+>>>>>>> fix/merge-conflicts-cleanup
 import nutriPeekLogo from '@/../public/nutripeek.png';
 
 export default function Navbar() {
   const pathname = usePathname();
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
   const isHiddenPage = pathname === '/' || pathname === '/Welcome';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -16,6 +26,10 @@ export default function Navbar() {
     return null;
   }
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen((prev) => !prev);
   };
@@ -24,6 +38,10 @@ export default function Navbar() {
     <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white/70 backdrop-blur-md shadow-md">
       <div className="flex items-center space-x-2">
         <Link href="/Welcome" className="flex items-center space-x-2">
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
           <Image
             src={nutriPeekLogo}
             alt="NutriPeek Logo"
@@ -36,9 +54,17 @@ export default function Navbar() {
         </Link>
       </div>
 
+<<<<<<< HEAD
+
       {!isHiddenPage && (
         <>
           <nav className="hidden md:flex items-center space-x-6">
+
+=======
+      {!isHiddenPage && (
+        <>
+          <nav className="hidden md:flex items-center space-x-6">
+>>>>>>> fix/merge-conflicts-cleanup
             <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">Profile</Link>
             <Link
               href="/NutriScan"
@@ -48,6 +74,11 @@ export default function Navbar() {
             </Link>
           </nav>
 
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
           <div className="md:hidden flex items-center">
             <button onClick={toggleMobileMenu} className="text-gray-600 hover:text-green-600 focus:outline-none">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,6 +89,10 @@ export default function Navbar() {
 
           {isMobileMenuOpen && (
             <div className="absolute top-16 left-0 w-full bg-white shadow-md flex flex-col items-center py-4 space-y-4 md:hidden z-50">
+<<<<<<< HEAD
+
+=======
+>>>>>>> fix/merge-conflicts-cleanup
               <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
               <Link
                 href="/NutriScan"
