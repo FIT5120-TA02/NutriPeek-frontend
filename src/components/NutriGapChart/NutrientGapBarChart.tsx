@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import UnitFormatter from '@/components/UniFormatter/UnitFormatter';
+import UnitFormatter from '@/components/UnitFormatter/UnitFormatter';
 
 interface NutrientGapOverviewProps {
   gaps: Record<string, {
