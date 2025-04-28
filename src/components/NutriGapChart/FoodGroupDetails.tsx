@@ -40,22 +40,22 @@ export default function FoodGroupDetails({ gaps }: FoodGroupDetailsProps) {
           ? (nutrient.current_intake / nutrient.recommended_intake) * 100
           : 0;
 
-        const isUnderrepresented = percentage < 70;
+        const isBelowRecommendedIntake = percentage < 70;
 
         return (
           <div key={index} className="border rounded-lg p-4 hover:shadow-md transition">
             <div className="flex justify-between items-center mb-2">
               <h4 className="text-lg font-semibold text-gray-800">{nutrient.name}</h4>
-              <span className={`text-sm ${isUnderrepresented ? 'text-red-500' : 'text-green-500'}`}>
+              <span className={`text-sm ${isBelowRecommendedIntake ? 'text-red-500' : 'text-green-500'}`}>
                 {percentage.toFixed(1)}% of recommendation
               </span>
             </div>
             <p className="text-gray-600 text-sm mb-2">
-              {isUnderrepresented
+              {isBelowRecommendedIntake
                 ? 'Currently underrepresented in the meal. Consider boosting intake of this group.'
                 : 'Sufficient intake. No immediate action needed.'}
             </p>
-            {isUnderrepresented && (
+            {isBelowRecommendedIntake && (
               <div className="text-xs text-gray-500 italic">
                 Tip: Add more sources rich in {nutrient.name.toLowerCase()} to balance the diet.
               </div>
