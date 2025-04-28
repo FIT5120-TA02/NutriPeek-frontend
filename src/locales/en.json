@@ -99,6 +99,8 @@
     "success_message": "Great job! You've created a balanced meal!",
     "error_loading": "Could not load food items. Please try again later.",
     "loading_message": "Loading food items...",
+    "loading_nutrition_data": "Loading nutrition data...",
+    "personalized_for": "Personalized for",
     "feedback_happy": "Excellent choice! This is a very balanced meal.",
     "feedback_neutral": "Good start! Try adding more variety for a more balanced meal.",
     "feedback_sad": "This meal could use more balance. Try adding foods from all food groups.",

@@ -12,7 +12,6 @@ export function getFoodImageUrl(foodName: string): string {
   // Replace forward slashes with colons before encoding
   const sanitizedName = foodName.replace(/\//g, ':');
   // Encode food name to handle spaces and special characters
-  console.log(sanitizedName);
   const encodedName = encodeURIComponent(`asset_${sanitizedName}`);
   return `${process.env.NEXT_PUBLIC_CDN_URL}/foods/${encodedName}.png`;
 }

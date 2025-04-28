@@ -99,6 +99,8 @@
     "success_message": "做得好！你创建了一份均衡的膳食！",
     "error_loading": "无法加载食物项目。请稍后再试。",
     "loading_message": "正在加载食物项目...",
+    "loading_nutrition_data": "正在加载营养数据...",
+    "personalized_for": "为以下人员个性化",
     "feedback_happy": "绝佳选择！这是一份非常均衡的膳食。",
     "feedback_neutral": "好的开始！尝试添加更多种类，使膳食更均衡。",
     "feedback_sad": "这份膳食可以更均衡。尝试添加所有食物组别的食物。",

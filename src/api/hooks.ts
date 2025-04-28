@@ -16,7 +16,8 @@ import {
   FoodAutocompleteResponse,
   FoodNutrientResponse,
   NutrientGapRequest,
-  NutrientGapResponse
+  NutrientGapResponse,
+  NutrientIntakeResponse
 } from './types';
 
 interface ApiHookState<T> {
@@ -342,5 +343,14 @@ export function useFoodNutrients(foodId: string | null, executeOnMount = false) 
 export function useCalculateNutrientGap() {
   return useApiCall<NutrientGapResponse, [NutrientGapRequest]>(
     (request: NutrientGapRequest) => nutripeekApi.calculateNutrientGap(request)
+  );
+}
+
+/**
+ * Hook for getting recommended nutrient intake for a child
+ */
+export function useGetNutrientIntake() {
+  return useApiCall<NutrientIntakeResponse, [{ age: number; gender: 'boy' | 'girl' }]>(
+    (childProfile: { age: number; gender: 'boy' | 'girl' }) => nutripeekApi.getNutrientIntake(childProfile)
   );
 }

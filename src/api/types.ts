@@ -142,6 +142,18 @@ export interface NutrientGapResponse {
   total_calories?: number;
 }
 
+// Nutrient Intake
+export interface NutrientIntakeInfo {
+  name: string;
+  recommended_intake: number;
+  unit: string;
+  category?: string | null;
+}
+
+export interface NutrientIntakeResponse {
+  nutrient_intakes: Record<string, NutrientIntakeInfo>;
+}
+
 // API Error Responses
 export interface ValidationError {
   loc: (string | number)[];

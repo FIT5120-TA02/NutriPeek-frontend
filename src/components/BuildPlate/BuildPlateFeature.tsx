@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, ChartPie } from 'phosphor-react';
 
 import { nutripeekApi } from '@/api/nutripeekApi';
+import { NutrientIntakeResponse } from '@/api/types';
 import { 
   PlateFood,
   PlacedFood,
@@ -28,12 +29,15 @@ import {
   getAvatarEmotion,
   getFeedbackMessage 
 } from './utils';
+import { calculatePersonalizedNutritionSummary } from './nutrientCalculations';
 
 import LoadingSpinner from '../ui/LoadingSpinner';
 import SectionedPlate from './SectionedPlate';
 import FoodPalette from './FoodPalette';
 import NutritionChart from './NutritionChart';
 import AvatarFeedback from './AvatarFeedback';
+import ProfileSelector from './ProfileSelector';
+import ProfileSelectionModal from './ProfileSelectionModal';
 
 // Animation variants for smooth transitions
 const containerVariants = {
@@ -43,6 +47,26 @@ const containerVariants = {
     transition: { duration: 0.5 }
   },
   exit: { opacity: 0, transition: { duration: 0.3 } }
+};
+
+// Child profile interface
+interface ChildProfile {
+  name: string;
+  age: string;
+  gender: string;
+  allergies: string[];
+}
+
+type ViewMode = 'build' | 'review';
+
+// Type guard to determine if a string is a valid view mode
+const isViewMode = (mode: string): mode is ViewMode => {
+  return mode === 'build' || mode === 'review';
+};
+
+// Function to toggle between view modes
+const getOppositeViewMode = (mode: ViewMode): ViewMode => {
+  return mode === 'build' ? 'review' : 'build';
 };
 
 /**
@@ -59,7 +83,10 @@ export default function BuildPlateFeature() {
   const [placedFoods, setPlacedFoods] = useState<PlacedFood[]>([]);
   
   // Mode state (build or review)
-  const [viewMode, setViewMode] = useState<'build' | 'review'>('build');
+  const [viewMode, setViewMode] = useState<ViewMode>('build');
+  
+  // Profile selection modal state
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   // Generate a stable key for each mode to prevent React key collision
   const buildModeKey = useMemo(() => 'build-mode-stable', []);
@@ -68,6 +95,23 @@ export default function BuildPlateFeature() {
   // Loading state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Nutrient intake API state
+  const [nutrientIntakeLoading, setNutrientIntakeLoading] = useState(false);
+  const [nutrientIntakeResponse, setNutrientIntakeResponse] = useState<NutrientIntakeResponse | null>(null);
+  
+  // Child profile state
+  const [selectedProfileIndex, setSelectedProfileIndex] = useState<number>(0);
+  const [selectedProfile, setSelectedProfile] = useState<ChildProfile | null>(null);
+  
+  // Max values for nutrition chart derived from API response
+  const [nutrientMaxValues, setNutrientMaxValues] = useState<{
+    energy: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+    fibre: number;
+  } | null>(null);
   
   // Load food categories data on mount
   useEffect(() => {
@@ -100,10 +144,21 @@ export default function BuildPlateFeature() {
     loadFoodCategories();
   }, [t]);
   
+  // Handle profile selection from ProfileSelector or ProfileSelectionModal
+  const handleProfileSelect = useCallback((profile: ChildProfile, index: number) => {
+    setSelectedProfile(profile);
+    setSelectedProfileIndex(index);
+  }, []);
+  
   // Calculate nutrition summary for placed foods
+  // If in review mode, use personalized calculation with API data
   const nutritionSummary = useMemo<PlateSummary>(() => {
-    return calculateNutritionSummary(placedFoods);
-  }, [placedFoods]);
+    if (viewMode === 'review' && nutrientIntakeResponse) {
+      return calculatePersonalizedNutritionSummary(placedFoods, nutrientIntakeResponse);
+    } else {
+      return calculatePersonalizedNutritionSummary(placedFoods, null);
+    }
+  }, [placedFoods, nutrientIntakeResponse, viewMode]);
   
   // Determine avatar emotion based on nutrition score
   const avatarEmotion = useMemo<AvatarEmotion>(() => {
@@ -117,14 +172,67 @@ export default function BuildPlateFeature() {
       carbs: placedFoods.filter(food => food.category === 'carbs'),
       extras: placedFoods.filter(food => food.category === 'extras')
     };
-    console.log('Grouped foods by category:', {
-      mode: viewMode,
-      proteinIds: grouped.protein.map(f => f.instanceId),
-      carbsIds: grouped.carbs.map(f => f.instanceId),
-      extrasIds: grouped.extras.map(f => f.instanceId)
-    });
     return grouped;
   }, [placedFoods, viewMode]);
+  
+  // Fetch nutrient intake data from API when toggling to review mode
+  const fetchNutrientIntake = useCallback(async () => {
+    if (!selectedProfile) {
+      console.warn('No profile selected, cannot fetch nutrient intake data');
+      return false;
+    }
+    
+    try {
+      setNutrientIntakeLoading(true);
+      
+      // Parse age to number and determine gender format for API
+      const age = parseInt(selectedProfile.age, 10);
+      const gender = selectedProfile.gender.toLowerCase() === 'female' ? 'girl' : 'boy';
+      
+      if (isNaN(age)) {
+        console.error('Invalid age:', selectedProfile.age);
+        return false;
+      }
+      
+      // Call the API
+      const response = await nutripeekApi.getNutrientIntake({ age, gender });
+      setNutrientIntakeResponse(response);
+      
+      // Extract max values for chart from response
+      if (response && response.nutrient_intakes) {
+        const intakes = response.nutrient_intakes;
+        const maxValues = {
+          energy: getRecommendedIntake(intakes, ['energy', 'energy_kj', 'kilojoules'], 1000),
+          protein: getRecommendedIntake(intakes, ['protein', 'protein_g'], 20),
+          fat: getRecommendedIntake(intakes, ['fat', 'total_fat', 'total_fat_g'], 30),
+          carbs: getRecommendedIntake(intakes, ['carbohydrate', 'carbs', 'carbohydrate_g'], 60),
+          fibre: getRecommendedIntake(intakes, ['fiber', 'fibre', 'dietary_fibre', 'dietary_fibre_g'], 10)
+        };
+        setNutrientMaxValues(maxValues);
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('Failed to fetch nutrient intake data:', err);
+      return false;
+    } finally {
+      setNutrientIntakeLoading(false);
+    }
+  }, [selectedProfile]);
+  
+  // Helper function to get recommended intake from API response
+  function getRecommendedIntake(
+    intakes: Record<string, any>,
+    possibleKeys: string[],
+    defaultValue: number
+  ): number {
+    for (const key of possibleKeys) {
+      if (intakes[key] && typeof intakes[key].recommended_intake === 'number') {
+        return intakes[key].recommended_intake;
+      }
+    }
+    return defaultValue;
+  }
   
   // Handle drag start from food palette
   const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement>, food: PlateFood) => {
@@ -187,16 +295,23 @@ export default function BuildPlateFeature() {
     setPlacedFoods([]);
     // Reset to build mode when plate is reset
     setViewMode('build');
+    // Reset API response
+    setNutrientIntakeResponse(null);
   }, []);
   
   // Toggle between build and review modes
-  const toggleViewMode = useCallback(() => {
+  const toggleViewMode = useCallback(async () => {
     // Prevent switching to review mode if there's no food on the plate
     if (viewMode === 'build' && placedFoods.length === 0) {
       return;
     }
-    console.log('Toggling view mode from', viewMode, 'to', viewMode === 'build' ? 'review' : 'build');
     
+    // If in build mode and trying to switch to review, show profile modal instead of direct switch
+    if (viewMode === 'build') {
+      setIsProfileModalOpen(true);
+      return;
+    }
+        
     // Create a clean copy of placed foods to prevent duplicate state issues
     // Keep their original instanceIds to maintain stable references
     const dedupedFoods = [...new Map(placedFoods.map(food => 
@@ -205,15 +320,36 @@ export default function BuildPlateFeature() {
     
     // Only update if we actually removed duplicates
     if (dedupedFoods.length !== placedFoods.length) {
-      console.log(`Removed ${placedFoods.length - dedupedFoods.length} duplicate foods`);
       setPlacedFoods(dedupedFoods);
     }
     
-    setViewMode(prev => prev === 'build' ? 'review' : 'build');
+    // Set view mode to the opposite of the current mode
+    setViewMode(getOppositeViewMode(viewMode));
   }, [viewMode, placedFoods]);
+  
+  // Proceed with switching to review mode after profile selection
+  const handleConfirmProfileSelection = useCallback(async () => {
+    if (!selectedProfile) {
+      console.warn('No profile selected, cannot fetch nutrient intake data');
+      return;
+    }
+    
+    setNutrientIntakeLoading(true);
+    const success = await fetchNutrientIntake();
+    setNutrientIntakeLoading(false);
+    
+    if (!success) {
+      console.warn('Failed to fetch nutrient intake data, using default values');
+      // We'll continue with default values in this case
+    }
+    
+    setViewMode('review');
+  }, [selectedProfile, fetchNutrientIntake]);
   
   // Check if plate has items to determine if we can switch to review mode
   const hasFood = placedFoods.length > 0;
+  const hasProfile = selectedProfile !== null;
+  const canReview = hasFood && hasProfile;
   
   if (loading) {
     return (
@@ -247,16 +383,25 @@ export default function BuildPlateFeature() {
         <div className="absolute top-[30%] -left-[5%] w-[15%] h-[15%] max-w-[120px] max-h-[120px] bg-yellow-100 rounded-full opacity-20"></div>
         <div className="absolute bottom-[40%] -right-[5%] w-[15%] h-[15%] max-w-[120px] max-h-[120px] bg-purple-100 rounded-full opacity-20"></div>
         
+        {/* Profile Selection Modal */}
+        <ProfileSelectionModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          onProfileSelect={handleProfileSelect}
+          selectedProfileIndex={selectedProfileIndex}
+          onConfirm={handleConfirmProfileSelection}
+        />
+        
         {/* Mode toggle button */}
         <div className="absolute top-4 right-4 z-20">
           <motion.button
             onClick={toggleViewMode}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-white font-bold 
-                    transition-all ${hasFood 
+                    transition-all ${canReview 
                       ? 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md cursor-pointer' 
                       : 'bg-gray-400 cursor-not-allowed opacity-70'}`}
-            whileHover={hasFood ? { scale: 1.05 } : {}}
-            whileTap={hasFood ? { scale: 0.95 } : {}}
+            whileHover={canReview ? { scale: 1.05 } : {}}
+            whileTap={canReview ? { scale: 0.95 } : {}}
           >
             {viewMode === 'build' ? (
               <>
@@ -272,6 +417,18 @@ export default function BuildPlateFeature() {
             )}
           </motion.button>
         </div>
+        
+        {/* Loading overlay for API calls */}
+        {nutrientIntakeLoading && (
+          <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-30">
+            <div className="flex flex-col items-center p-6 rounded-lg">
+              <LoadingSpinner size="medium" />
+              <p className="mt-4 text-indigo-700 font-medium">
+                {t('loading_nutrition_data') || 'Loading nutrition data...'}
+              </p>
+            </div>
+          </div>
+        )}
         
         {/* Build Mode or Review Mode */}
         <AnimatePresence mode="wait">
@@ -292,6 +449,8 @@ export default function BuildPlateFeature() {
                 onFoodPositioned={handleFoodPositioned}
                 loading={loading}
                 modeKey={buildModeKey}
+                onProfileSelect={handleProfileSelect}
+                selectedProfileIndex={selectedProfileIndex}
               />
             </motion.div>
           ) : (
@@ -309,6 +468,8 @@ export default function BuildPlateFeature() {
                 avatarEmotion={avatarEmotion}
                 onReset={handleResetPlate}
                 modeKey={reviewModeKey}
+                nutrientMaxValues={nutrientMaxValues}
+                selectedProfile={selectedProfile}
               />
             </motion.div>
           )}
@@ -329,7 +490,9 @@ function BuildMode({
   onRemoveFood,
   onFoodPositioned,
   loading,
-  modeKey
+  modeKey,
+  onProfileSelect,
+  selectedProfileIndex
 }: {
   groupedFoodsByCategory: CategoryFoods;
   allFoods: PlateFood[];
@@ -338,12 +501,10 @@ function BuildMode({
   onFoodPositioned: (foodInstanceId: string, position: { x: number, y: number }, sectionId: string) => void;
   loading: boolean;
   modeKey: string;
+  onProfileSelect: (profile: ChildProfile, index: number) => void;
+  selectedProfileIndex: number;
 }) {
   const t = useTranslations('BuildPlate');
-  
-  // Use a stable key
-  console.log('BuildMode rendering foods:', 
-    Object.values(groupedFoodsByCategory).flat().map(f => f.instanceId));
   
   return (
     <div className="pt-10">
@@ -352,9 +513,9 @@ function BuildMode({
         <p className="text-gray-600 max-w-2xl mx-auto">{t('plate_instructions')}</p>
       </div>
       
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Side - Plate */}
-        <div className="flex flex-col">
+        <div className="lg:w-1/2">
           <DndContext>
             <SectionedPlate 
               key={modeKey}
@@ -368,12 +529,14 @@ function BuildMode({
         </div>
         
         {/* Right Side - Food Palette */}
-        <div className="bg-white bg-opacity-80 rounded-2xl p-6 shadow-sm">
-          <FoodPalette 
-            foods={allFoods}
-            onDragStart={onDragStart}
-            loading={loading}
-          />
+        <div className="lg:w-1/2">
+          <div className="bg-white bg-opacity-80 rounded-2xl p-6 shadow-sm h-full">
+            <FoodPalette 
+              foods={allFoods}
+              onDragStart={onDragStart}
+              loading={loading}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -383,79 +546,95 @@ function BuildMode({
 /**
  * Review Mode Component
  * Shows the plate alongside nutrition information and feedback
- * Highlights avatar feedback first followed by nutrition details
  */
 function ReviewMode({
   groupedFoodsByCategory,
   nutritionSummary,
   avatarEmotion,
   onReset,
-  modeKey
+  modeKey,
+  nutrientMaxValues,
+  selectedProfile
 }: {
   groupedFoodsByCategory: CategoryFoods;
   nutritionSummary: PlateSummary;
   avatarEmotion: AvatarEmotion;
   onReset: () => void;
   modeKey: string;
+  nutrientMaxValues: {
+    energy: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+    fibre: number;
+  } | null;
+  selectedProfile: ChildProfile | null;
 }) {
   const t = useTranslations('BuildPlate');
   
-  // Use a stable key
-  console.log('ReviewMode rendering foods:', 
-    Object.values(groupedFoodsByCategory).flat().map(f => f.instanceId));
-  
   return (
-    <div className="pt-10">
-      <div className="text-center mb-10">
+    <div className="pt-6">
+      <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-indigo-600 mb-2">{t('nutrition_title')}</h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">{t('nutrition_description')}</p>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          {selectedProfile ? 
+            `${t('nutrition_description')} ${t('personalized_for') || 'Personalized for'} ${selectedProfile.name}.` : 
+            t('nutrition_description')
+          }
+        </p>
       </div>
       
-      {/* Reorganized to highlight avatar feedback first */}
-      <div className="flex flex-col items-center mb-10">
-        <div className="w-full max-w-lg">
-          <AvatarFeedback 
-            emotion={avatarEmotion} 
-            message={getFeedbackMessage(avatarEmotion, t)} 
-          />
-        </div>
-      </div>
-      
-      <div className="grid lg:grid-cols-2 gap-8 mt-6">
-        {/* Left Side - Nutrition Info */}
-        <div className="bg-white bg-opacity-80 rounded-2xl p-6 shadow-sm flex flex-col items-center">
-          <h3 className="text-xl font-bold text-indigo-600 mb-6 self-start">{t('nutrition_summary')}</h3>
-          
-          <div className="w-full max-w-md">
-            <NutritionChart summary={nutritionSummary} />
+      <div className="flex flex-col lg:flex-row gap-8 items-center">
+        {/* Left Side - Nutrition Summary */}
+        <div className="lg:w-1/2 flex flex-col justify-center">
+          <div className="bg-white bg-opacity-80 rounded-2xl p-6 shadow-sm mb-6">
+            <h3 className="text-xl font-bold text-indigo-600 mb-6">{t('nutrition_summary')}</h3>
+            
+            <div className="w-full max-w-md mx-auto">
+              <NutritionChart 
+                summary={nutritionSummary} 
+                maxValues={nutrientMaxValues || undefined}
+              />
+            </div>
           </div>
           
           {/* Reset Button */}
-          <motion.button 
-            onClick={onReset}
-            className="mt-8 py-3 px-6 bg-gradient-to-r from-red-400 to-pink-400 text-white font-bold rounded-full 
-                     hover:from-red-500 hover:to-pink-500 transition-all duration-300 shadow-md"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {t('reset_button')}
-          </motion.button>
+          <div className="flex justify-center">
+            <motion.button 
+              onClick={onReset}
+              className="py-3 px-6 bg-gradient-to-r from-red-400 to-pink-400 text-white font-bold rounded-full 
+                      hover:from-red-500 hover:to-pink-500 transition-all duration-300 shadow-md"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {t('reset_button')}
+            </motion.button>
+          </div>
         </div>
         
-        {/* Right Side - Plate (readonly version) */}
-        <div className="flex flex-col">
-          <h3 className="text-xl font-bold text-green-600 mb-4">{t('your_plate')}</h3>
-          
-          <DndContext>
-            <SectionedPlate 
-              key={modeKey}
-              selectedFoods={groupedFoodsByCategory}
-              plateSections={PLATE_SECTIONS}
-              onRemoveFood={() => {}} // Empty function as we're in read-only mode
-              onFoodPositioned={() => {}} // Empty function as we're in read-only mode
-              readOnly={true} // Set to true to indicate read-only state
+        {/* Right Side - Avatar and Plate */}
+        <div className="lg:w-1/2 flex flex-col">
+          {/* Avatar Feedback */}
+          <div className="rounded-2xl p-6 mb-6">
+            <AvatarFeedback 
+              emotion={avatarEmotion} 
+              message={getFeedbackMessage(avatarEmotion, t)} 
             />
-          </DndContext>
+          </div>
+          
+          {/* Plate (readonly version) */}
+          <div>            
+            <DndContext>
+              <SectionedPlate 
+                key={modeKey}
+                selectedFoods={groupedFoodsByCategory}
+                plateSections={PLATE_SECTIONS}
+                onRemoveFood={() => {}} // Empty function as we're in read-only mode
+                onFoodPositioned={() => {}} // Empty function as we're in read-only mode
+                readOnly={true} // Set to true to indicate read-only state
+              />
+            </DndContext>
+          </div>
         </div>
       </div>
     </div>

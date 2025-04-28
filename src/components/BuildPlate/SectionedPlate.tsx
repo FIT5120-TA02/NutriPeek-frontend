@@ -126,12 +126,6 @@ export default function SectionedPlate({
   // Update state when selectedFoods changes
   useEffect(() => {
     const allSelectedFoods = Object.values(selectedFoods).flat();
-    console.log('SectionedPlate selectedFoods update:', { 
-      readOnly, 
-      mode: readOnly ? 'review' : 'build',
-      allSelectedFoodsLength: allSelectedFoods.length, 
-      allSelectedFoodIds: allSelectedFoods.map(f => f.instanceId)
-    });
     
     // If in readOnly mode, just directly use the selectedFoods as they should already have positions
     if (readOnly) {
@@ -159,7 +153,6 @@ export default function SectionedPlate({
       // If we've switched modes or there's a real change, start fresh
       if (currentPlacedFoods.some(food => !allSelectedFoods.some(f => f.instanceId === food.instanceId)) ||
           allSelectedFoods.some(food => !currentPlacedFoods.some(f => f.instanceId === food.instanceId))) {
-        console.log('Completely refreshing food items');
         return allSelectedFoods;
       }
       
@@ -170,7 +163,6 @@ export default function SectionedPlate({
       
       // Add new foods with calculated positions
       if (newFoods.length > 0) {
-        console.log('Adding new foods:', newFoods.map(f => f.instanceId));
         const newPlacedFoods = newFoods.map(food => {
           // Check if the food already has position and sectionId
           if (food.position && food.sectionId) {
@@ -207,7 +199,7 @@ export default function SectionedPlate({
         allSelectedFoods.some(food => food.instanceId === placed.instanceId)
       );
       if (currentPlacedFoods.length !== filtered.length) {
-        console.log('Removed foods: before', currentPlacedFoods.length, 'after', filtered.length);
+        console.warn('Removed foods: before', currentPlacedFoods.length, 'after', filtered.length);
       }
       return filtered;
     });
@@ -522,11 +514,11 @@ export default function SectionedPlate({
       // Disable all dnd functionality when in readOnly mode
       autoScroll={!readOnly}
     >
-      <div className="mb-8">
+      <div className={`${readOnly ? '' : 'mb-8'}`}>
         {/* Inject the enhanced animations CSS */}
         <style jsx global>{enhancedAnimations}</style>
         
-        <div className="text-center mb-4">
+        <div className={`text-center ${readOnly ? '' : 'mb-4'}`}>
           <motion.p 
             className="text-base text-indigo-600 font-medium"
             initial={{ opacity: 0, y: -10 }}
@@ -540,7 +532,7 @@ export default function SectionedPlate({
         {/* Plate container with shadow effect and floating animation */}
         <motion.div
           ref={plateRef}
-          className={`relative mx-auto w-full max-w-[600px] h-auto aspect-[600/420] plate-container float-animation ${readOnly ? 'pointer-events-none' : ''}`}
+          className={`relative mx-auto w-full max-w-[600px] h-auto aspect-[600/420] plate-container ${!readOnly ? 'float-animation' : ''} ${readOnly ? 'pointer-events-none' : ''}`}
           data-testid="lunchbox-plate"
           onDragOver={!readOnly ? handleHTMLDragOver : undefined}
           onDragLeave={!readOnly ? handleHTMLDragLeave : undefined}
@@ -580,7 +572,6 @@ export default function SectionedPlate({
             // Include index to guarantee uniqueness
             const uniqueKey = `${modePrefix}${food.instanceId}-index-${index}`;
             
-            console.log('Rendering food item:', uniqueKey, food.name);
             return (
               <PlacedFoodItem
                 key={uniqueKey}
@@ -605,7 +596,8 @@ export default function SectionedPlate({
             </motion.div>
           )}
         </motion.div>
-        
+          
+        {!readOnly && (
         <div className="text-center mt-4">
           <motion.p 
             className="text-sm text-gray-600"
@@ -613,9 +605,10 @@ export default function SectionedPlate({
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            {readOnly ? t('review_mode') : t('drag_to_position')}
-          </motion.p>
-        </div>
+              {t('drag_to_position')}
+            </motion.p>
+          </div>
+        )}
       </div>
     </DndContext>
   );

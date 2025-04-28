@@ -10,6 +10,13 @@ import { PlateSummary } from './types';
 
 interface NutritionChartProps {
   summary: PlateSummary;
+  maxValues?: {
+    energy: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+    fibre: number;
+  };
 }
 
 interface NutrientBarProps {
@@ -62,11 +69,11 @@ function NutrientBar({ label, value, maxValue, unit, color, icon, index }: Nutri
 /**
  * Nutrition chart component with enhanced visual design for children
  */
-export default function NutritionChart({ summary }: NutritionChartProps) {
+export default function NutritionChart({ summary, maxValues }: NutritionChartProps) {
   const t = useTranslations('BuildPlate');
   
-  // Define reference values for nutrients (simplified example)
-  const maxValues = {
+  // Define reference values for nutrients (default values, can be overridden)
+  const nutrientMaxValues = maxValues || {
     energy: 1000, // kJ
     protein: 20,  // g
     fat: 30,      // g
@@ -156,7 +163,7 @@ export default function NutritionChart({ summary }: NutritionChartProps) {
         <NutrientBar 
           label={t('energy')} 
           value={summary.totalEnergy} 
-          maxValue={maxValues.energy} 
+          maxValue={nutrientMaxValues.energy} 
           unit="kJ" 
           color={colors.energy}
           icon={icons.energy}
@@ -166,7 +173,7 @@ export default function NutritionChart({ summary }: NutritionChartProps) {
         <NutrientBar 
           label={t('protein')} 
           value={summary.totalProtein} 
-          maxValue={maxValues.protein} 
+          maxValue={nutrientMaxValues.protein} 
           unit="g" 
           color={colors.protein}
           icon={icons.protein}
@@ -176,7 +183,7 @@ export default function NutritionChart({ summary }: NutritionChartProps) {
         <NutrientBar 
           label={t('fat')} 
           value={summary.totalFat} 
-          maxValue={maxValues.fat} 
+          maxValue={nutrientMaxValues.fat} 
           unit="g" 
           color={colors.fat} 
           icon={icons.fat}
@@ -186,7 +193,7 @@ export default function NutritionChart({ summary }: NutritionChartProps) {
         <NutrientBar 
           label={t('carbs')} 
           value={summary.totalCarbs} 
-          maxValue={maxValues.carbs} 
+          maxValue={nutrientMaxValues.carbs} 
           unit="g" 
           color={colors.carbs} 
           icon={icons.carbs}
@@ -196,7 +203,7 @@ export default function NutritionChart({ summary }: NutritionChartProps) {
         <NutrientBar 
           label={t('fibre')} 
           value={summary.totalFibre} 
-          maxValue={maxValues.fibre} 
+          maxValue={nutrientMaxValues.fibre} 
           unit="g" 
           color={colors.fibre} 
           icon={icons.fibre}

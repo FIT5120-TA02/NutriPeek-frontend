@@ -16,7 +16,8 @@ import {
   FoodNutrientResponse,
   NutrientGapRequest,
   NutrientGapResponse,
-  FoodCategoriesResponse
+  FoodCategoriesResponse,
+  NutrientIntakeResponse
 } from './types';
 
 /**
@@ -144,6 +145,15 @@ export class NutriPeekApi {
    */
   async calculateNutrientGap(request: NutrientGapRequest): Promise<NutrientGapResponse> {
     return apiClient.post<NutrientGapResponse>('/api/v1/nutrient/calculate-gap', request);
+  }
+
+  /**
+   * Get required nutrient intake for a child
+   * @param childProfile - Profile with age and gender
+   * @returns Required daily nutrient intake information
+   */
+  async getNutrientIntake(childProfile: { age: number; gender: 'boy' | 'girl' }): Promise<NutrientIntakeResponse> {
+    return apiClient.post<NutrientIntakeResponse>('/api/v1/nutrient/nutrient-intake', childProfile);
   }
 }
 
