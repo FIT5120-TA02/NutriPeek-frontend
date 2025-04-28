@@ -10,8 +10,8 @@ interface NutrientInfo {
 }
 
 interface RecommendationComparisonProps {
-  missingNutrients: Record<string, NutrientInfo>;
-  excessNutrients: Record<string, NutrientInfo>;
+  missingNutrients: NutrientInfo[];
+  excessNutrients: NutrientInfo[];
 }
 
 export default function RecommendationComparison({
