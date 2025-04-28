@@ -15,7 +15,8 @@ import {
   FoodAutocompleteResponse,
   FoodNutrientResponse,
   NutrientGapRequest,
-  NutrientGapResponse
+  NutrientGapResponse,
+  FoodCategoriesResponse
 } from './types';
 
 /**
@@ -113,6 +114,17 @@ export class NutriPeekApi {
     return apiClient.get<FoodAutocompleteResponse[]>('/api/v1/food/autocomplete', {
       query,
       limit
+    });
+  }
+
+  /**
+   * Get food categories with average nutrient values
+   * @param excludeEmpty - Whether to exclude categories with null/empty values (default: true)
+   * @returns List of food categories with average nutrient values
+   */
+  async getFoodCategories(excludeEmpty: boolean = true): Promise<FoodCategoriesResponse> {
+    return apiClient.get<FoodCategoriesResponse>('/api/v1/food/categories', {
+      exclude_empty: excludeEmpty
     });
   }
 

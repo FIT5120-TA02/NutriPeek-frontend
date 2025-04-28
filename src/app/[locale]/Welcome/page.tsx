@@ -6,31 +6,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Baby, CameraRotate, UsersThree, ArrowCircleRight } from 'phosphor-react';
+import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import nutriPeekLogo from '@/../public/nutripeek.png';
 
 export default function WelcomePage() {
   const router = useRouter();
   const [showNavbar, setShowNavbar] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-    document.body.className = "min-h-screen flex flex-col bg-gradient-to-b from-green-50 to-green-100";
     const timer = setTimeout(() => setShowNavbar(true), 2000);
-    
-    return () => {
-      document.body.className = "";
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, []);
-
-  const emojis = [
-    "🍇", "🍎", "🍪", "🍕", "🍣", "🥑", "🍞",
-    "🍔", "🍉", "🍍", "🥗", "🥛", "🍗",
-    "🍑", "🥒", "🍓", "🍊", "🥦", "🥝", "🍌",
-    "🍆", "🥬", "🧀", "🥕", "🫐", "🍅", "🥭"
-  ];
 
   const container = {
     hidden: { opacity: 0 },
@@ -48,81 +35,17 @@ export default function WelcomePage() {
     show: { y: 0, opacity: 1 }
   };
 
-  // Generate random positions only on client-side
-  const generateRandomEmojis = () => {
-    if (!mounted) return [];
-    
-    // Create more emojis to make them more frequent
-    const moreEmojis = [...emojis, ...emojis, ...emojis].slice(0, 50);
-    
-    return moreEmojis.map((emoji, index) => {
-      const randomX = Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000);
-      const randomY = Math.random() * (typeof window !== 'undefined' ? window.innerHeight * 2 : 2000);
-      const randomX2 = Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000);
-      const randomY2 = Math.random() * (typeof window !== 'undefined' ? window.innerHeight * 2 : 2000);
-      
-      // Calculate random size between 1 and 2.5
-      const randomSize = 1 + Math.random() * 1.5;
-      
-      // Calculate random speed/duration between 12 and 25 seconds
-      const randomDuration = 12 + Math.random() * 13;
-      
-      return (
-        <motion.div
-          key={`emoji-${index}`}
-          className="fixed text-5xl select-none pointer-events-none"
-          style={{
-            zIndex: -1,
-            fontSize: `${randomSize}rem`
-          }}
-          initial={{ 
-            x: randomX, 
-            y: -100,
-            opacity: 0,
-            rotate: 0
-          }}
-          animate={{ 
-            x: [randomX, randomX2, randomX],
-            y: [0, randomY, 0],
-            opacity: [0.15, 0.35, 0.15],
-            rotate: [0, randomSize * 60, 0],
-            scale: [0.8, 1.2, 0.8]
-          }}
-          transition={{ 
-            duration: randomDuration, 
-            repeat: Infinity,
-            repeatType: "loop",
-            ease: "easeInOut"
-          }}
-        >
-          {emoji}
-        </motion.div>
-      );
-    });
-  };
 
-  // Create a floating emoji background component
-  const FloatingEmojisBackground = () => {
-    if (!mounted) return null;
-    
-    return (
-      <div className="fixed inset-0 w-screen h-screen overflow-hidden -z-10">
-        {generateRandomEmojis()}
-      </div>
-    );
-  };
 
   return (
-    <>
+    <FloatingEmojisLayout emojisCount={50}>
       {/* Hero Section */}
       <motion.section 
-        className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4 bg-gradient-to-b from-green-50 to-green-100"
+        className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         ref={containerRef}
       >
-        {/* Floating Background - Available throughout the page */}
-        <FloatingEmojisBackground />
 
         <motion.div 
           className="flex items-center mb-6"
@@ -337,6 +260,9 @@ export default function WelcomePage() {
           <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">
             Profile
           </Link>
+          <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors">
+            Build Plate
+          </Link>
           <Link
             href="/NutriScan"
             className="ml-4 px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
@@ -345,6 +271,6 @@ export default function WelcomePage() {
           </Link>
         </nav>
       </motion.header>
-    </>
+    </FloatingEmojisLayout>
   );
 }

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { showConfirmDialog } from "@/components/ui/ConfirmDialog";
 import storageService from "@/libs/StorageService";
 import Card from "@/components/ui/Card";
 import Dropdown from "@/components/ui/Dropdown";
 import { motion } from "framer-motion";
+import FloatingEmojisLayout from "@/components/layouts/FloatingEmojisLayout";
 
 interface ChildProfile {
   name: string;
@@ -15,11 +16,12 @@ interface ChildProfile {
   allergies: string[];
 }
 
+const CHILDREN_KEY = "user_children";
+
 export default function ProfilePage() {
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editChild, setEditChild] = useState<ChildProfile | null>(null);
-  const [mounted, setMounted] = useState(false);
   
   // New child form state
   const [newChildName, setNewChildName] = useState('');
@@ -28,18 +30,14 @@ export default function ProfilePage() {
   const [newChildAllergies, setNewChildAllergies] = useState<string[]>([]);
   const [otherAllergy, setOtherAllergy] = useState('');
 
-  const CHILDREN_KEY = "user_children";
-
+  // Load saved children profiles from local storage using useEffect
   useEffect(() => {
-    setMounted(true);
-    document.body.className = "min-h-screen flex flex-col bg-gradient-to-b from-green-50 to-green-100";
-    
-    const saved = storageService.getLocalItem({ key: CHILDREN_KEY, defaultValue: [] });
-    if (saved) setChildren(saved);
-    
-    return () => {
-      document.body.className = "";
-    };
+    if (typeof window !== 'undefined') {
+      const saved = storageService.getLocalItem({ key: CHILDREN_KEY, defaultValue: [] });
+      if (saved && saved.length > 0) {
+        setChildren(saved);
+      }
+    }
   }, []);
 
   const handleClearAll = async () => {
@@ -130,83 +128,8 @@ export default function ProfilePage() {
     "Peanut", "Milk", "Egg", "Soy", "Wheat", "Fish", "Shellfish", "Tree nuts", "Chicken", "Celery"
   ];
 
-  // Food emojis for background
-  const emojis = [
-    "🍇", "🍎", "🍪", "🍕", "🍣", "🥑", "🍞",
-    "🍔", "🍉", "🍍", "🥗", "🥛", "🍗",
-    "🍑", "🥒", "🍓", "🍊", "🥦", "🥝", "🍌",
-    "🍆", "🥬", "🧀", "🥕", "🫐", "🍅", "🥭"
-  ];
-
-  // Generate random positions only on client-side
-  const generateRandomEmojis = () => {
-    if (!mounted) return [];
-    
-    // Create more emojis to make them more frequent
-    const moreEmojis = [...emojis, ...emojis].slice(0, 30);
-    
-    return moreEmojis.map((emoji, index) => {
-      const randomX = Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000);
-      const randomY = Math.random() * (typeof window !== 'undefined' ? window.innerHeight * 2 : 2000);
-      const randomX2 = Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000);
-      const randomY2 = Math.random() * (typeof window !== 'undefined' ? window.innerHeight * 2 : 2000);
-      
-      // Calculate random size between 1 and 2.5
-      const randomSize = 1 + Math.random() * 1.5;
-      
-      // Calculate random speed/duration between 12 and 25 seconds
-      const randomDuration = 12 + Math.random() * 13;
-      
-      return (
-        <motion.div
-          key={`emoji-${index}`}
-          className="fixed text-5xl select-none pointer-events-none"
-          style={{
-            zIndex: -1,
-            fontSize: `${randomSize}rem`
-          }}
-          initial={{ 
-            x: randomX, 
-            y: -100,
-            opacity: 0,
-            rotate: 0
-          }}
-          animate={{ 
-            x: [randomX, randomX2, randomX],
-            y: [0, randomY, 0],
-            opacity: [0.15, 0.35, 0.15],
-            rotate: [0, randomSize * 60, 0],
-            scale: [0.8, 1.2, 0.8]
-          }}
-          transition={{ 
-            duration: randomDuration, 
-            repeat: Infinity,
-            repeatType: "loop",
-            ease: "easeInOut"
-          }}
-        >
-          {emoji}
-        </motion.div>
-      );
-    });
-  };
-
-  // Create a floating emoji background component
-  const FloatingEmojisBackground = () => {
-    if (!mounted) return null;
-    
-    return (
-      <div className="fixed inset-0 w-screen h-screen overflow-hidden -z-10">
-        {generateRandomEmojis()}
-      </div>
-    );
-  };
-
   return (
-    <>
-      {/* Floating Background */}
-      <FloatingEmojisBackground />
-      
+    <FloatingEmojisLayout>
       <div className="w-full max-w-5xl mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-screen">
         <motion.h1 
           className="text-3xl md:text-4xl font-bold text-center mb-10 text-green-700"
@@ -467,6 +390,6 @@ export default function ProfilePage() {
           </div>
         </motion.div>
       </div>
-    </>
+    </FloatingEmojisLayout>
   );
 }
