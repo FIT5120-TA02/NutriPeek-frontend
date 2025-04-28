@@ -102,7 +102,6 @@ export default function ChildInfoPage() {
             options={[
               { label: "Male", value: "male" },
               { label: "Female", value: "female" },
-              { label: "Other", value: "other" },
             ]}
           />
         </div>

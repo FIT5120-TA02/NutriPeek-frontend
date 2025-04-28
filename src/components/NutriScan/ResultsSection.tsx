@@ -125,7 +125,7 @@ export default function ResultsSection({
       setSelectedChildId(currentProfileIndex);
       
       // Navigate to the results page (locale-aware routing)
-      router.push('/results');
+      router.push('/NutriGap');
       
     } catch (error) {
       console.error("Error preparing nutritional gap calculation:", error);
