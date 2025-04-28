@@ -24,4 +24,13 @@ export function getFoodImageUrl(foodName: string): string {
  */
 export function getPlateImageUrl(imageName: string): string {
   return `${process.env.NEXT_PUBLIC_CDN_URL}/plates/${imageName}.png`;
+}
+
+/**
+ * Gets the CDN URL for an avatar image
+ * @param emotionType - Type of avatar emotion (happy, neutral, sad)
+ * @returns Full URL to the avatar image
+ */
+export function getAvatarImageUrl(emotionType: string): string {
+  return `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/${emotionType}_avatar.png`;
 } 

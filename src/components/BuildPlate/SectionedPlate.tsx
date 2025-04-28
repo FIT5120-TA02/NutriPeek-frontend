@@ -26,6 +26,7 @@ import {
 import { SectionedPlateProps, PlateSection, PlacedFood, PlateFood } from './types';
 import { PLATE_SECTIONS } from './constants';
 import { findSectionAtPosition } from './utils';
+import { getPlateImageUrl } from '@/utils/assetHelpers';
 
 // CSS for enhanced visual effects
 const enhancedAnimations = `
@@ -88,7 +89,7 @@ export default function SectionedPlate({
 }: SectionedPlateProps) {
   const t = useTranslations('BuildPlate');
   const plateRef = useRef<HTMLDivElement>(null);
-  const plateImageUrl = `${process.env.NEXT_PUBLIC_CDN_URL}/plates/lunchbox.png`;
+  const plateImageUrl = getPlateImageUrl('lunchbox');
   
   // Configure sensors for better drag detection
   const sensors = useSensors(

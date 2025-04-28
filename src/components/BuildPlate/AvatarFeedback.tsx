@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { AvatarEmotion } from './types';
+import { getAvatarImageUrl } from '@/utils/assetHelpers';
 
 interface AvatarFeedbackProps {
   emotion: AvatarEmotion;
@@ -19,9 +20,9 @@ interface AvatarFeedbackProps {
  * Map of emotion types to avatar image paths
  */
 const AVATAR_IMAGES: Record<AvatarEmotion, string> = {
-  happy: '/avatars/happy.png',
-  neutral: '/avatars/neutral.png',
-  sad: '/avatars/sad.png'
+  happy: getAvatarImageUrl('happy'),
+  neutral: getAvatarImageUrl('neutral'),
+  sad: getAvatarImageUrl('sad')
 };
 
 /**
