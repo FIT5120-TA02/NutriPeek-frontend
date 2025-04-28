@@ -126,7 +126,7 @@ function addDefaultFoodsForCategory(foods: PlateFood[], category: FoodCategory, 
         instanceId: `default-${category}-instance-${i}-${Date.now()}`,
         name: food.name,
         category: food.category,
-        imageUrl: `${process.env.NEXT_PUBLIC_CDN_URL}/foods/${food.fileName}.png`,
+        imageUrl: getFoodImageUrl(food.fileName),
         nutrients: generateDefaultNutrients(food.category)
       });
     });
@@ -181,7 +181,7 @@ export function getDefaultFoods(): PlateFood[] {
     instanceId: `default-food-instance-${index}-${Date.now()}`,
     name: food.name,
     category: food.category,
-    imageUrl: `${process.env.NEXT_PUBLIC_CDN_URL}/foods/${food.fileName}.png`,
+    imageUrl: getFoodImageUrl(food.fileName),
     nutrients: generateDefaultNutrients(food.category)
   }));
 }

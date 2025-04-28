@@ -4,10 +4,11 @@
  * DraggableFoodItem Component
  * A reusable component for displaying draggable food items
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDraggable } from '@dnd-kit/core';
-import { PlateFood, DraggableFoodItemProps } from './types';
+import { DraggableFoodItemProps } from './types';
+import { getFoodImageUrl } from '@/utils/assetHelpers';
 
 /**
  * DraggableFoodItem component with tooltip and drag capabilities
@@ -30,9 +31,9 @@ export default function DraggableFoodItem({
   
   // Fallback images by category
   const fallbackImages = {
-    protein: `${process.env.NEXT_PUBLIC_CDN_URL}/foods/protein.png`,
-    carbs: `${process.env.NEXT_PUBLIC_CDN_URL}/foods/carbs.png`,
-    extras: `${process.env.NEXT_PUBLIC_CDN_URL}/foods/fruit.png`,
+    protein: getFoodImageUrl('bread'),
+    carbs: getFoodImageUrl('rice'),
+    extras: getFoodImageUrl('apple'),
   };
   
   // Define background colors based on food category
