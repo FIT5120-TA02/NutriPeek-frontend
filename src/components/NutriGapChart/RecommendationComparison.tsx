@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import UnitFormatter from '@/components/UniFormatter/UnitFormatter';
+import UnitFormatter from '@/components/UnitFormatter/UnitFormatter';
 
 interface NutrientInfo {
   name: string;
