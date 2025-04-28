@@ -40,6 +40,7 @@ export default function Navbar() {
         <>
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">Profile</Link>
+            <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors">Build Plate</Link>
             <Link
               href="/NutriScan"
               className="ml-4 px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
@@ -59,6 +60,7 @@ export default function Navbar() {
           {isMobileMenuOpen && (
             <div className="absolute top-16 left-0 w-full bg-white shadow-md flex flex-col items-center py-4 space-y-4 md:hidden z-50">
               <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
+              <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Build Plate</Link>
               <Link
                 href="/NutriScan"
                 className="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"

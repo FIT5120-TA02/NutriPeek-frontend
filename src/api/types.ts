@@ -92,6 +92,28 @@ export interface FoodAutocompleteResponse {
 
 export interface FoodNutrientResponse extends FoodNutrientSummary {}
 
+/**
+ * Food category with average nutrient values
+ * Contains the category name and average nutritional values of all foods in that category
+ */
+export interface FoodCategoryAvgNutrients {
+  food_category: string;
+  count: number;
+  energy_with_fibre_kj?: number | null;
+  protein_g?: number | null;
+  total_fat_g?: number | null;
+  carbs_with_sugar_alcohols_g?: number | null;
+  dietary_fibre_g?: number | null;
+  sodium_mg?: number | null;
+}
+
+/**
+ * Response for food categories with average nutrient values
+ */
+export interface FoodCategoriesResponse {
+  categories: FoodCategoryAvgNutrients[];
+}
+
 // Nutrient Gap
 export interface ChildProfile {
   age: number; // 0-18
@@ -118,6 +140,18 @@ export interface NutrientGapResponse {
   missing_nutrients?: string[];
   excess_nutrients?: string[];
   total_calories?: number;
+}
+
+// Nutrient Intake
+export interface NutrientIntakeInfo {
+  name: string;
+  recommended_intake: number;
+  unit: string;
+  category?: string | null;
+}
+
+export interface NutrientIntakeResponse {
+  nutrient_intakes: Record<string, NutrientIntakeInfo>;
 }
 
 // API Error Responses
