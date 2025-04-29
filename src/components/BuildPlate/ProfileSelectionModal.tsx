@@ -145,7 +145,7 @@ export default function ProfileSelectionModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-b from-gray-600/50 to-gray-800/50 backdrop-blur-md"
           onClick={onClose}
         >
           <motion.div 
@@ -153,7 +153,7 @@ export default function ProfileSelectionModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", damping: 20 }}
-            className="bg-white bg-opacity-95 rounded-xl p-6 w-full max-w-md shadow-xl relative"
+            className="bg-white/95 backdrop-blur-sm rounded-xl p-6 w-full max-w-md shadow-2xl relative"
             onClick={e => e.stopPropagation()}
           >
             <button 

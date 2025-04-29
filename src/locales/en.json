@@ -131,5 +131,45 @@
     "extra_foods": "Extras",
     "showing_x_foods": "Showing {count} foods",
     "category": "Category"
+  },
+  "MatchAndLearn": {
+    "meta_title": "Match & Learn Nutrient Game",
+    "meta_description": "A fun memory matching game that teaches kids about nutritious foods",
+    "title": "Match & Learn Nutrient Game",
+    "description": "Flip cards to find matching pairs and learn about nutritious foods. Play against the computer and see who can find the most matches!",
+    
+    "choose_difficulty": "Choose Difficulty Level",
+    "difficulty_description": "Select a difficulty level to start the game. Higher difficulty levels have more cards to match.",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "easy_description": "5 pairs (10 cards)",
+    "medium_description": "12 pairs (24 cards)",
+    "hard_description": "26 pairs (52 cards)",
+    
+    "your_score": "Your Score",
+    "computer_score": "Computer Score",
+    "your_turn": "Your Turn",
+    "computer_turn": "Computer's Turn",
+    "computer_thinking": "Computer is Thinking...",
+    
+    "you_found_a_match": "You Found a Match!",
+    "computer_found_a_match": "Computer Found a Match!",
+    "avatar_match_reaction": "Great job! This food helps your body stay strong and healthy!",
+    
+    "game_over": "Game Over!",
+    "you_won": "You Won! 🎉",
+    "computer_won": "Computer Won!",
+    "its_a_tie": "It's a Tie!",
+    "play_again": "Play Again",
+    "change_difficulty": "Change Difficulty",
+    "game_completed": "Game Completed",
+    "click_to_see_results": "Click to see your results!",
+    
+    "food_fact_prefix": "Did you know?",
+    "pairs_remaining": "Pairs remaining: {count}",
+    "total_pairs": "Total pairs: {count}",
+
+    "click_anywhere_to_continue": "Click anywhere to continue"
   }
 }
