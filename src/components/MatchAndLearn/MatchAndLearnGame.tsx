@@ -14,6 +14,7 @@ import ScorePanel from './ScorePanel';
 import TurnIndicator from './TurnIndicator';
 import MatchPopup from './MatchPopup';
 import GameOverScreen from './GameOverScreen';
+import QuizPopup from './QuizPopup';
 
 import { Card, Food, DifficultyLevel } from './types';
 import { getFoodImageUrl } from '@/utils/assetHelpers';
@@ -129,6 +130,13 @@ export default function MatchAndLearnGame() {
   const [funFacts, setFunFacts] = useState<FoodCategoryFunFactResponse[]>([]);
   const [isLoadingFunFacts, setIsLoadingFunFacts] = useState<boolean>(false);
   const [cachedFunFacts, setCachedFunFacts] = useState<FoodCategoryFunFactResponse[]>([]);
+  
+  // New state for the quiz feature
+  const [showQuiz, setShowQuiz] = useState<boolean>(false);
+  const [quizFood, setQuizFood] = useState<Food | null>(null);
+  const [incorrectOptions, setIncorrectOptions] = useState<Food[]>([]);
+  const [quizCompleted, setQuizCompleted] = useState<boolean>(false);
+  const [quizResult, setQuizResult] = useState<boolean | null>(null);
   
   // Store timeouts so they can be cleared if needed
   const timeoutRef = useRef<{[key: string]: ReturnType<typeof setTimeout>}>({});
@@ -300,6 +308,13 @@ export default function MatchAndLearnGame() {
     setTurnCount(0);
     isProcessingRef.current = false;
     
+    // Reset quiz-related states
+    setShowQuiz(false);
+    setQuizFood(null);
+    setIncorrectOptions([]);
+    setQuizCompleted(false);
+    setQuizResult(null);
+    
     // If we have cached fun facts, use them right away instead of showing loading indicator
     if (cachedFunFacts.length > 0) {
       const newCards = prepareCards(selectedDifficulty, cachedFunFacts);
@@ -325,16 +340,25 @@ export default function MatchAndLearnGame() {
    * Handles the dismissal of the match popup.
    * Controls turn flow after a match is found:
    * - Always switch turns after a match, regardless of who made the match
-   * - If game is completed, show game over screen
+   * - If game is completed, show quiz popup before game over screen
    */
   const handleCloseMatchPopup = useCallback(() => {
     setShowMatch(false);
     setCheckingMatch(false);
     
-    // If game is completed, show game over screen after match popup is closed
-    if (gameCompleted) {
+    // If game is completed, prepare and show quiz popup after match popup is closed
+    if (gameCompleted && !quizCompleted) {
+      // Add a small delay before showing the quiz
+      setGameTimeout(() => {
+        prepareQuiz();
+        setShowQuiz(true);
+      }, 300, 'showQuiz');
+      return; // Don't continue with turn switching if game is over
+    }
+    
+    // If quiz was completed, show game over screen
+    if (gameCompleted && quizCompleted) {
       // Add a small delay before showing the game over screen
-      // This gives the match popup time to animate out completely
       setGameTimeout(() => {
         setGameOver(true);
       }, 300, 'showGameOver');
@@ -361,7 +385,86 @@ export default function MatchAndLearnGame() {
     
     // Always reset the processing flag to prevent stuck states
     isProcessingRef.current = false;
-  }, [isPlayerTurn, setGameTimeout, gameCompleted]);
+  }, [isPlayerTurn, setGameTimeout, gameCompleted, quizCompleted]);
+  
+  /**
+   * Prepares the quiz by selecting a random matched food and three incorrect options
+   */
+  const prepareQuiz = useCallback(() => {
+    // Find all the matched foods
+    const matchedFoods: Food[] = [];
+    cards.forEach(card => {
+      if (card.isMatched) {
+        // Check if this food is already in the matchedFoods array
+        const exists = matchedFoods.some(food => food.name === card.food.name);
+        if (!exists) {
+          matchedFoods.push(card.food);
+        }
+      }
+    });
+    
+    // If we have at least 4 matched foods (1 correct + 3 incorrect), proceed
+    if (matchedFoods.length >= 4) {
+      // Select a random food for the quiz
+      const randomIndex = Math.floor(Math.random() * matchedFoods.length);
+      const selectedFood = matchedFoods[randomIndex];
+      
+      // Remove the selected food from the array and shuffle remaining foods
+      const remainingFoods = matchedFoods.filter(food => food.name !== selectedFood.name);
+      
+      // Fisher-Yates shuffle
+      for (let i = remainingFoods.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [remainingFoods[i], remainingFoods[j]] = [remainingFoods[j], remainingFoods[i]];
+      }
+      
+      // Take the first 3 shuffled foods as incorrect options
+      const incorrectFoods = remainingFoods.slice(0, 3);
+      
+      setQuizFood(selectedFood);
+      setIncorrectOptions(incorrectFoods);
+    } else {
+      // Not enough unique foods for a quiz, skip to game over
+      setQuizCompleted(true);
+      setGameTimeout(() => {
+        setGameOver(true);
+      }, 300, 'showGameOver');
+    }
+  }, [cards, setGameTimeout]);
+  
+  /**
+   * Handles the answer from the quiz
+   * Adjusts scores based on the answer and shows game over screen
+   */
+  const handleQuizAnswer = useCallback((isCorrect: boolean) => {
+    setQuizResult(isCorrect);
+    setQuizCompleted(true);
+    setShowQuiz(false);
+    
+    // Adjust the scores based on the answer
+    if (isCorrect) {
+      if (isPlayerTurn || lastMatchedByPlayer) {
+        // Player gets +10 points for correct answer
+        setPlayerScore(prev => prev + 10);
+      } else {
+        // Computer gets +10 points for correct answer
+        setComputerScore(prev => prev + 10);
+      }
+    } else {
+      if (isPlayerTurn || lastMatchedByPlayer) {
+        // Player gets -10 points for wrong answer
+        setPlayerScore(prev => Math.max(0, prev - 10)); // Prevent negative score
+      } else {
+        // Computer gets -10 points for wrong answer
+        setComputerScore(prev => Math.max(0, prev - 10)); // Prevent negative score
+      }
+    }
+    
+    // Show game over screen after quiz is completed
+    setGameTimeout(() => {
+      setGameOver(true);
+    }, 500, 'showGameOver');
+  }, [isPlayerTurn, lastMatchedByPlayer, setGameTimeout]);
   
   /**
    * Determine if the computer should remember a card based on difficulty level
@@ -783,6 +886,13 @@ export default function MatchAndLearnGame() {
       setComputerThinking(false);
       isProcessingRef.current = false;
       
+      // Reset quiz-related states
+      setShowQuiz(false);
+      setQuizFood(null);
+      setIncorrectOptions([]);
+      setQuizCompleted(false);
+      setQuizResult(null);
+      
       // Clear all timeouts
       Object.values(timeoutRef.current).forEach(clearTimeout);
       timeoutRef.current = {};
@@ -820,6 +930,13 @@ export default function MatchAndLearnGame() {
     setTurnCount(0);
     setComputerThinking(false);
     isProcessingRef.current = false;
+    
+    // Reset quiz-related states
+    setShowQuiz(false);
+    setQuizFood(null);
+    setIncorrectOptions([]);
+    setQuizCompleted(false);
+    setQuizResult(null);
     
     // Clear cached fun facts to force a new API fetch when new difficulty is selected
     setCachedFunFacts([]);
@@ -895,6 +1012,17 @@ export default function MatchAndLearnGame() {
         )}
       </AnimatePresence>
       
+      {/* Quiz popup - shown after the last match is found */}
+      <AnimatePresence>
+        {showQuiz && quizFood && (
+          <QuizPopup 
+            quizFood={quizFood}
+            incorrectOptions={incorrectOptions}
+            onAnswer={handleQuizAnswer}
+          />
+        )}
+      </AnimatePresence>
+      
       {/* Game over screen */}
       <AnimatePresence>
         {gameOver && (
@@ -903,6 +1031,7 @@ export default function MatchAndLearnGame() {
             computerScore={computerScore}
             onReset={handleReset}
             onChangeDifficulty={handleChangeDifficulty}
+            quizResult={quizResult}
             onInit={() => {
               // Make sure all timeouts are cleared
               Object.values(timeoutRef.current).forEach(clearTimeout);

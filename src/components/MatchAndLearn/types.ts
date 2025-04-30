@@ -89,6 +89,7 @@ export interface GameOverScreenProps {
   onReset: () => void;
   onChangeDifficulty: () => void;
   onInit?: () => void;
+  quizResult?: boolean | null;
 }
 
 /**

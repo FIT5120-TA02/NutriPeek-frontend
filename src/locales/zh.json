@@ -162,7 +162,7 @@
     "computer_won": "电脑赢了！",
     "its_a_tie": "平局！",
     "play_again": "再玩一次",
-    "change_difficulty": "更改难度",
+    "exit_game": "退出游戏",
     "game_completed": "游戏完成",
     "click_to_see_results": "点击查看结果！",
     
@@ -173,6 +173,15 @@
     "click_anywhere_to_continue": "点击任意位置继续",
     "loading_fun_facts": "加载趣味事实...",
     "error_loading_cards": "无法加载卡片。请稍后再试。",
-    "retry_button": "重试"
+    "retry_button": "重试",
+
+    "final_challenge": "最终挑战！",
+    "hurry_up": "快点！时间不多了！ ⏰",
+    "quiz_instruction": "这个趣味知识点属于哪种食物？选择正确答案！",
+    "quiz_correct_answer": "正确！奖励+10分！",
+    "quiz_wrong_answer": "哎呀！答错了。扣除10分！",
+    "quiz_correct_answer_bonus": "您回答了测验正确！",
+    "quiz_wrong_answer_penalty": "您错过了测验问题！",
+    "points": "分"
   }
 }

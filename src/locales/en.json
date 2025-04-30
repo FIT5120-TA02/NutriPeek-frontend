@@ -162,7 +162,7 @@
     "computer_won": "Computer Won!",
     "its_a_tie": "It's a Tie!",
     "play_again": "Play Again",
-    "change_difficulty": "Change Difficulty",
+    "exit_game": "Exit Game",
     "game_completed": "Game Completed",
     "click_to_see_results": "Click to see your results!",
     
@@ -173,6 +173,15 @@
     "click_anywhere_to_continue": "Click anywhere to continue",
     "loading_fun_facts": "Loading fun facts...",
     "error_loading_cards": "Error loading cards. Please try again later.",
-    "retry_button": "Retry"
+    "retry_button": "Retry",
+
+    "final_challenge": "Final Challenge!",
+    "hurry_up": "Hurry Up! ⏰",
+    "quiz_instruction": "Which food does this fun fact belong to? Choose the correct answer!",
+    "quiz_correct_answer": "Correct! +10 points bonus!",
+    "quiz_wrong_answer": "Oops! That's not right. -10 points penalty!",
+    "quiz_correct_answer_bonus": "You answered the quiz correctly!",
+    "quiz_wrong_answer_penalty": "You missed the quiz question!",
+    "points": "points"
   }
 }

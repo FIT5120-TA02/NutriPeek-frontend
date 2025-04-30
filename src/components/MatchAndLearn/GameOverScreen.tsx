@@ -15,7 +15,8 @@ export default function GameOverScreen({
   computerScore, 
   onReset, 
   onChangeDifficulty,
-  onInit
+  onInit,
+  quizResult
 }: GameOverScreenProps) {
   const t = useTranslations('MatchAndLearn');
   
@@ -188,6 +189,26 @@ export default function GameOverScreen({
             {t('game_over')}
           </motion.h2>
           
+          {/* Quiz result (if applicable) */}
+          {quizResult !== undefined && quizResult !== null && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className={`mb-4 p-3 rounded-lg text-center ${
+                quizResult ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              }`}
+            >
+              <p className="font-bold">
+                {quizResult ? t('quiz_correct_answer_bonus') : t('quiz_wrong_answer_penalty')}
+              </p>
+              <p className="text-sm mt-1">
+                {quizResult ? '+10 ' : '-10 '} 
+                {t('points')}
+              </p>
+            </motion.div>
+          )}
+          
           {/* Game result message */}
           <motion.h3
             initial={{ opacity: 0 }}
@@ -242,7 +263,7 @@ export default function GameOverScreen({
               onClick={onChangeDifficulty}
               className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-bold shadow-md transition-colors"
             >
-              {t('change_difficulty')}
+              {t('exit_game')}
             </motion.button>
           </div>
         </motion.div>
