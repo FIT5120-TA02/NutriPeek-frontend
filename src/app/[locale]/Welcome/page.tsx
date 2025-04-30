@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -11,13 +11,7 @@ import nutriPeekLogo from '@/../public/nutripeek.png';
 
 export default function WelcomePage() {
   const router = useRouter();
-  const [showNavbar, setShowNavbar] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowNavbar(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const container = {
     hidden: { opacity: 0 },
@@ -34,8 +28,6 @@ export default function WelcomePage() {
     hidden: { y: 20, opacity: 0 },
     show: { y: 0, opacity: 1 }
   };
-
-
 
   return (
     <FloatingEmojisLayout emojisCount={50}>
@@ -231,49 +223,6 @@ export default function WelcomePage() {
           </motion.div>
         </motion.div>
       </section>
-
-      {/* Navigation Bar */}
-      <motion.header 
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md shadow-md"
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ 
-          y: showNavbar ? 0 : -100, 
-          opacity: showNavbar ? 1 : 0 
-        }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="flex items-center space-x-2">
-          <Link href="/Welcome" className="flex items-center space-x-2">
-            <Image
-              src={nutriPeekLogo}
-              alt="NutriPeek Logo"
-              width={40}
-              height={40}
-              className="object-contain"
-              priority
-            />
-            <span className="text-xl font-bold text-gray-800 tracking-tight">NutriPeek</span>
-          </Link>
-        </div>
-
-        <nav className="hidden md:flex items-center space-x-6">
-          <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">
-            Profile
-          </Link>
-          <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors">
-            Build Plate
-          </Link>
-          <Link href="/MatchAndLearn" className="text-gray-600 hover:text-green-600 transition-colors">
-            Match & Learn
-          </Link>
-          <Link
-            href="/NutriScan"
-            className="ml-4 px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
-          >
-            Launch Scan
-          </Link>
-        </nav>
-      </motion.header>
     </FloatingEmojisLayout>
   );
 }

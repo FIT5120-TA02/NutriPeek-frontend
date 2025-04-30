@@ -36,8 +36,9 @@ import SectionedPlate from './SectionedPlate';
 import FoodPalette from './FoodPalette';
 import NutritionChart from './NutritionChart';
 import AvatarFeedback from './AvatarFeedback';
-import ProfileSelector from './ProfileSelector';
 import ProfileSelectionModal from './ProfileSelectionModal';
+
+import { ChildProfile } from '@/types/profile';
 
 // Animation variants for smooth transitions
 const containerVariants = {
@@ -48,14 +49,6 @@ const containerVariants = {
   },
   exit: { opacity: 0, transition: { duration: 0.3 } }
 };
-
-// Child profile interface
-interface ChildProfile {
-  name: string;
-  age: string;
-  gender: string;
-  allergies: string[];
-}
 
 type ViewMode = 'build' | 'review';
 

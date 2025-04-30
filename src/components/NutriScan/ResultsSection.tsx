@@ -7,13 +7,7 @@ import { IngredientsList } from './FoodIngredients';
 import { useNutrition } from '../../contexts/NutritionContext';
 import storageService from '@/libs/StorageService';
 import { motion } from 'framer-motion';
-
-interface ChildProfile {
-  name: string;
-  age: string;
-  gender: string;
-  allergies: string[];
-}
+import { ChildProfile } from '@/types/profile';
 
 interface ResultsSectionProps {
   detectedItems: FoodItemDisplay[];
@@ -183,7 +177,7 @@ export default function ResultsSection({
             <div className="mt-3">
               <span className="text-gray-600 block mb-1">Allergies:</span>
               <div className="flex flex-wrap gap-1">
-                {profile.allergies.length > 0 ? (
+                {profile.allergies && profile.allergies.length > 0 ? (
                   profile.allergies.map((allergy, idx) => (
                     <span
                       key={idx}

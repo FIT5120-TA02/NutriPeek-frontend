@@ -1,7 +1,3 @@
- * NutriPeek API Service
- * Provides methods for interacting with the NutriPeek backend API
- */
-
 import { apiClient } from './apiClient';
 import {
   HealthCheckResponse,
@@ -18,7 +14,8 @@ import {
   FoodCategoriesResponse,
   NutrientIntakeResponse,
   FoodCategoryFunFactResponse,
-  FoodCategoryFunFactsResponse
+  FoodCategoryFunFactsResponse,
+  FoodRecommendation,
 } from './types';
 
 /**

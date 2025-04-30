@@ -153,7 +153,7 @@ export interface NutrientGapRequest {
 
 export interface NutrientGapResponse {
   nutrient_gaps: Record<string, NutrientInfo>;
-  missing_nutrients?: string[];
+  missing_nutrients?: string[] | NutrientGapDetails[];
   excess_nutrients?: string[];
   total_calories?: number;
 }
@@ -168,6 +168,33 @@ export interface NutrientIntakeInfo {
 
 export interface NutrientIntakeResponse {
   nutrient_intakes: Record<string, NutrientIntakeInfo>;
+}
+
+/**
+ * Food recommendation based on specific nutrient content
+ */
+export interface FoodRecommendation {
+  id: string;
+  food_category: string;
+}
+
+/**
+ * Enhanced food recommendations grouped by nutrient
+ */
+export interface NutrientRecommendation {
+  nutrient: string;
+  foodCategories: string[];
+}
+
+/**
+ * Extended nutrient information with gap details
+ */
+export interface NutrientGapDetails {
+  name: string;
+  unit: string;
+  gap: number;
+  recommended_intake: number;
+  current_intake: number;
 }
 
 // API Error Responses

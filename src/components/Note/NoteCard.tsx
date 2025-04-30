@@ -7,26 +7,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import UnitFormatter from '@/components/UnitFormatter/UnitFormatter';
 import { calculateGapSummary } from '@/components/Note/gapCalculator';
 import ChildAvatar from '@/components/ui/ChildAvatar';
-
-interface NutrientGapInfo {
-  gap: number;
-  unit: string;
-  current_intake: number;
-  recommended_intake: number;
-}
-
-interface FoodItem {
-  id: string;
-  name: string;
-  imageUrl?: string;
-  nutrients?: Record<string, number>;
-}
+import { FoodItem } from '@/types/notes';
+import { NutrientInfo } from '@/api/types';
 
 interface NoteCardProps {
   id: string;
   timestamp: number;
   selectedFoods?: FoodItem[];
-  nutrient_gaps?: Record<string, NutrientGapInfo>;
+  nutrient_gaps?: Record<string, NutrientInfo>;
   onDelete: (id: string) => void;
   child?: {
     name: string;

@@ -6,16 +6,10 @@ import { NutrientGapResponse } from '../../../api/types';
 import { useNutrition } from '../../../contexts/NutritionContext';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import storageService from '@/libs/StorageService';
+import { ChildProfile } from '@/types/profile';
 
 import NutrientSummary from '@/components/NutriGapChart/NutrientSummary';
 import NutrientGapOverview from '@/components/NutriGapChart/NutrientGapBarChart';
-
-interface ChildProfile {
-  name: string;
-  age: string;
-  gender: string;
-  allergies: string[];
-}
 
 export default function ResultsPage() {
   const router = useRouter();

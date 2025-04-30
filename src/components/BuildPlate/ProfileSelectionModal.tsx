@@ -3,13 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { X } from 'phosphor-react';
 import storageService from '@/libs/StorageService';
-
-interface ChildProfile {
-  name: string;
-  age: string;
-  gender: string;
-  allergies: string[];
-}
+import { ChildProfile } from '@/types/profile';
 
 interface ProfileSelectionModalProps {
   isOpen: boolean;
@@ -114,7 +108,7 @@ export default function ProfileSelectionModal({
             <div className="mt-3">
               <span className="text-gray-600 block mb-1">Allergies:</span>
               <div className="flex flex-wrap gap-1">
-                {profile.allergies.length > 0 ? (
+                {profile.allergies && profile.allergies.length > 0 ? (
                   profile.allergies.map((allergy, idx) => (
                     <span
                       key={idx}
