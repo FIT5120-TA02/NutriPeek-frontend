@@ -71,9 +71,7 @@ export default function NutrientGapOverview({ gaps }: NutrientGapOverviewProps) 
                   {percentage >= 100
                     ? 'Met'
                     : (
-                      nutrient.gap > 0 
-                        ? `-${Math.abs(nutrient.gap).toFixed(2)} ${nutrient.unit}`
-                        : `${Math.abs(nutrient.gap).toFixed(2)} ${nutrient.unit}`
+                      <UnitFormatter value={nutrient.gap} unit={nutrient.unit} />
                     )}
                 </span>
               </div>

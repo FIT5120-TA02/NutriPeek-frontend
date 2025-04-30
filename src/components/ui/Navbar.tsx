@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { NavigationArrow } from 'phosphor-react';
 import nutriPeekLogo from '@/../public/nutripeek.png';
 
 export default function Navbar() {
@@ -38,9 +37,11 @@ export default function Navbar() {
 
       {!isHiddenPage && (
         <>
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">Profile</Link>
             <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors">Build Plate</Link>
+            <Link href="/MyNote" className="text-gray-600 hover:text-green-600 transition-colors">My Notes</Link>
             <Link
               href="/NutriScan"
               className="ml-4 px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
@@ -49,6 +50,7 @@ export default function Navbar() {
             </Link>
           </nav>
 
+          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button onClick={toggleMobileMenu} className="text-gray-600 hover:text-green-600 focus:outline-none">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,10 +59,12 @@ export default function Navbar() {
             </button>
           </div>
 
+          {/* Mobile Dropdown Menu */}
           {isMobileMenuOpen && (
             <div className="absolute top-16 left-0 w-full bg-white shadow-md flex flex-col items-center py-4 space-y-4 md:hidden z-50">
               <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
               <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Build Plate</Link>
+              <Link href="/MyNote" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>My Notes</Link>
               <Link
                 href="/NutriScan"
                 className="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
