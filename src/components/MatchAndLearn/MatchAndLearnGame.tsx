@@ -6,7 +6,7 @@
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 import GameBoard from './GameBoard';
 import DifficultySelector from './DifficultySelector';
@@ -17,7 +17,8 @@ import GameOverScreen from './GameOverScreen';
 
 import { Card, Food, DifficultyLevel } from './types';
 import { getFoodImageUrl } from '@/utils/assetHelpers';
-import { log } from 'console';
+import { nutripeekApi } from '@/api/nutripeekApi';
+import { FoodCategoryFunFactResponse } from '@/api/types';
 
 // Define difficulty levels with corresponding card counts
 const DIFFICULTY_LEVELS: Record<DifficultyLevel, number> = {
@@ -26,73 +27,68 @@ const DIFFICULTY_LEVELS: Record<DifficultyLevel, number> = {
   hard: 40, // 20 pairs (will form a 5x8 grid)
 };
 
-// Sample food facts for matched cards
-const FOOD_FACTS: Record<string, string> = {
-  apple: "Apples are rich in fiber and vitamin C, helping your immune system stay strong!",
-  banana: "Bananas give you energy with natural sugars and contain potassium for healthy muscles!",
-  broccoli: "Broccoli is packed with vitamins that help your body grow and stay healthy!",
-  carrot: "Carrots have vitamin A that helps keep your eyes healthy and strong!",
-  chicken: "Chicken is full of protein that helps build strong muscles!",
-  egg: "Eggs contain protein and vitamins that help your brain develop and stay sharp!",
-  milk: "Milk has calcium that makes your bones and teeth strong!",
-  orange: "Oranges are bursting with vitamin C that helps heal cuts and fight colds!",
-  rice: "Rice gives you energy to run, play, and learn all day long!",
-  salmon: "Salmon has omega-3 fats that help your brain think clearly!",
-  spinach: "Spinach makes you strong with iron that helps carry oxygen in your blood!",
-  strawberry: "Strawberries are sweet and full of vitamin C to keep you healthy!",
-  tomato: "Tomatoes have lycopene that protects your cells and keeps you healthy!",
-  yogurt: "Yogurt has friendly bacteria that help your tummy digest food properly!",
-  potato: "Potatoes give you energy and contain vitamin C for a healthy immune system!",
-  avocado: "Avocados are full of healthy fats that help your brain grow strong!",
-  blueberry: "Blueberries are packed with antioxidants that protect your body's cells!",
-  corn: "Corn provides energy and fiber to help your digestion work smoothly!",
-  cucumber: "Cucumbers are full of water that keeps your body hydrated and healthy!",
-  grape: "Grapes have antioxidants that help protect your heart as you grow!",
-  lettuce: "Lettuce has water and fiber that keeps your body hydrated and helps digestion!",
-  mushroom: "Mushrooms have vitamin D that helps your bones grow strong!",
-  pea: "Peas have protein and fiber that help build muscles and keep your tummy happy!",
-  pepper: "Peppers are full of vitamin C that helps heal cuts and keeps you healthy!",
-  pineapple: "Pineapples have enzymes that help your body digest food properly!",
-  watermelon: "Watermelons are full of water that keeps you hydrated on hot days!"
-};
-
-// Default foods for the game
-const DEFAULT_FOODS = [
-  "apple", "banana", "broccoli", "carrot", "chicken", "egg", 
-  "milk", "orange", "rice", "salmon", "spinach", "strawberry", 
-  "tomato", "yogurt", "potato", "avocado", "blueberry", "corn",
-  "cucumber", "grape", "lettuce", "mushroom", "pea", "pepper",
-  "pineapple", "watermelon"
-];
-
 /**
- * Prepares the food cards for the game based on difficulty
+ * Prepares the food cards for the game based on difficulty and available fun facts
  */
-function prepareCards(difficulty: DifficultyLevel): Card[] {
+function prepareCards(difficulty: DifficultyLevel, funFacts: FoodCategoryFunFactResponse[] = []): Card[] {
   const cardCount = DIFFICULTY_LEVELS[difficulty];
   const pairCount = cardCount / 2;
   
-  // Take only the needed number of foods
-  const selectedFoods = DEFAULT_FOODS.slice(0, pairCount);
-  
-  // Create pairs of cards
+  // Create cards using fun facts from the API
   const cards: Card[] = [];
-  selectedFoods.forEach((food, index) => {
-    // Create two cards for each food (a pair)
-    for (let i = 0; i < 2; i++) {
-      cards.push({
-        id: `${food}-${i}`,
-        food: {
-          id: index,
-          name: food,
-          imageUrl: getFoodImageUrl(food),
-          fact: FOOD_FACTS[food] || `${food} is a nutritious food!`
-        },
-        isFlipped: false,
-        isMatched: false
-      });
+  
+  if (funFacts.length > 0) {
+    // Get unique food categories from fun facts
+    const uniqueCategories = Array.from(new Set(funFacts.map(fact => fact.category)));
+    
+    // Create a mapping of categories to fun facts (taking the first fun fact for each category)
+    const categoryFactsMap: Record<string, string> = {};
+    funFacts.forEach(fact => {
+      if (!categoryFactsMap[fact.category]) {
+        categoryFactsMap[fact.category] = fact.fun_fact;
+      }
+    });
+    
+    // If we don't have enough unique categories, we'll use some categories multiple times
+    let selectedCategories: string[] = [];
+    
+    if (uniqueCategories.length >= pairCount) {
+      // Shuffle categories and take what we need
+      selectedCategories = [...uniqueCategories]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, pairCount);
+    } else {
+      // We need to reuse some categories
+      const timesToRepeat = Math.ceil(pairCount / uniqueCategories.length);
+      for (let i = 0; i < timesToRepeat; i++) {
+        const shuffled = [...uniqueCategories].sort(() => Math.random() - 0.5);
+        selectedCategories = [...selectedCategories, ...shuffled];
+      }
+      // Trim to exact number needed
+      selectedCategories = selectedCategories.slice(0, pairCount);
     }
-  });
+    
+    // Create pairs of cards for each selected category
+    selectedCategories.forEach((category, index) => {
+      const foodName = category.toLowerCase(); // Convert category to lowercase for image URL
+      const funFact = categoryFactsMap[category];
+      
+      // Create two cards for each category (a pair)
+      for (let i = 0; i < 2; i++) {
+        cards.push({
+          id: `${category}-${i}-${index}`, // Added index to handle same category appearing multiple times
+          food: {
+            id: index,
+            name: foodName,
+            imageUrl: getFoodImageUrl(foodName),
+            fact: funFact
+          },
+          isFlipped: false,
+          isMatched: false
+        });
+      }
+    });
+  }
   
   // Shuffle the cards
   return shuffleCards(cards);
@@ -128,8 +124,10 @@ export default function MatchAndLearnGame() {
   const [computerMemory, setComputerMemory] = useState<Map<string, string>>(new Map());
   const [checkingMatch, setCheckingMatch] = useState<boolean>(false);
   const [lastMatchedByPlayer, setLastMatchedByPlayer] = useState<boolean>(true);
-  const [turnCount, setTurnCount] = useState<number>(0); // Track turn count to help debug even/odd turn issues
-  const [gameCompleted, setGameCompleted] = useState<boolean>(false); // New state to track if game is complete but not yet over
+  const [turnCount, setTurnCount] = useState<number>(0);
+  const [gameCompleted, setGameCompleted] = useState<boolean>(false);
+  const [funFacts, setFunFacts] = useState<FoodCategoryFunFactResponse[]>([]);
+  const [isLoadingFunFacts, setIsLoadingFunFacts] = useState<boolean>(false);
   
   // Store timeouts so they can be cleared if needed
   const timeoutRef = useRef<{[key: string]: ReturnType<typeof setTimeout>}>({});
@@ -205,15 +203,69 @@ export default function MatchAndLearnGame() {
     }
   }, [computerThinking]);
   
+  // Fetch fun facts when component mounts
+  useEffect(() => {
+    const fetchFunFacts = async () => {
+      if (difficulty) {
+        try {
+          setIsLoadingFunFacts(true);
+          // Calculate number of fun facts to fetch based on difficulty
+          // We need at least as many as pairs in the game
+          const pairCount = DIFFICULTY_LEVELS[difficulty] / 2;
+          // Request the maximum allowed to ensure we have enough unique categories
+          const count = 50; // API max is 50
+          
+          const response = await nutripeekApi.getFoodCategoryFunFacts(count);
+          
+          if (response.fun_facts?.length > 0) {
+            setFunFacts(response.fun_facts);
+            
+            // Always create new cards with the latest fun facts
+            const newCards = prepareCards(difficulty, response.fun_facts);
+            setCards(newCards);
+          } else {
+            console.warn('Received empty fun facts array from API');
+            // Show an error message or handle empty state
+            setFunFacts([]);
+            setCards([]);
+          }
+        } catch (error) {
+          console.error('Failed to fetch food category fun facts:', error);
+          // Clear any existing fun facts and cards
+          setFunFacts([]);
+          setCards([]);
+        } finally {
+          setIsLoadingFunFacts(false);
+        }
+      }
+    };
+    
+    fetchFunFacts();
+    // Only re-run when difficulty changes
+  }, [difficulty]);
+  
+  // Function to retry loading fun facts
+  const handleRetryLoading = useCallback(() => {
+    if (difficulty) {
+      // Re-trigger the fetch by changing and resetting the difficulty
+      const currentDifficulty = difficulty;
+      setDifficulty(null);
+      
+      // Use a small timeout to ensure state updates properly
+      setTimeout(() => {
+        setDifficulty(currentDifficulty);
+      }, 100);
+    }
+  }, [difficulty]);
+  
   // Initialize game with selected difficulty
   const startGame = useCallback((selectedDifficulty: DifficultyLevel) => {
     // Clear all timeouts when starting a new game
     Object.values(timeoutRef.current).forEach(clearTimeout);
     timeoutRef.current = {};
     
-    const newCards = prepareCards(selectedDifficulty);
+    // Reset all game state
     setDifficulty(selectedDifficulty);
-    setCards(newCards);
     setFlippedCards([]);
     setMatchedPairs(0);
     setIsPlayerTurn(true);
@@ -222,11 +274,15 @@ export default function MatchAndLearnGame() {
     setShowMatch(false);
     setMatchedFood(null);
     setGameOver(false);
-    setGameCompleted(false); // Reset game completed state
+    setGameCompleted(false);
     setComputerMemory(new Map());
     setCheckingMatch(false);
-    setTurnCount(0); // Reset turn count when starting a new game
-    isProcessingRef.current = false; // Reset processing flag
+    setTurnCount(0);
+    isProcessingRef.current = false;
+    
+    // Set cards to empty array initially
+    // The useEffect hook will fetch fun facts and create the cards
+    setCards([]);
   }, []);
   
   // Total pairs in the game
@@ -653,6 +709,10 @@ export default function MatchAndLearnGame() {
     return <DifficultySelector onSelectDifficulty={startGame} />;
   }
   
+  // Show loading state if we're loading fun facts or if we have difficulty set but no cards yet
+  const isLoading = isLoadingFunFacts || (difficulty && cards.length === 0);
+  const hasError = !isLoading && cards.length === 0 && difficulty !== null;
+  
   return (
     <div className="flex flex-col space-y-6">
       {/* Game header with scores and turn indicator */}
@@ -669,14 +729,36 @@ export default function MatchAndLearnGame() {
         />
       </div>
       
-      {/* Game board with cards */}
-      <GameBoard 
-        cards={cards} 
-        onCardFlip={handleCardFlip}
-        isPlayerTurn={isPlayerTurn}
-        computerThinking={computerThinking}
-        difficulty={difficulty}
-      />
+      {/* Loading state for fun facts */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
+        </div>
+      )}
+      
+      {/* Error state with retry button */}
+      {hasError && (
+        <div className="text-center p-4 bg-red-50 text-red-600 rounded-md">
+          <p className="mb-3">{t('error_loading_cards')}</p>
+          <button 
+            onClick={handleRetryLoading}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+          >
+            {t('retry_button')}
+          </button>
+        </div>
+      )}
+      
+      {/* Show game board only when there are cards */}
+      {cards.length > 0 && (
+        <GameBoard 
+          cards={cards} 
+          onCardFlip={handleCardFlip}
+          isPlayerTurn={isPlayerTurn}
+          computerThinking={computerThinking}
+          difficulty={difficulty}
+        />
+      )}
       
       {/* Match popup */}
       <AnimatePresence>

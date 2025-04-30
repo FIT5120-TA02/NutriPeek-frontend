@@ -5,7 +5,6 @@
  * Wraps the game component with necessary page layout
  */
 import React from 'react';
-import { motion } from 'framer-motion';
 import MatchAndLearnGame from './MatchAndLearnGame';
 import { PageWrapperProps } from './types';
 import FloatingEmojisLayout from '../layouts/FloatingEmojisLayout';

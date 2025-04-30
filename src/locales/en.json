@@ -170,6 +170,9 @@
     "pairs_remaining": "Pairs remaining: {count}",
     "total_pairs": "Total pairs: {count}",
 
-    "click_anywhere_to_continue": "Click anywhere to continue"
+    "click_anywhere_to_continue": "Click anywhere to continue",
+    "loading_fun_facts": "Loading fun facts...",
+    "error_loading_cards": "Error loading cards. Please try again later.",
+    "retry_button": "Retry"
   }
 }

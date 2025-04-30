@@ -114,6 +114,22 @@ export interface FoodCategoriesResponse {
   categories: FoodCategoryAvgNutrients[];
 }
 
+/**
+ * Food category fun fact response
+ */
+export interface FoodCategoryFunFactResponse {
+  category: string;
+  fun_fact: string;
+  id: string;
+}
+
+/**
+ * Multiple food category fun facts response
+ */
+export interface FoodCategoryFunFactsResponse {
+  fun_facts: FoodCategoryFunFactResponse[];
+}
+
 // Nutrient Gap
 export interface ChildProfile {
   age: number; // 0-18

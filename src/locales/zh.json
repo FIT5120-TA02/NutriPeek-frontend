@@ -170,6 +170,9 @@
     "pairs_remaining": "剩余对数: {count}",
     "total_pairs": "总对数: {count}",
 
-    "click_anywhere_to_continue": "点击任意位置继续"
+    "click_anywhere_to_continue": "点击任意位置继续",
+    "loading_fun_facts": "加载趣味事实...",
+    "error_loading_cards": "无法加载卡片。请稍后再试。",
+    "retry_button": "重试"
   }
 }
