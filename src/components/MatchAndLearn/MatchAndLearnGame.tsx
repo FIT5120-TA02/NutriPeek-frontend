@@ -76,7 +76,7 @@ function prepareCards(difficulty: DifficultyLevel, funFacts: FoodCategoryFunFact
       // Create two cards for each category (a pair)
       for (let i = 0; i < 2; i++) {
         cards.push({
-          id: `${category}-${i}-${index}`, // Added index to handle same category appearing multiple times
+          id: `${category}-${i}-${index}-${Date.now()}`, // Added timestamp to ensure unique IDs on restart
           food: {
             id: index,
             name: foodName,
@@ -128,6 +128,7 @@ export default function MatchAndLearnGame() {
   const [gameCompleted, setGameCompleted] = useState<boolean>(false);
   const [funFacts, setFunFacts] = useState<FoodCategoryFunFactResponse[]>([]);
   const [isLoadingFunFacts, setIsLoadingFunFacts] = useState<boolean>(false);
+  const [cachedFunFacts, setCachedFunFacts] = useState<FoodCategoryFunFactResponse[]>([]);
   
   // Store timeouts so they can be cleared if needed
   const timeoutRef = useRef<{[key: string]: ReturnType<typeof setTimeout>}>({});
@@ -203,21 +204,40 @@ export default function MatchAndLearnGame() {
     }
   }, [computerThinking]);
   
-  // Fetch fun facts when component mounts
+  /**
+   * Prepares card game data from existing fun facts
+   * This function allows reusing cached fun facts to avoid API calls
+   */
+  const prepareCardsFromExistingFunFacts = useCallback((selectedDifficulty: DifficultyLevel, existingFunFacts: FoodCategoryFunFactResponse[]) => {
+    if (existingFunFacts.length === 0) return [];
+    
+    const newCards = prepareCards(selectedDifficulty, existingFunFacts);
+    setCards(newCards);
+    return newCards;
+  }, []);
+  
+  // Fetch fun facts when component mounts or when needed
   useEffect(() => {
     const fetchFunFacts = async () => {
       if (difficulty) {
         try {
+          // Check if we already have cached fun facts we can reuse
+          if (cachedFunFacts.length > 0) {
+            const newCards = prepareCards(difficulty, cachedFunFacts);
+            setCards(newCards);
+            setIsLoadingFunFacts(false);
+            return;
+          }
+          
           setIsLoadingFunFacts(true);
-          // Calculate number of fun facts to fetch based on difficulty
-          // We need at least as many as pairs in the game
-          const pairCount = DIFFICULTY_LEVELS[difficulty] / 2;
           // Request the maximum allowed to ensure we have enough unique categories
           const count = 50; // API max is 50
           
           const response = await nutripeekApi.getFoodCategoryFunFacts(count);
           
           if (response.fun_facts?.length > 0) {
+            // Cache the fun facts for future use
+            setCachedFunFacts(response.fun_facts);
             setFunFacts(response.fun_facts);
             
             // Always create new cards with the latest fun facts
@@ -242,11 +262,14 @@ export default function MatchAndLearnGame() {
     
     fetchFunFacts();
     // Only re-run when difficulty changes
-  }, [difficulty]);
+  }, [difficulty, cachedFunFacts]);
   
   // Function to retry loading fun facts
   const handleRetryLoading = useCallback(() => {
     if (difficulty) {
+      // Clear cached fun facts to force a new fetch
+      setCachedFunFacts([]);
+      
       // Re-trigger the fetch by changing and resetting the difficulty
       const currentDifficulty = difficulty;
       setDifficulty(null);
@@ -280,10 +303,16 @@ export default function MatchAndLearnGame() {
     setTurnCount(0);
     isProcessingRef.current = false;
     
-    // Set cards to empty array initially
-    // The useEffect hook will fetch fun facts and create the cards
-    setCards([]);
-  }, []);
+    // If we have cached fun facts, use them right away instead of showing loading indicator
+    if (cachedFunFacts.length > 0) {
+      const newCards = prepareCards(selectedDifficulty, cachedFunFacts);
+      setCards(newCards);
+    } else {
+      // Otherwise, set cards to empty array initially
+      // The useEffect hook will fetch fun facts and create the cards
+      setCards([]);
+    }
+  }, [cachedFunFacts]);
   
   // Total pairs in the game
   const totalPairs = difficulty ? DIFFICULTY_LEVELS[difficulty] / 2 : 0;
@@ -338,9 +367,30 @@ export default function MatchAndLearnGame() {
   }, [isPlayerTurn, setGameTimeout, gameCompleted]);
   
   /**
+   * Determine if the computer should remember a card based on difficulty level
+   * Easy: No memory of any cards
+   * Medium: Only remembers its own flipped cards 
+   * Hard: Remembers all flipped cards (both player's and computer's)
+   */
+  const shouldComputerRememberCard = useCallback((isComputerFlipping: boolean) => {
+    if (!difficulty) return false;
+    
+    switch (difficulty) {
+      case 'easy':
+        return false; // Computer has no memory in easy mode
+      case 'medium':
+        return !isPlayerTurn; // In medium, computer only remembers cards it flips
+      case 'hard':
+        return true; // In hard mode, computer remembers all flipped cards
+      default:
+        return false;
+    }
+  }, [difficulty, isPlayerTurn]);
+  
+  /**
    * Handles card flipping logic.
    * 1. Validates if card can be flipped
-   * 2. Updates computer memory
+   * 2. Updates computer memory based on difficulty level
    * 3. Flips card in the UI
    * 4. Checks for matches when two cards are flipped
    * 5. Updates scores and handles matched/unmatched cases
@@ -365,12 +415,15 @@ export default function MatchAndLearnGame() {
       return;
     }
     
-    // Remember this card for the computer
-    setComputerMemory(prev => {
-      const updated = new Map(prev);
-      updated.set(card.id, card.food.name);
-      return updated;
-    });
+    // Remember this card for the computer based on difficulty level
+    const isComputerFlipping = !isPlayerTurn;
+    if (shouldComputerRememberCard(isComputerFlipping)) {
+      setComputerMemory(prev => {
+        const updated = new Map(prev);
+        updated.set(card.id, card.food.name);
+        return updated;
+      });
+    }
     
     // Flip the card
     setCards(prev => 
@@ -457,14 +510,30 @@ export default function MatchAndLearnGame() {
       return newFlippedCards;
     });
     
-  }, [flippedCards, isPlayerTurn, setGameTimeout, showMatch]);
+  }, [flippedCards, isPlayerTurn, setGameTimeout, showMatch, shouldComputerRememberCard]);
+  
+  /**
+   * Helper function to get cards known to the computer based on difficulty level
+   * Returns only the card IDs that computer should know about
+   */
+  const getCardsKnownToComputer = useCallback(() => {
+    if (!difficulty) return new Map<string, string>();
+    
+    // For 'easy', computer knows nothing
+    if (difficulty === 'easy') {
+      return new Map<string, string>();
+    }
+    
+    // For medium and hard, return the current memory
+    return computerMemory;
+  }, [difficulty, computerMemory]);
   
   /**
    * Handles the computer's turn.
    * Logic:
    * 1. Computer only makes moves when it's its turn and no other actions are happening
    * 2. If knowing a match, computer will flip those cards
-   * 3. Otherwise, makes strategic or random choices based on what it remembers
+   * 3. Otherwise, makes strategic or random choices based on difficulty level
    * 4. Contains safeguards to prevent flipping more than 2 cards
    */
   useEffect(() => {
@@ -544,8 +613,11 @@ export default function MatchAndLearnGame() {
       const [firstCard] = flippedCards;
       let secondCard: Card | null = null;
       
+      // Get cards that the computer knows about based on difficulty
+      const knownCards = getCardsKnownToComputer();
+      
       // Try to find a match for the first card in computer's memory
-      const matchingCardId = Array.from(computerMemory.entries())
+      const matchingCardId = Array.from(knownCards.entries())
         .find(([id, food]) => id !== firstCard.id && food === firstCard.food.name)?.[0];
       
       if (matchingCardId) {
@@ -593,6 +665,9 @@ export default function MatchAndLearnGame() {
       let firstCard: Card | null = null;
       let secondCard: Card | null = null;
       
+      // Get cards that the computer knows about based on difficulty
+      const knownCards = getCardsKnownToComputer();
+      
       // Try to find a known matching pair
       const unmatched = cards.filter(card => !card.isMatched && !card.isFlipped);
       const unmatchedFoods = new Map<string, Card[]>();
@@ -608,8 +683,8 @@ export default function MatchAndLearnGame() {
       // Find a matching pair if computer knows one
       for (const [foodName, foodCards] of unmatchedFoods.entries()) {
         if (foodCards.length === 2 && 
-            computerMemory.has(foodCards[0].id) && 
-            computerMemory.has(foodCards[1].id)) {
+            knownCards.has(foodCards[0].id) && 
+            knownCards.has(foodCards[1].id)) {
           firstCard = foodCards[0];
           secondCard = foodCards[1];
           break;
@@ -632,8 +707,8 @@ export default function MatchAndLearnGame() {
         const randomIndex1 = Math.floor(Math.random() * availableCards.length);
         firstCard = availableCards[randomIndex1];
         
-        // Try to find a match for the first card
-        const matchingCardId = Array.from(computerMemory.entries())
+        // Try to find a match for the first card in what the computer knows
+        const matchingCardId = Array.from(knownCards.entries())
           .find(([id, food]) => id !== firstCard?.id && food === firstCard?.food.name)?.[0];
         
         if (matchingCardId) {
@@ -690,17 +765,65 @@ export default function MatchAndLearnGame() {
         isProcessingRef.current = false;
       }
     }
-  }, [isPlayerTurn, gameOver, gameCompleted, cards, computerMemory, difficulty, handleCardFlip, checkingMatch, flippedCards, setGameTimeout, showMatch, turnCount]);
+  }, [isPlayerTurn, gameOver, gameCompleted, cards, difficulty, handleCardFlip, checkingMatch, flippedCards, setGameTimeout, showMatch, turnCount, getCardsKnownToComputer]);
   
   // Reset game
   const handleReset = useCallback(() => {
     if (difficulty) {
-      startGame(difficulty);
+      // Clear all states before starting a new game
+      setFlippedCards([]);
+      setMatchedPairs(0);
+      setIsPlayerTurn(true);
+      setPlayerScore(0);
+      setComputerScore(0);
+      setShowMatch(false);
+      setMatchedFood(null);
+      setGameOver(false);
+      setGameCompleted(false);
+      setComputerMemory(new Map());
+      setCheckingMatch(false);
+      setTurnCount(0);
+      setComputerThinking(false);
+      isProcessingRef.current = false;
+      
+      // Clear all timeouts
+      Object.values(timeoutRef.current).forEach(clearTimeout);
+      timeoutRef.current = {};
+      
+      // Generate new cards with the current difficulty
+      if (cachedFunFacts.length > 0) {
+        const newCards = prepareCards(difficulty, cachedFunFacts);
+        setCards(newCards);
+      } else {
+        // If somehow we don't have cached fun facts, restart the game
+        startGame(difficulty);
+      }
     }
-  }, [difficulty, startGame]);
+  }, [difficulty, startGame, cachedFunFacts]);
   
   // Change difficulty
   const handleChangeDifficulty = useCallback(() => {
+    // Clear all timeouts when changing difficulty
+    Object.values(timeoutRef.current).forEach(clearTimeout);
+    timeoutRef.current = {};
+    
+    // Reset all game states before changing difficulty
+    setFlippedCards([]);
+    setMatchedPairs(0);
+    setIsPlayerTurn(true);
+    setPlayerScore(0);
+    setComputerScore(0);
+    setShowMatch(false);
+    setMatchedFood(null);
+    setGameOver(false);
+    setGameCompleted(false);
+    setComputerMemory(new Map());
+    setCheckingMatch(false);
+    setTurnCount(0);
+    setComputerThinking(false);
+    isProcessingRef.current = false;
+    
+    // Finally, set difficulty to null to show the difficulty selector
     setDifficulty(null);
   }, []);
   
