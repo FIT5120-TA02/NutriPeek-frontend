@@ -221,24 +221,21 @@ export default function MatchAndLearnGame() {
     const fetchFunFacts = async () => {
       if (difficulty) {
         try {
-          // Check if we already have cached fun facts we can reuse
-          if (cachedFunFacts.length > 0) {
-            const newCards = prepareCards(difficulty, cachedFunFacts);
-            setCards(newCards);
-            setIsLoadingFunFacts(false);
-            return;
-          }
-          
           setIsLoadingFunFacts(true);
-          // Request the maximum allowed to ensure we have enough unique categories
-          const count = 50; // API max is 50
+          // Calculate how many fun facts we need based on difficulty
+          // We get N+10 fun facts where N is the number of pairs needed for the difficulty
+          const pairsNeeded = DIFFICULTY_LEVELS[difficulty] / 2;
+          const funFactsToRequest = pairsNeeded + 10; // Request 10 more than needed to ensure variety
+          
+          // Cap at API maximum (50)
+          const count = Math.min(funFactsToRequest, 50);
           
           const response = await nutripeekApi.getFoodCategoryFunFacts(count);
           
           if (response.fun_facts?.length > 0) {
-            // Cache the fun facts for future use
-            setCachedFunFacts(response.fun_facts);
+            // Store the new fun facts, replacing previous cached ones
             setFunFacts(response.fun_facts);
+            setCachedFunFacts(response.fun_facts);
             
             // Always create new cards with the latest fun facts
             const newCards = prepareCards(difficulty, response.fun_facts);
@@ -262,7 +259,7 @@ export default function MatchAndLearnGame() {
     
     fetchFunFacts();
     // Only re-run when difficulty changes
-  }, [difficulty, cachedFunFacts]);
+  }, [difficulty]);
   
   // Function to retry loading fun facts
   const handleRetryLoading = useCallback(() => {
@@ -790,16 +787,17 @@ export default function MatchAndLearnGame() {
       Object.values(timeoutRef.current).forEach(clearTimeout);
       timeoutRef.current = {};
       
-      // Generate new cards with the current difficulty
-      if (cachedFunFacts.length > 0) {
-        const newCards = prepareCards(difficulty, cachedFunFacts);
-        setCards(newCards);
-      } else {
-        // If somehow we don't have cached fun facts, restart the game
-        startGame(difficulty);
-      }
+      // Clear cached fun facts to force a new API fetch
+      setCachedFunFacts([]);
+      
+      // Re-initialize the game with the same difficulty
+      // This will trigger the useEffect to fetch new fun facts
+      setDifficulty(null);
+      setTimeout(() => {
+        setDifficulty(difficulty);
+      }, 100);
     }
-  }, [difficulty, startGame, cachedFunFacts]);
+  }, [difficulty]);
   
   // Change difficulty
   const handleChangeDifficulty = useCallback(() => {
@@ -822,6 +820,9 @@ export default function MatchAndLearnGame() {
     setTurnCount(0);
     setComputerThinking(false);
     isProcessingRef.current = false;
+    
+    // Clear cached fun facts to force a new API fetch when new difficulty is selected
+    setCachedFunFacts([]);
     
     // Finally, set difficulty to null to show the difficulty selector
     setDifficulty(null);
