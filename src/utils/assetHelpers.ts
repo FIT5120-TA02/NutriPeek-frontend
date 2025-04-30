@@ -33,3 +33,4 @@ export function getPlateImageUrl(imageName: string): string {
 export function getAvatarImageUrl(emotionType: string): string {
   return `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/${emotionType}_avatar.png`;
 } 
+

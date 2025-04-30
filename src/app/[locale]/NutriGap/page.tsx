@@ -122,7 +122,7 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#ECF9F2]">
+    <div className="min-h-screen w-full bg-green-50">
       <div className="max-w-7xl mx-auto pt-32 px-6 lg:px-20">
         
         {/* Title */}

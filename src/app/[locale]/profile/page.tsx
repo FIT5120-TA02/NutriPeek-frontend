@@ -8,6 +8,7 @@ import Card from "@/components/ui/Card";
 import Dropdown from "@/components/ui/Dropdown";
 import { motion } from "framer-motion";
 import FloatingEmojisLayout from "@/components/layouts/FloatingEmojisLayout";
+import ChildAvatar from '@/components/ui/ChildAvatar';
 
 interface ChildProfile {
   name: string;
@@ -329,7 +330,9 @@ export default function ProfilePage() {
                         </div>
                       ) : (
                         <>
-                          <h2 className="text-xl font-semibold mb-2 text-green-700">{child.name}</h2>
+                          <div className="flex items-center mb-4">
+                            <ChildAvatar name={child.name} age={child.age} gender={child.gender} />
+                          </div>
                           <p><strong>Age:</strong> {child.age} years</p>
                           <p><strong>Gender:</strong> {child.gender}</p>
                           <div className="mt-4">

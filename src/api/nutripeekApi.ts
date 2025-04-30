@@ -155,6 +155,15 @@ export class NutriPeekApi {
   async getNutrientIntake(childProfile: { age: number; gender: 'boy' | 'girl' }): Promise<NutrientIntakeResponse> {
     return apiClient.post<NutrientIntakeResponse>('/api/v1/nutrient/nutrient-intake', childProfile);
   }
+
+  /**
+   * Get 
+   * @param 
+   * @returns 
+   */
+    async getRecommendedFoods(nutrient_name: string, limit: number = 10): Promise<FoodRecommendation[]> {
+      return apiClient.get<FoodRecommendation[]>('/api/v1/nutrient/recommend-food', {nutrient_name, limit});
+    }
 }
 
 // Export a singleton instance

@@ -6,20 +6,15 @@ import storageService from '@/libs/StorageService';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import { NutrientGapResponse } from '@/api/types';
 import RecommendationComparison from '@/components/NutriGapChart/RecommendationComparison';
-import FoodGroupDetails from '@/components/NutriGapChart/FoodGroupDetails';
 import { useRouter } from 'next/navigation';
+import ChildAvatar from '@/components/ui/ChildAvatar';
+import BackButton from '@/components/ui/BackButton';
 
 interface ChildProfile {
   name: string;
   age: string;
   gender: string;
   allergies: string[];
-}
-
-interface Nutrient {
-  name: string;
-  gap: number;
-  unit: string;
 }
 
 export default function NutriRecommendPage() {
@@ -29,10 +24,6 @@ export default function NutriRecommendPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
-  const [processedNutrients, setProcessedNutrients] = useState<{
-    missingNutrients: Nutrient[];
-    excessNutrients: Nutrient[];
-  }>({ missingNutrients: [], excessNutrients: [] });
 
   const CHILDREN_KEY = 'user_children';
 
@@ -44,7 +35,6 @@ export default function NutriRecommendPage() {
           if (storedResults) {
             const parsed = JSON.parse(storedResults);
             setResults(parsed);
-            processNutrients(parsed);
             return;
           }
           setError('No ingredients selected');
@@ -55,6 +45,7 @@ export default function NutriRecommendPage() {
           key: CHILDREN_KEY,
           defaultValue: []
         }) as ChildProfile[];
+
         if (!childProfiles.length) {
           setError('No child profile found');
           return;
@@ -62,14 +53,16 @@ export default function NutriRecommendPage() {
 
         const profileIndex = selectedChildId ?? 0;
         const childProfile = childProfiles[profileIndex];
+
         if (!childProfile) {
           setError('Selected child profile not found');
           return;
         }
+
         setSelectedChild(childProfile);
 
-        const apiGender =
-          childProfile.gender.toLowerCase() === 'female' ? 'girl' : 'boy';
+        const apiGender = childProfile.gender.toLowerCase() === 'female' ? 'girl' : 'boy';
+
         const result = await nutripeekApi.calculateNutrientGap({
           child_profile: {
             age: parseInt(childProfile.age, 10),
@@ -78,8 +71,40 @@ export default function NutriRecommendPage() {
           ingredient_ids: ingredientIds
         });
 
-        setResults(result);
-        processNutrients(result);
+        const missing = Object.entries(result.nutrient_gaps)
+          .filter(([_, info]) => info.recommended_intake > 0 && info.current_intake / info.recommended_intake < 1)
+          .map(([name, info]) => ({
+            name,
+            gap: info.gap,
+            unit: info.unit,
+            recommended_intake: info.recommended_intake,
+            current_intake: info.current_intake
+          }));
+
+        const finalResult = { ...result, missing_nutrients: missing };
+        setResults(finalResult);
+
+        const previousNotes = storageService.getLocalItem({
+          key: 'nutri_notes',
+          defaultValue: [],
+        }) as any[];
+
+        const newNote = {
+          id: Date.now(),
+          childName: childProfile.name,
+          childGender: childProfile.gender,
+          summary: {
+            totalCalories: result.total_energy_kj,
+            missingCount: missing.length,
+            excessCount: result.excess_nutrients?.length ?? 0,
+          },
+          nutrient_gaps: result.nutrient_gaps,
+          createdAt: new Date().toISOString(),
+        };
+
+        const updatedNotes = [...previousNotes, newNote];
+        storageService.setLocalItem('nutri_notes', updatedNotes);
+
       } catch (err) {
         console.error('Error fetching recommendations:', err);
         setError('Failed to load recommendations. Please try again.');
@@ -87,21 +112,9 @@ export default function NutriRecommendPage() {
         setLoading(false);
       }
     };
+
     fetchRecommendations();
   }, [ingredientIds, selectedChildId]);
-
-  const processNutrients = (data: NutrientGapResponse) => {
-    if (!data.nutrient_gaps) return;
-    const list = Object.entries(data.nutrient_gaps).map(([name, info]) => ({
-      name,
-      gap: info?.gap ?? 0,
-      unit: info?.unit ?? ''
-    }));
-    setProcessedNutrients({
-      missingNutrients: list.filter(n => n.gap < 0),
-      excessNutrients: list.filter(n => n.gap > 0)
-    });
-  };
 
   const handleScanAgain = () => {
     clearIngredientIds();
@@ -109,67 +122,43 @@ export default function NutriRecommendPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-600">
-        {error}
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center text-red-600">{error}</div>;
   }
 
   if (!results) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        No recommendation data available.
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-palette-secondary-light px-4 pt-24 md:pt-28 pb-12">
-      <div className="max-w-6xl mx-auto">
-   
+    <div className="min-h-screen w-full bg-palette-secondary-light">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-12">
+        {/* Back Button */}
+        <div className="flex justify-start mb-6">
+          <BackButton to="/NutriGap" label=" Back " />
+        </div>
+
+        {/* Title & Avatar */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-palette-primary">
-            Nutrition Insights
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-palette-primary">Nutrition Gap Balance</h1>
           {selectedChild && (
-            <p className="text-gray-600 mt-2">
-              Personalized for {selectedChild.name}, {selectedChild.age} years old
-            </p>
+            <div className="flex justify-center mt-4">
+              <ChildAvatar
+                name={selectedChild.name}
+                gender={selectedChild.gender}
+                size={80}
+              />
+            </div>
           )}
         </div>
 
-   
-        <div className="flex flex-col lg:flex-row gap-10">
- 
-          <div className="flex-1 bg-white p-6 rounded-2xl shadow-sm flex flex-col h-full">
-            <h2 className="text-2xl font-semibold text-palette-primary mb-4">
-              Comparison Against Standard Guidelines
-            </h2>
-            <RecommendationComparison
-              missingNutrients={processedNutrients.missingNutrients}
-              excessNutrients={processedNutrients.excessNutrients}
-            />
-          </div>
+        {/* Nutrient Cards */}
+        <RecommendationComparison missingNutrients={results.missing_nutrients ?? []} />
 
-   
-          <div className="flex-1 bg-white p-6 rounded-2xl shadow-sm flex flex-col h-full">
-            <h2 className="text-2xl font-semibold text-palette-primary mb-4">
-              Detailed Food Group Information
-            </h2>
-            <FoodGroupDetails gaps={results.nutrient_gaps} />
-          </div>
-        </div>
-
-     
+        {/* CTA Button */}
         <div className="flex justify-center mt-12">
           <button
             onClick={handleScanAgain}
@@ -182,4 +171,5 @@ export default function NutriRecommendPage() {
     </div>
   );
 }
+
 
