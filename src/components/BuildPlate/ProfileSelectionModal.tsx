@@ -3,13 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { X } from 'phosphor-react';
 import storageService from '@/libs/StorageService';
-
-interface ChildProfile {
-  name: string;
-  age: string;
-  gender: string;
-  allergies: string[];
-}
+import { ChildProfile } from '@/types/profile';
 
 interface ProfileSelectionModalProps {
   isOpen: boolean;
@@ -114,7 +108,7 @@ export default function ProfileSelectionModal({
             <div className="mt-3">
               <span className="text-gray-600 block mb-1">Allergies:</span>
               <div className="flex flex-wrap gap-1">
-                {profile.allergies.length > 0 ? (
+                {profile.allergies && profile.allergies.length > 0 ? (
                   profile.allergies.map((allergy, idx) => (
                     <span
                       key={idx}
@@ -145,7 +139,7 @@ export default function ProfileSelectionModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-b from-gray-600/50 to-gray-800/50 backdrop-blur-md"
           onClick={onClose}
         >
           <motion.div 
@@ -153,7 +147,7 @@ export default function ProfileSelectionModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", damping: 20 }}
-            className="bg-white bg-opacity-95 rounded-xl p-6 w-full max-w-md shadow-xl relative"
+            className="bg-white/95 backdrop-blur-sm rounded-xl p-6 w-full max-w-md shadow-2xl relative"
             onClick={e => e.stopPropagation()}
           >
             <button 

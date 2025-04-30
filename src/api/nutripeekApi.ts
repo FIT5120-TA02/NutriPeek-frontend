@@ -1,8 +1,3 @@
-/**
- * NutriPeek API Service
- * Provides methods for interacting with the NutriPeek backend API
- */
-
 import { apiClient } from './apiClient';
 import {
   HealthCheckResponse,
@@ -17,7 +12,10 @@ import {
   NutrientGapRequest,
   NutrientGapResponse,
   FoodCategoriesResponse,
-  NutrientIntakeResponse
+  NutrientIntakeResponse,
+  FoodCategoryFunFactResponse,
+  FoodCategoryFunFactsResponse,
+  FoodRecommendation,
 } from './types';
 
 /**
@@ -157,13 +155,39 @@ export class NutriPeekApi {
   }
 
   /**
-   * Get 
-   * @param 
-   * @returns 
+   * Get recommended foods for a nutrient
+   * @param nutrient_name - The name of the nutrient
+   * @param limit - Maximum number of results to return (1-50)
+   * @returns List of recommended foods
    */
     async getRecommendedFoods(nutrient_name: string, limit: number = 10): Promise<FoodRecommendation[]> {
       return apiClient.get<FoodRecommendation[]>('/api/v1/nutrient/recommend-food', {nutrient_name, limit});
     }
+  
+  /**
+   * Get random fun facts for food categories
+   * @param count - Number of random fun facts to return (1-50)
+   * @param categories - Optional list of food categories to get fun facts for
+   * @returns List of food category fun facts
+   */
+  async getFoodCategoryFunFacts(count: number = 5, categories?: string[]): Promise<FoodCategoryFunFactsResponse> {
+    const params: Record<string, any> = { count };
+    
+    if (categories && categories.length > 0) {
+      params.categories = categories;
+    }
+    
+    return apiClient.get<FoodCategoryFunFactsResponse>('/api/v1/food-category/fun-facts', params);
+  }
+
+  /**
+   * Get a fun fact for a specific food category
+   * @param category - The food category name
+   * @returns Fun fact for the specified food category
+   */
+  async getFoodCategoryFunFact(category: string): Promise<FoodCategoryFunFactResponse> {
+    return apiClient.get<FoodCategoryFunFactResponse>(`/api/v1/food-category/fun-facts/${category}`);
+  }
 }
 
 // Export a singleton instance

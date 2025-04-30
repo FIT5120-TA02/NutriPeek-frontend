@@ -1,16 +1,10 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import storageService from "@/libs/StorageService";
 import Dropdown from "@/components/ui/Dropdown";
-
-interface ChildProfile {
-  name: string;
-  age: string;
-  gender: string;
-  allergies: string[];
-}
+import { ChildProfile } from "@/types/profile";
 
 export default function ChildInfoPage() {
   const [childName, setChildName] = useState('');

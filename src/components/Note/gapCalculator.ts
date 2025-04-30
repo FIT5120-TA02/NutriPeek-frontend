@@ -1,16 +1,5 @@
-interface NutrientInfo {
-  gap: number;
-  unit: string;
-  current_intake: number;
-  recommended_intake: number;
-}
-
-interface FoodItem {
-  id: string;
-  name: string;
-  imageUrl?: string;
-  nutrients?: Record<string, number>; // key: nutrient name, value: amount
-}
+import { FoodItem } from '@/types/notes';
+import { NutrientInfo } from '@/api/types';
 
 interface NoteData {
   id: string;

@@ -63,3 +63,20 @@
 .bg-secondary-30 { background-color: rgba(var(--color-secondary), 0.3); }
 .bg-secondary-20 { background-color: rgba(var(--color-secondary), 0.2); }
 .bg-secondary-10 { background-color: rgba(var(--color-secondary), 0.1); }
+
+/* 3D Card Flip Animation Styles */
+.perspective-500 {
+  perspective: 500px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}

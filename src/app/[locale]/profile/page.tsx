@@ -9,13 +9,7 @@ import Dropdown from "@/components/ui/Dropdown";
 import { motion } from "framer-motion";
 import FloatingEmojisLayout from "@/components/layouts/FloatingEmojisLayout";
 import ChildAvatar from '@/components/ui/ChildAvatar';
-
-interface ChildProfile {
-  name: string;
-  age: string;
-  gender: string;
-  allergies: string[];
-}
+import { ChildProfile } from "@/types/profile";
 
 const CHILDREN_KEY = "user_children";
 
@@ -292,14 +286,14 @@ export default function ProfilePage() {
                                 <span
                                   key={item}
                                   onClick={() => {
-                                    if (editChild?.allergies.includes(item)) {
-                                      setEditChild(prev => prev ? { ...prev, allergies: prev.allergies.filter(a => a !== item) } : null);
+                                    if (editChild?.allergies && editChild?.allergies.includes(item)) {
+                                      setEditChild(prev => prev && prev.allergies ? { ...prev, allergies: prev.allergies.filter(a => a !== item) } : null);
                                     } else {
-                                      setEditChild(prev => prev ? { ...prev, allergies: [...prev.allergies, item] } : null);
+                                      setEditChild(prev => prev && prev.allergies ? { ...prev, allergies: [...prev.allergies, item] } : null);
                                     }
                                   }}
                                   className={`cursor-pointer px-3 py-1 rounded-full text-sm font-medium ${
-                                    editChild?.allergies.includes(item)
+                                    editChild?.allergies && editChild?.allergies.includes(item)
                                       ? 'bg-green-200 text-green-800'
                                       : 'bg-gray-200 text-gray-700'
                                   }`}
@@ -331,14 +325,14 @@ export default function ProfilePage() {
                       ) : (
                         <>
                           <div className="flex items-center mb-4">
-                            <ChildAvatar name={child.name} age={child.age} gender={child.gender} />
+                            <ChildAvatar name={child.name} gender={child.gender} />
                           </div>
                           <p><strong>Age:</strong> {child.age} years</p>
                           <p><strong>Gender:</strong> {child.gender}</p>
                           <div className="mt-4">
                             <p className="font-semibold mb-2">Allergies:</p>
                             <div className="flex flex-wrap gap-2">
-                              {child.allergies.length > 0 ? (
+                              {child.allergies && child.allergies.length > 0 ? (
                                 child.allergies.map((allergy, idx) => (
                                   <span
                                     key={idx}

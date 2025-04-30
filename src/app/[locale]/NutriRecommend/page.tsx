@@ -4,23 +4,29 @@ import { useEffect, useState } from 'react';
 import { useNutrition } from '@/contexts/NutritionContext';
 import storageService from '@/libs/StorageService';
 import { nutripeekApi } from '@/api/nutripeekApi';
-import { NutrientGapResponse } from '@/api/types';
+import { NutrientGapResponse, NutrientGapDetails } from '@/api/types';
+import { NutritionalNote } from '@/types/notes';
 import RecommendationComparison from '@/components/NutriGapChart/RecommendationComparison';
 import { useRouter } from 'next/navigation';
 import ChildAvatar from '@/components/ui/ChildAvatar';
 import BackButton from '@/components/ui/BackButton';
+import { ChildProfile } from '@/types/profile';
 
-interface ChildProfile {
-  name: string;
-  age: string;
-  gender: string;
-  allergies: string[];
+interface ExtendedNutrientGapResponse extends Omit<NutrientGapResponse, 'missing_nutrients'> {
+  missing_nutrients: NutrientGapDetails[];
+  total_energy_kj?: number;
 }
 
+/**
+ * NutriRecommend page component
+ * 
+ * Displays nutrition gap analysis and recommendations based on scanned food items
+ * and the selected child's profile.
+ */
 export default function NutriRecommendPage() {
   const { ingredientIds, selectedChildId, clearIngredientIds } = useNutrition();
   const router = useRouter();
-  const [results, setResults] = useState<NutrientGapResponse | null>(null);
+  const [results, setResults] = useState<ExtendedNutrientGapResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
@@ -30,6 +36,7 @@ export default function NutriRecommendPage() {
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
+        // Check for stored results if no ingredients selected
         if (ingredientIds.length === 0) {
           const storedResults = localStorage.getItem('nutripeekGapResults');
           if (storedResults) {
@@ -41,6 +48,7 @@ export default function NutriRecommendPage() {
           return;
         }
 
+        // Get child profiles from storage
         const childProfiles = storageService.getLocalItem({
           key: CHILDREN_KEY,
           defaultValue: []
@@ -51,6 +59,7 @@ export default function NutriRecommendPage() {
           return;
         }
 
+        // Get selected child profile
         const profileIndex = selectedChildId ?? 0;
         const childProfile = childProfiles[profileIndex];
 
@@ -61,8 +70,10 @@ export default function NutriRecommendPage() {
 
         setSelectedChild(childProfile);
 
+        // Map gender to API format
         const apiGender = childProfile.gender.toLowerCase() === 'female' ? 'girl' : 'boy';
 
+        // Calculate nutrient gap
         const result = await nutripeekApi.calculateNutrientGap({
           child_profile: {
             age: parseInt(childProfile.age, 10),
@@ -71,7 +82,8 @@ export default function NutriRecommendPage() {
           ingredient_ids: ingredientIds
         });
 
-        const missing = Object.entries(result.nutrient_gaps)
+        // Transform missing nutrients into detailed format
+        const missingNutrients = Object.entries(result.nutrient_gaps)
           .filter(([_, info]) => info.recommended_intake > 0 && info.current_intake / info.recommended_intake < 1)
           .map(([name, info]) => ({
             name,
@@ -81,21 +93,29 @@ export default function NutriRecommendPage() {
             current_intake: info.current_intake
           }));
 
-        const finalResult = { ...result, missing_nutrients: missing };
-        setResults(finalResult);
+        // Create extended response with typed missing nutrients
+        const extendedResult: ExtendedNutrientGapResponse = { 
+          ...result, 
+          missing_nutrients: missingNutrients,
+          total_energy_kj: result.total_calories 
+        };
+        
+        setResults(extendedResult);
 
+        // Save to nutritional notes
         const previousNotes = storageService.getLocalItem({
           key: 'nutri_notes',
           defaultValue: [],
-        }) as any[];
+        }) as NutritionalNote[];
 
-        const newNote = {
+        // Create a new nutritional note
+        const newNote: NutritionalNote = {
           id: Date.now(),
           childName: childProfile.name,
           childGender: childProfile.gender,
           summary: {
-            totalCalories: result.total_energy_kj,
-            missingCount: missing.length,
+            totalCalories: extendedResult.total_energy_kj,
+            missingCount: missingNutrients.length,
             excessCount: result.excess_nutrients?.length ?? 0,
           },
           nutrient_gaps: result.nutrient_gaps,
@@ -138,7 +158,7 @@ export default function NutriRecommendPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-12">
         {/* Back Button */}
         <div className="flex justify-start mb-6">
-          <BackButton to="/NutriGap" label=" Back " />
+          <BackButton href="/NutriGap" label=" Back " />
         </div>
 
         {/* Title & Avatar */}
@@ -156,7 +176,7 @@ export default function NutriRecommendPage() {
         </div>
 
         {/* Nutrient Cards */}
-        <RecommendationComparison missingNutrients={results.missing_nutrients ?? []} />
+        <RecommendationComparison missingNutrients={results.missing_nutrients} />
 
         {/* CTA Button */}
         <div className="flex justify-center mt-12">

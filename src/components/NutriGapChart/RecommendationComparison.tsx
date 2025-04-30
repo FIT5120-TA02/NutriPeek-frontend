@@ -5,114 +5,118 @@ import { nutripeekApi } from '@/api/nutripeekApi';
 import { mapNutrientNameToDbField } from '@/utils/nutritionMappings';
 import { getFoodImageUrl } from '@/utils/assetHelpers';
 import storageService from '@/libs/StorageService';
-
-interface NutrientInfo {
-  name: string;
-  unit: string;
-  gap: number;
-  recommended_intake?: number;
-  current_intake?: number;
-}
-
-interface RecommendationComparisonProps {
-  missingNutrients: NutrientInfo[];
-}
-
-interface FoodRecommendation {
-  nutrient: string;
-  foodCategories: string[];
-}
-
-interface SelectedFood {
-  id: string;
-  name: string;
-  imageUrl?: string;
-  weight: number;
-}
-
+import { NutrientRecommendation, NutrientGapDetails } from '@/api/types';
 
 const NOTES_KEY = 'nutri_notes';
 
+interface RecommendationComparisonProps {
+  missingNutrients: NutrientGapDetails[];
+}
+
+
+
+/**
+ * RecommendationComparison component displays missing nutrients and their recommended foods
+ * 
+ * This component shows a list of missing nutrients with their current intake percentages
+ * and recommended food categories to help address the nutritional gaps.
+ */
 export default function RecommendationComparison({
   missingNutrients,
 }: RecommendationComparisonProps) {
-  const [recommendations, setRecommendations] = useState<FoodRecommendation[]>([]);
+  const [recommendations, setRecommendations] = useState<NutrientRecommendation[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
 
+  // Fetch recommended foods for each missing nutrient
   useEffect(() => {
     async function fetchGroupedRecommendations() {
-      const allRecs: FoodRecommendation[] = [];
+      const allRecommendations: NutrientRecommendation[] = [];
 
       for (const nutrient of missingNutrients) {
         const dbField = mapNutrientNameToDbField(nutrient.name);
         if (!dbField) continue;
 
         try {
-          const recs = await nutripeekApi.getRecommendedFoods(dbField, 10);
-          if (!Array.isArray(recs)) continue;
+          const recommendations = await nutripeekApi.getRecommendedFoods(dbField, 10);
+          if (!Array.isArray(recommendations)) continue;
 
-          const categories = Array.from(
-            new Set(recs.map((r) => r.food_category).filter(Boolean))
+          // Extract unique food categories from recommendations
+          const foodCategories = Array.from(
+            new Set(recommendations.map((r) => r.food_category).filter(Boolean))
           );
 
-          if (categories.length > 0) {
-            allRecs.push({ nutrient: nutrient.name, foodCategories: categories });
+          if (foodCategories.length > 0) {
+            allRecommendations.push({ 
+              nutrient: nutrient.name, 
+              foodCategories 
+            });
           }
         } catch (error) {
-          console.error(`fetch recommendations for ${nutrient.name} failed`, error);
+          console.error(`Failed to fetch recommendations for ${nutrient.name}:`, error);
         }
       }
 
-      setRecommendations(allRecs);
+      setRecommendations(allRecommendations);
     }
 
     fetchGroupedRecommendations();
   }, [missingNutrients]);
 
+  /**
+   * Save selected food recommendations to notes
+   */
   const handleSaveToNote = () => {
     if (missingNutrients.length === 0 || selectedFoods.length === 0) {
       alert('Please select at least one food item.');
       return;
     }
 
-    const prev = storageService.getLocalItem({ key: NOTES_KEY, defaultValue: [] });
+    const previousNotes = storageService.getLocalItem({ 
+      key: NOTES_KEY, 
+      defaultValue: [] 
+    }) as any[];
 
-    const note = {
+    const newNote = {
       id: Date.now().toString(),
       timestamp: Date.now(),
-      selectedFoods: selectedFoods.map((cat) => ({
-        id: cat,
-        name: cat,
-        imageUrl: getFoodImageUrl(cat),
+      selectedFoods: selectedFoods.map((category) => ({
+        id: category,
+        name: category,
+        imageUrl: getFoodImageUrl(category),
       })),
       nutrient_gaps: missingNutrients.reduce((acc, item) => {
         acc[item.name] = {
+          name: item.name,
           gap: item.gap,
           unit: item.unit,
           recommended_intake: item.recommended_intake,
           current_intake: item.current_intake,
         };
         return acc;
-      }, {} as Record<string, NutrientInfo>)
+      }, {} as Record<string, NutrientGapDetails>)
     };
 
-    storageService.setLocalItem(NOTES_KEY, [...prev, note]);
+    storageService.setLocalItem(NOTES_KEY, [...previousNotes, newNote]);
     alert('Saved to My Notes!');
   };
 
+  /**
+   * Toggle food selection
+   */
   const toggleFood = (food: string) => {
     setSelectedFoods((prev) =>
       prev.includes(food) ? prev.filter((f) => f !== food) : [...prev, food]
     );
   };
 
-  const orderedList = missingNutrients
-    .filter((n) => n.recommended_intake && n.recommended_intake > 0)
+  // Sort nutrients by percentage of daily requirement
+  const orderedNutrients = missingNutrients
+    .filter((n) => n.recommended_intake > 0)
     .sort((a, b) => {
-      const percA = (a.current_intake! / a.recommended_intake!) * 100;
-      const percB = (b.current_intake! / b.recommended_intake!) * 100;
-      return percA - percB;
+      const percentageA = (a.current_intake / a.recommended_intake) * 100;
+      const percentageB = (b.current_intake / b.recommended_intake) * 100;
+      return percentageA - percentageB;
     });
 
   return (
@@ -120,9 +124,9 @@ export default function RecommendationComparison({
       <h3 className="text-2xl font-bold text-gray-800 mb-4">Missing Nutrients</h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-        {orderedList.map((nutrient) => {
-          const percentage = nutrient.recommended_intake! > 0
-            ? (nutrient.current_intake! / nutrient.recommended_intake!) * 100
+        {orderedNutrients.map((nutrient) => {
+          const percentage = nutrient.recommended_intake > 0
+            ? (nutrient.current_intake / nutrient.recommended_intake) * 100
             : 0;
 
           const matchingRecommendation = recommendations.find(
@@ -142,27 +146,29 @@ export default function RecommendationComparison({
                 <span className="text-sm text-gray-500">{percentage.toFixed(1)}%</span>
               </div>
               <div className="w-full h-2 mt-2 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-red-400" style={{ width: `${percentage}%` }}></div>
+                <div className="h-full bg-red-400" style={{ width: `${Math.min(percentage, 100)}%` }}></div>
               </div>
               <div className="text-right text-xs text-gray-500 mt-1">
-                {nutrient.current_intake?.toFixed(2)} {nutrient.unit}
+                {nutrient.current_intake.toFixed(2)} {nutrient.unit}
               </div>
 
               {isOpen && matchingRecommendation && (
                 <div className="mt-3">
                   <p className="text-xs text-gray-500 italic mb-1">Click to select:</p>
                   <ul className="flex flex-wrap gap-2">
-                    {matchingRecommendation.foodCategories.map((cat) => (
+                    {matchingRecommendation.foodCategories.map((category: string) => (
                       <li
-                        key={cat}
+                        key={category}
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleFood(cat);
+                          toggleFood(category);
                         }}
-                        className={`flex items-center gap-2 px-2 py-1 rounded-lg border text-sm cursor-pointer transition ${selectedFoods.includes(cat) ? 'bg-green-100 border-green-400' : 'bg-gray-100'}`}
+                        className={`flex items-center gap-2 px-2 py-1 rounded-lg border text-sm cursor-pointer transition ${
+                          selectedFoods.includes(category) ? 'bg-green-100 border-green-400' : 'bg-gray-100'
+                        }`}
                       >
-                        <img src={getFoodImageUrl(cat)} alt={cat} className="w-5 h-5 object-contain" />
-                        <span className="capitalize">{cat}</span>
+                        <img src={getFoodImageUrl(category)} alt={category} className="w-5 h-5 object-contain" />
+                        <span className="capitalize">{category}</span>
                       </li>
                     ))}
                   </ul>

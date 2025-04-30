@@ -8,7 +8,7 @@ import nutriPeekLogo from '@/../public/nutripeek.png';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const isHiddenPage = pathname === '/' || pathname === '/Welcome';
+  const isHiddenPage = pathname === '/';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (isHiddenPage) {
@@ -40,8 +40,9 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">Profile</Link>
-            <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors">Build Plate</Link>
-            <Link href="/MyNote" className="text-gray-600 hover:text-green-600 transition-colors">My Notes</Link>
+            <Link href="/MyNote" className="text-gray-600 hover:text-green-600 transition-colors">Notes</Link>
+            <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors">Build Plate</Link>      
+            <Link href="/MatchAndLearn" className="text-gray-600 hover:text-green-600 transition-colors">Match & Learn</Link>
             <Link
               href="/NutriScan"
               className="ml-4 px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
