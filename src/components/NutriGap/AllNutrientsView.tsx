@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import UnitFormatter from '@/components/UnitFormatter/UnitFormatter';
+import { ChildEnergyRequirementsResponse } from '@/api/types';
 
 interface NutrientData {
   name: string;
@@ -9,16 +10,46 @@ interface NutrientData {
   current_intake: number;
   unit: string;
   gap: number;
+  isAdjustedForActivity?: boolean;
 }
 
 interface AllNutrientsViewProps {
   gaps: Record<string, NutrientData>;
+  energyRequirements?: ChildEnergyRequirementsResponse | null;
 }
 
-export default function AllNutrientsView({ gaps }: AllNutrientsViewProps) {
+export default function AllNutrientsView({ gaps, energyRequirements }: AllNutrientsViewProps) {
   const [sortBy, setSortBy] = useState<'name' | 'percentage'>('percentage');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'deficient' | 'excess' | 'optimal'>('all');
+
+  // Identify the energy nutrient key
+  const energyNutrientKey = useMemo(() => {
+    return Object.keys(gaps).find(key => 
+      gaps[key].name.toLowerCase().includes('energy')
+    );
+  }, [gaps]);
+  
+  // Apply energy adjustments if needed
+  const adjustedGaps = useMemo(() => {
+    if (!energyRequirements || !energyNutrientKey) return gaps;
+    
+    const adjustedGaps = { ...gaps };
+    const baseEnergy = adjustedGaps[energyNutrientKey];
+    const adjustedTarget = energyRequirements.estimated_energy_requirement;
+    
+    // Only adjust if the estimated requirement is higher
+    if (adjustedTarget > baseEnergy.recommended_intake) {
+      adjustedGaps[energyNutrientKey] = {
+        ...baseEnergy,
+        recommended_intake: adjustedTarget,
+        gap: Math.max(0, adjustedTarget - baseEnergy.current_intake),
+        isAdjustedForActivity: true // Add flag to track adjusted nutrients
+      };
+    }
+    
+    return adjustedGaps;
+  }, [gaps, energyRequirements, energyNutrientKey]);
 
   const calculatePercentage = (nutrient: NutrientData) => {
     if (nutrient.recommended_intake === 0) return 0;
@@ -42,7 +73,7 @@ export default function AllNutrientsView({ gaps }: AllNutrientsViewProps) {
   };
 
   const filteredAndSortedNutrients = useMemo(() => {
-    let result = Object.values(gaps);
+    let result = Object.values(adjustedGaps);
 
     // Apply search filter
     if (searchTerm) {
@@ -79,7 +110,7 @@ export default function AllNutrientsView({ gaps }: AllNutrientsViewProps) {
         return percB - percA; // Sort by highest percentage first
       }
     });
-  }, [gaps, sortBy, searchTerm, filterBy]);
+  }, [adjustedGaps, sortBy, searchTerm, filterBy]);
 
   return (
     <div className="w-full">
@@ -132,7 +163,7 @@ export default function AllNutrientsView({ gaps }: AllNutrientsViewProps) {
       
       {/* Results count */}
       <p className="mb-4 text-sm text-gray-500">
-        Showing {filteredAndSortedNutrients.length} of {Object.values(gaps).length} nutrients
+        Showing {filteredAndSortedNutrients.length} of {Object.values(adjustedGaps).length} nutrients
       </p>
       
       {/* Nutrient List */}
@@ -145,12 +176,25 @@ export default function AllNutrientsView({ gaps }: AllNutrientsViewProps) {
               const percentage = calculatePercentage(nutrient);
               const barColor = getBarColor(percentage);
               const statusText = getStatusText(percentage);
+              const isAdjustedEnergy = energyNutrientKey && 
+                nutrient.name.toLowerCase().includes('energy') && 
+                (nutrient as any).isAdjustedForActivity;
               
               return (
-                <div key={index} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                <div 
+                  key={index} 
+                  className={`p-4 border rounded-lg hover:shadow-md transition-shadow ${isAdjustedEnergy ? 'border-blue-300 bg-blue-50' : ''}`}
+                >
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-800">{nutrient.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-gray-800">{nutrient.name}</h3>
+                        {isAdjustedEnergy && (
+                          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                            Adjusted for Activity
+                          </span>
+                        )}
+                      </div>
                       <span className={`text-sm ${percentage < 90 ? 'text-red-500' : percentage > 110 ? 'text-amber-500' : 'text-green-500'}`}>
                         {statusText}
                       </span>
@@ -197,6 +241,15 @@ export default function AllNutrientsView({ gaps }: AllNutrientsViewProps) {
                       ></div>
                     </div>
                   </div>
+                  
+                  {isAdjustedEnergy && (
+                    <div className="mt-2 text-xs text-blue-700 bg-blue-50 p-2 rounded">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Target energy requirement increased due to high activity level.
+                    </div>
+                  )}
                 </div>
               );
             })

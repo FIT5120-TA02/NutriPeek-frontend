@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ChildProfile } from '@/types/profile';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import storageService from '@/libs/StorageService';
+import { ChildEnergyRequirementsResponse } from '@/api/types';
 import {
   RecommendHeader,
   NutrientList,
@@ -31,11 +32,23 @@ export default function NutriRecommendPage() {
   const [selectedFoods, setSelectedFoods] = useState<FoodItem[]>([]);
   const [activeNutrient, setActiveNutrient] = useState<string | null>(null);
   const [totalEnergy, setTotalEnergy] = useState<number | null>(null);
+  const [energyRequirements, setEnergyRequirements] = useState<ChildEnergyRequirementsResponse | null>(null);
+  const [hasAdjustedEnergy, setHasAdjustedEnergy] = useState(false);
 
   // Fetch initial data
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
+        // Check for energy requirements based on activity level
+        const storedEnergyRequirements = storageService.getLocalItem({
+          key: 'energyRequirements',
+          defaultValue: null
+        });
+        
+        if (storedEnergyRequirements) {
+          setEnergyRequirements(storedEnergyRequirements);
+        }
+        
         if (ingredientIds.length === 0) {
           const storedResults = localStorage.getItem('nutripeekGapResults');
           if (storedResults) {
@@ -45,6 +58,13 @@ export default function NutriRecommendPage() {
             setMissingNutrients(missingNutrients);
             setTotalEnergy(totalEnergy);
             setSelectedChild(childProfile);
+            
+            // Check if any nutrients were adjusted for activity
+            const hasAdjusted = missingNutrients.some(nutrient => 
+              nutrient.isAdjustedForActivity && 
+              nutrient.name.toLowerCase().includes('energy')
+            );
+            setHasAdjustedEnergy(hasAdjusted);
             
             if (missingNutrients.length > 0) {
               setActiveNutrient(missingNutrients[0].name);
@@ -88,6 +108,13 @@ export default function NutriRecommendPage() {
         
         setMissingNutrients(missingNutrients);
         setTotalEnergy(totalEnergy);
+        
+        // Check if any nutrients were adjusted for activity
+        const hasAdjusted = missingNutrients.some(nutrient => 
+          nutrient.isAdjustedForActivity && 
+          nutrient.name.toLowerCase().includes('energy')
+        );
+        setHasAdjustedEnergy(hasAdjusted);
         
         if (missingNutrients.length > 0) {
           setActiveNutrient(missingNutrients[0].name);
@@ -245,6 +272,27 @@ export default function NutriRecommendPage() {
       <div className="w-full px-4 py-16 max-w-7xl mx-auto">
         {/* Header with Back Button, Title, and Avatar in one row */}
         <RecommendHeader selectedChild={selectedChild} />
+
+        {/* Display message about adjusted energy if applicable */}
+        {hasAdjustedEnergy && energyRequirements && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium">Adjusted Energy Requirements</h3>
+                <p className="mt-1 text-sm">
+                  Due to your child's high activity level (PAL: {energyRequirements.input_physical_activity_level.toFixed(2)}), 
+                  their energy requirements have been increased to {energyRequirements.estimated_energy_requirement.toFixed(0)} {energyRequirements.unit}.
+                  Consider adding energy-rich foods to meet these needs.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 w-full">

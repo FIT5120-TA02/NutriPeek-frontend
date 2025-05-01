@@ -144,6 +144,7 @@ export interface NutrientInfo {
   gap: number;
   gap_percentage: number;
   category?: string | null;
+  isAdjustedForActivity?: boolean;
 }
 
 export interface NutrientGapRequest {

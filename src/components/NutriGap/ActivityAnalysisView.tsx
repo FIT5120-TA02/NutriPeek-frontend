@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { ActivityResult } from '@/api/types';
+import { ActivityResult, ChildEnergyRequirementsResponse } from '@/api/types';
 
 interface ActivityAnalysisViewProps {
   activityResult: ActivityResult | null;
+  energyRequirements?: ChildEnergyRequirementsResponse | null;
 }
 
 /**
@@ -15,8 +16,11 @@ interface ActivityAnalysisViewProps {
  * 
  * The ideal PAL is considered to be around 1.6 (moderate activity),
  * below 1.4 is considered low, and above 1.8 is considered high.
+ * 
+ * When energy requirements are provided, it also displays the estimated energy requirements
+ * based on the child's activity level.
  */
-export default function ActivityAnalysisView({ activityResult }: ActivityAnalysisViewProps) {
+export default function ActivityAnalysisView({ activityResult, energyRequirements }: ActivityAnalysisViewProps) {
   // If no activity result, show placeholder
   if (!activityResult) {
     return (
@@ -69,6 +73,32 @@ export default function ActivityAnalysisView({ activityResult }: ActivityAnalysi
           </div>
         </div>
       </div>
+
+      {/* Energy Requirements Card (shown when available) */}
+      {energyRequirements && (
+        <div className="bg-white border border-blue-200 rounded-xl shadow-sm p-6">
+          <h3 className="text-xl font-semibold mb-4">Energy Requirements</h3>
+          
+          <div className="flex items-center mb-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-600">Based on the current activity level ({activityResult.pal.toFixed(2)}), the estimated energy requirement is:</p>
+              <p className="text-xl font-bold text-blue-600 mt-1">
+                {energyRequirements.estimated_energy_requirement.toFixed(0)} {energyRequirements.unit}
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
+            <p>This is an adjusted energy requirement based on your child's specific activity level. 
+            The energy needs increase with higher activity levels.</p>
+          </div>
+        </div>
+      )}
 
       {/* METy Minutes Card */}
       <div className="bg-white border rounded-xl shadow-sm p-6">
@@ -160,6 +190,12 @@ export default function ActivityAnalysisView({ activityResult }: ActivityAnalysi
               <li>Build in rest days to prevent burnout</li>
               <li>Watch for signs of overtraining</li>
               <li>Maintain a balance between physical activity and other aspects of development</li>
+              {energyRequirements && (
+                <li className="font-medium text-blue-700">
+                  Increase energy intake to meet the higher energy requirements 
+                  ({energyRequirements.estimated_energy_requirement.toFixed(0)} {energyRequirements.unit})
+                </li>
+              )}
             </ul>
           </div>
         )}

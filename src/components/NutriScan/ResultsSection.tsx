@@ -138,18 +138,31 @@ export default function ResultsSection({
       const hasActivityData = selectedActivities && selectedActivities.length > 0;
       
       // If we have activity data but haven't calculated PAL yet, calculate it now
-      if (hasActivityData && !activityPAL) {
-        // Get the current child's age
+      let calculatedPAL = activityPAL;
+      let energyRequirements = null;
+      
+      if (hasActivityData) {
+        // Get the current child's age and gender
         const childProfile = childProfiles[currentProfileIndex];
         const childAge = parseInt(childProfile.age, 10);
+        const childGender = childProfile.gender.toLowerCase() === 'female' || childProfile.gender.toLowerCase() === 'girl' ? 'girl' : 'boy';
         
-        // If we have activities, calculate PAL directly using the ActivityEntry objects
         try {
-          const activityResult = await nutripeekApi.calculatePAL(childAge, selectedActivities);
-          storageService.setLocalItem('activityResult', activityResult);
-          storageService.setLocalItem('activityPAL', activityResult.pal);
+          if (!calculatedPAL) {
+            // Calculate PAL first if we don't have it
+            const activityResult = await nutripeekApi.calculatePAL(childAge, selectedActivities);
+            calculatedPAL = activityResult.pal;
+            storageService.setLocalItem('activityResult', activityResult);
+            storageService.setLocalItem('activityPAL', activityResult.pal);
+          }
+          
+          // Now get the target energy based on the PAL
+          if (calculatedPAL) {
+            energyRequirements = await nutripeekApi.getTargetEnergy(childAge, childGender, calculatedPAL);
+            storageService.setLocalItem('energyRequirements', energyRequirements);
+          }
         } catch (error) {
-          console.error("Error calculating PAL:", error);
+          console.error("Error calculating PAL or target energy:", error);
         }
       }
       

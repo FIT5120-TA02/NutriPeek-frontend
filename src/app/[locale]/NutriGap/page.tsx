@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { NutrientGapResponse, ActivityResult } from '../../../api/types';
+import { NutrientGapResponse, ActivityResult, ChildEnergyRequirementsResponse } from '../../../api/types';
 import { useNutrition } from '../../../contexts/NutritionContext';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import storageService from '@/libs/StorageService';
@@ -21,6 +21,7 @@ export default function ResultsPage() {
   const { ingredientIds, clearIngredientIds, selectedChildId } = useNutrition();
   const [results, setResults] = useState<NutrientGapResponse | null>(null);
   const [activityResult, setActivityResult] = useState<ActivityResult | null>(null);
+  const [energyRequirements, setEnergyRequirements] = useState<ChildEnergyRequirementsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
@@ -81,6 +82,16 @@ export default function ResultsPage() {
         if (storedActivityResult) {
           setActivityResult(storedActivityResult);
           setIsActivityEnabled(true);
+          
+          // Check for energy requirements based on activity level
+          const storedEnergyRequirements = storageService.getLocalItem({ 
+            key: 'energyRequirements', 
+            defaultValue: null 
+          });
+          
+          if (storedEnergyRequirements) {
+            setEnergyRequirements(storedEnergyRequirements);
+          }
         }
       } catch (error) {
         console.error('Error calculating nutritional gap:', error);
@@ -185,6 +196,7 @@ export default function ResultsPage() {
               excessNutrients={results.excess_nutrients?.length || 0}
               allNutrients={results.nutrient_gaps}
               activityPAL={activityResult?.pal}
+              energyRequirements={energyRequirements}
               onViewRecommendations={handleViewRecommendations}
             />
           </div>
@@ -227,13 +239,19 @@ export default function ResultsPage() {
                   
                   {/* All Nutrients View (Conditional) */}
                   {showAllNutrients && (
-                    <AllNutrientsView gaps={results.nutrient_gaps} />
+                    <AllNutrientsView 
+                      gaps={results.nutrient_gaps} 
+                      energyRequirements={energyRequirements}
+                    />
                   )}
                 </div>
               )}
               
               {currentTab === 'activity' && (
-                <ActivityAnalysisView activityResult={activityResult} />
+                <ActivityAnalysisView 
+                  activityResult={activityResult}
+                  energyRequirements={energyRequirements}
+                />
               )}
             </AnalysisTabs>
           </div>

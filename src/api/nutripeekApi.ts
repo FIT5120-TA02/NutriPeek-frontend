@@ -218,8 +218,8 @@ export class NutriPeekApi {
    * @param pal - The PAL of the child
    * @returns The target energy for the child
    */
-  async getTargetEnergy(age: number, gender: string, pal: number): Promise<ChildEnergyRequirementsResponse> {
-    return apiClient.post<ChildEnergyRequirementsResponse>('/api/v1/child_energy_requirements/find-nearest-pal', { age, gender, pal });
+  async getTargetEnergy(age: number, gender: string, physical_activity_level: number): Promise<ChildEnergyRequirementsResponse> {
+    return apiClient.post<ChildEnergyRequirementsResponse>('/api/v1/child-energy-requirements/find-nearest-pal', { age, gender, physical_activity_level });
   }
 }
 
