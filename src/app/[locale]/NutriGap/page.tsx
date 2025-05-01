@@ -94,8 +94,8 @@ export default function ResultsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-green-50">
-        <div className="text-center">
+      <div className="min-h-screen w-full flex items-center justify-center bg-green-50">
+        <div className="text-center w-full">
           <div className="w-16 h-16 border-4 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">Analyzing nutrition data...</p>
         </div>
@@ -105,7 +105,7 @@ export default function ResultsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-green-50">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-green-50">
         <div className="bg-white p-8 rounded-xl shadow-md max-w-md w-full text-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -125,7 +125,7 @@ export default function ResultsPage() {
 
   if (!results) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-green-50">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-green-50">
         <div className="bg-white p-8 rounded-xl shadow-md max-w-md w-full text-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-amber-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -145,10 +145,10 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen w-full bg-green-50">
-      <div className="max-w-7xl mx-auto pt-24 pb-16 px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto pt-24 pb-16 px-6 lg:px-8 w-full">
         
         {/* Title */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 w-full">
           <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
             Nutritional Gap Analysis
           </h1>
@@ -158,7 +158,7 @@ export default function ResultsPage() {
         </div>
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
           {/* Left Side: Profile Summary */}
           <div className="lg:col-span-1">
             <ProfileSummary 
@@ -179,12 +179,12 @@ export default function ResultsPage() {
               isActivityEnabled={false} // Future feature
             >
               {currentTab === 'nutrients' && (
-                <div className="space-y-8">
+                <div className="space-y-8 w-full">
                   {/* Important Nutrients Dashboard */}
                   <ImportantNutrientsDashboard gaps={results.nutrient_gaps} />
                   
                   {/* Toggle Button for All Nutrients */}
-                  <div className="flex justify-center">
+                  <div className="flex justify-center w-full">
                     <button
                       onClick={() => setShowAllNutrients(!showAllNutrients)}
                       className="px-6 py-3 bg-gray-100 text-gray-800 hover:bg-gray-200 rounded-lg font-medium transition-colors flex items-center gap-2"
@@ -215,7 +215,7 @@ export default function ResultsPage() {
               )}
               
               {currentTab === 'activity' && (
-                <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500">
+                <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500 w-full">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
                   </svg>
@@ -228,7 +228,7 @@ export default function ResultsPage() {
         </div>
 
         {/* Scan Again Button */}
-        <div className="flex justify-center mt-12">
+        <div className="flex justify-center mt-12 w-full">
           <button
             onClick={handleScanAgain}
             className="px-8 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition text-lg font-semibold flex items-center gap-2"
