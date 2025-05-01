@@ -6,7 +6,7 @@ import storageService from '@/libs/StorageService';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import { NutrientGapResponse, NutrientGapDetails } from '@/api/types';
 import { NutritionalNote } from '@/types/notes';
-import RecommendationComparison from '@/components/NutriGapChart/RecommendationComparison';
+import RecommendationComparison from '@/components/NutriRecommend/RecommendationComparison';
 import { useRouter } from 'next/navigation';
 import ChildAvatar from '@/components/ui/ChildAvatar';
 import BackButton from '@/components/ui/BackButton';
@@ -146,7 +146,7 @@ export default function NutriRecommendPage() {
       emojisCount={15}
     >
       <div className="w-full px-6 py-20 max-w-7xl mx-auto">
-        <BackButton to="/NutriGap" label=" Back to Gap Overview" />
+        <BackButton href="/NutriGap" label=" Back to Gap Overview" />
 
         <motion.h1
           className="text-3xl md:text-4xl font-bold text-center text-green-700 mb-6"

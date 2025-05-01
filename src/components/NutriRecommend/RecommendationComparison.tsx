@@ -5,7 +5,7 @@ import { nutripeekApi } from '@/api/nutripeekApi';
 import { mapNutrientNameToDbField } from '@/utils/nutritionMappings';
 import { getFoodImageUrl } from '@/utils/assetHelpers';
 import storageService from '@/libs/StorageService';
-import { NutrientRecommendation, NutrientGapDetails } from '@/api/types';
+import { NutrientRecommendation, NutrientGapDetails, type FoodRecommendation } from '@/api/types';
 import UnitFormatter from '@/components/UnitFormatter/UnitFormatter';
 
 const NOTES_KEY = 'nutri_notes';
@@ -41,11 +41,11 @@ export default function RecommendationComparison({ missingNutrients }: Recommend
 
           for (const rec of recs) {
             const name = rec.food_category;
-            const rawValue = rec[dbField];
+            const rawValue = rec[dbField as keyof FoodRecommendation];
             if (!name || rawValue === undefined || rawValue === null) continue;
 
             const isMicrogram = nutrient.unit === 'μg';
-            const value = rawValue * (isMicrogram ? 1000 : 1);
+            const value = (typeof rawValue === 'number' ? rawValue : 0) * (isMicrogram ? 1000 : 1);
 
             if (!foodData[name]) {
               foodData[name] = {

@@ -8,8 +8,11 @@ import { nutripeekApi } from '@/api/nutripeekApi';
 import storageService from '@/libs/StorageService';
 import { ChildProfile } from '@/types/profile';
 
-import NutrientSummary from '@/components/NutriGapChart/NutrientSummary';
-import NutrientGapOverview from '@/components/NutriGapChart/NutrientGapBarChart';
+// Components
+import ProfileSummary from '@/components/NutriGap/ProfileSummary';
+import AnalysisTabs, { AnalysisType } from '@/components/NutriGap/AnalysisTabs';
+import ImportantNutrientsDashboard from '@/components/NutriGap/ImportantNutrientsDashboard';
+import AllNutrientsView from '@/components/NutriGap/AllNutrientsView';
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -18,6 +21,8 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
+  const [currentTab, setCurrentTab] = useState<AnalysisType>('nutrients');
+  const [showAllNutrients, setShowAllNutrients] = useState(false);
 
   const CHILDREN_KEY = 'user_children';
 
@@ -61,6 +66,8 @@ export default function ResultsPage() {
         });
 
         setResults(result);
+        // Store results for later use
+        localStorage.setItem('nutripeekGapResults', JSON.stringify(result));
       } catch (error) {
         console.error('Error calculating nutritional gap:', error);
         setError('Failed to calculate nutritional gap. Please try again.');
@@ -81,83 +88,158 @@ export default function ResultsPage() {
     router.push('/NutriRecommend');
   };
 
+  const handleTabChange = (tab: AnalysisType) => {
+    setCurrentTab(tab);
+  };
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-green-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Analyzing nutrition data...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-palette-secondary-light">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
-        <p className="text-gray-600">{error}</p>
-        <button
-          onClick={handleScanAgain}
-          className="mt-6 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-        >
-          Scan Food
-        </button>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-green-50">
+        <div className="bg-white p-8 rounded-xl shadow-md max-w-md w-full text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Error</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={handleScanAgain}
+            className="px-6 py-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
+          >
+            Scan Food
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!results) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-palette-secondary-light">
-        <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
-        <p className="text-gray-600">Please scan some food items first.</p>
-        <button
-          onClick={handleScanAgain}
-          className="mt-6 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-        >
-          Scan Food
-        </button>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-green-50">
+        <div className="bg-white p-8 rounded-xl shadow-md max-w-md w-full text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-amber-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
+          <p className="text-gray-600 mb-6">Please scan some food items first.</p>
+          <button
+            onClick={handleScanAgain}
+            className="px-6 py-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
+          >
+            Scan Food
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen w-full bg-green-50">
-      <div className="max-w-7xl mx-auto pt-32 px-6 lg:px-20">
+      <div className="max-w-7xl mx-auto pt-24 pb-16 px-6 lg:px-8">
         
         {/* Title */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
             Nutritional Gap Analysis
           </h1>
+          <p className="mt-2 text-lg text-gray-600">
+            Review your child's nutrition and get personalized recommendations
+          </p>
         </div>
 
-        {/* Content */}
-        <div className="flex flex-col lg:flex-row gap-10">
-          {/* Left Side: Summary */}
-          <div className="flex-1 flex">
-            <div className="flex flex-col justify-between w-full bg-white rounded-2xl shadow-md p-8">
-              <NutrientSummary 
-                results={results}
-                childName={selectedChild?.name}
-                childGender={selectedChild?.gender}
-                onViewRecommendations={handleViewRecommendations}
-              />
-            </div>
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Side: Profile Summary */}
+          <div className="lg:col-span-1">
+            <ProfileSummary 
+              profile={selectedChild}
+              totalCalories={results.total_calories || 0}
+              missingNutrients={results.missing_nutrients?.length || 0}
+              excessNutrients={results.excess_nutrients?.length || 0}
+              allNutrients={results.nutrient_gaps}
+              onViewRecommendations={handleViewRecommendations}
+            />
           </div>
 
-          {/* Right Side: Nutrient Gap Overview */}
-          <div className="flex-1 flex flex-col justify-between">
-            <div className="w-full bg-white rounded-2xl shadow-md p-8 flex flex-col h-full">
-              <NutrientGapOverview gaps={results.nutrient_gaps} />
-            </div>
+          {/* Right Side: Analysis Tabs and Content */}
+          <div className="lg:col-span-2">
+            <AnalysisTabs 
+              currentTab={currentTab} 
+              onTabChange={handleTabChange}
+              isActivityEnabled={false} // Future feature
+            >
+              {currentTab === 'nutrients' && (
+                <div className="space-y-8">
+                  {/* Important Nutrients Dashboard */}
+                  <ImportantNutrientsDashboard gaps={results.nutrient_gaps} />
+                  
+                  {/* Toggle Button for All Nutrients */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => setShowAllNutrients(!showAllNutrients)}
+                      className="px-6 py-3 bg-gray-100 text-gray-800 hover:bg-gray-200 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                      {showAllNutrients ? (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                          Hide Detailed View
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                          </svg>
+                          Show All Nutrients
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {/* All Nutrients View (Conditional) */}
+                  {showAllNutrients && (
+                    <AllNutrientsView gaps={results.nutrient_gaps} />
+                  )}
+                </div>
+              )}
+              
+              {currentTab === 'activity' && (
+                <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
+                  </svg>
+                  <h3 className="text-xl font-medium mb-2">Activity Analysis Coming Soon</h3>
+                  <p>We're working on adding physical activity tracking and analysis.</p>
+                </div>
+              )}
+            </AnalysisTabs>
           </div>
         </div>
 
-        {/* Buttons at bottom */}
-        <div className="flex flex-col md:flex-row gap-6 justify-center mt-12">
+        {/* Scan Again Button */}
+        <div className="flex justify-center mt-12">
           <button
             onClick={handleScanAgain}
-            className="w-full md:w-auto px-8 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition text-lg font-semibold"
+            className="px-8 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition text-lg font-semibold flex items-center gap-2"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
             Scan Another Food
           </button>
         </div>
-
       </div>
     </div>
   );
