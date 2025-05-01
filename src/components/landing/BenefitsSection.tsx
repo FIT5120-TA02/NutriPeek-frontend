@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Card from '../ui/Card';
-import { Clock, Brain, ShieldCheck } from 'phosphor-react';
+import { Barbell, UserFocus, ShieldCheck } from 'phosphor-react';
 import SectionContainer from './SectionContainer';
 
 /**
@@ -13,18 +13,18 @@ import SectionContainer from './SectionContainer';
 export default function BenefitsSection() {
   const benefits = [
     {
-      title: "Save Time",
-      description: "Quickly decide what to include in your child's lunchbox using what you already have at home.",
-      icon: <Clock size={48} weight="duotone" className="text-blue-500" />,
+      title: "Smarter Nutrition for Active Kids",
+      description: "Dynamically matches nutrition recommendations to your child's activity levels, optimizing energy balance and supporting healthy development.",
+      icon: <Barbell size={48} weight="duotone" className="text-blue-500" />,
     },
     {
-      title: "Better Decisions",
-      description: "Make informed nutritional choices that support your child's development and learning.",
-      icon: <Brain size={48} weight="duotone" className="text-purple-500" />,
+      title: "Personalized to Each Child",
+      description: "Creates custom meal suggestions tailored to your child's unique profile, dietary needs, and activity patterns for precise nutritional support.",
+      icon: <UserFocus size={48} weight="duotone" className="text-purple-500" />,
     },
     {
       title: "Peace of Mind",
-      description: "Ensure lunch boxes meet dietary restrictions and nutritional requirements with confidence.",
+      description: "Ensure lunch boxes meet nutritional requirements with confidence, backed by evidence-based recommendations.",
       icon: <ShieldCheck size={48} weight="duotone" className="text-green-500" />,
     }
   ];
@@ -38,9 +38,9 @@ export default function BenefitsSection() {
         viewport={{ once: true }}
         transition={{ duration: 0.7 }}
       >
-        <h2 className="text-3xl md:text-4xl font-bold text-green-600 mb-4">What You Get</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-green-600 mb-4">Smart Nutrition, Personalized</h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          NutriPeek provides tangible benefits to help you navigate the daily challenge of preparing healthy school lunches.
+          NutriPeek delivers tailored nutrition guidance that adapts to your child's unique needs, activity levels, and dietary requirements.
         </p>
       </motion.div>
 
@@ -75,7 +75,7 @@ export default function BenefitsSection() {
         transition={{ duration: 0.7, delay: 0.6 }}
       >
         <p className="text-lg text-green-700 font-medium italic">
-          "NutriPeek makes healthy lunch preparation quick, easy and informative."
+          "NutriPeek transformed how we approach nutrition for our active children, making personalized meal planning effortless and effective."
         </p>
       </motion.div>
     </SectionContainer>

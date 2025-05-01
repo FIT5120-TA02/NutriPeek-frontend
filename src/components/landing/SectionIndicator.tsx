@@ -6,93 +6,18 @@ import { motion } from 'framer-motion';
 interface SectionIndicatorProps {
   totalSections: number;
   sections: string[];
+  activeSection: number;
+  onSectionChange: (index: number) => void;
 }
 
-export default function SectionIndicator({ totalSections, sections }: SectionIndicatorProps) {
-  const [activeSection, setActiveSection] = useState(0);
-
-  // Debounced scroll handler for better performance
-  const debounce = (func: Function, wait: number) => {
-    let timeout: NodeJS.Timeout;
-    return (...args: any[]) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  };
-
-  const determineActiveSection = useCallback(() => {
-    // Get all section elements
-    const sectionElements = sections.map(id => document.getElementById(id));
-    
-    // Calculate which section is most visible in the viewport
-    let maxVisibleSection = 0;
-    let maxVisibleArea = 0;
-    
-    sectionElements.forEach((section, index) => {
-      if (!section) return;
-      
-      const rect = section.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      
-      // Calculate how much of the section is visible in the viewport
-      const visibleTop = Math.max(0, rect.top);
-      const visibleBottom = Math.min(windowHeight, rect.bottom);
-      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-      
-      // If this section has more visible area than previous maximum, update
-      if (visibleHeight > maxVisibleArea) {
-        maxVisibleArea = visibleHeight;
-        maxVisibleSection = index;
-      }
-    });
-    
-    setActiveSection(maxVisibleSection);
-  }, [sections]);
-  
-  useEffect(() => {
-    // Main scroll handler
-    const handleScroll = () => {
-      requestAnimationFrame(() => {
-        determineActiveSection();
-      });
-    };
-    
-    // More responsive scroll event listener
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    // Handle initial load
-    determineActiveSection();
-    
-    // Handle section changes from snap scrolling
-    const snapObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-          const sectionId = entry.target.id;
-          const sectionIndex = sections.indexOf(sectionId);
-          if (sectionIndex !== -1) {
-            setActiveSection(sectionIndex);
-          }
-        }
-      });
-    }, { threshold: 0.5 });
-    
-    // Observe all sections
-    sections.forEach(id => {
-      const element = document.getElementById(id);
-      if (element) snapObserver.observe(element);
-    });
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      sections.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) snapObserver.unobserve(element);
-      });
-    };
-  }, [sections, determineActiveSection]);
-
+export default function SectionIndicator({ 
+  totalSections, 
+  sections, 
+  activeSection, 
+  onSectionChange 
+}: SectionIndicatorProps) {
   const handleDotClick = (index: number) => {
-    setActiveSection(index); // Immediately update active section when clicked
+    onSectionChange(index);
     const element = document.getElementById(sections[index]);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });

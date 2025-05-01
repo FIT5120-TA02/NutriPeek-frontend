@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { InstagramLogo, FacebookLogo, TwitterLogo, EnvelopeSimple } from 'phosphor-react';
 import SectionContainer from './SectionContainer';
+import nutriPeekLogo from '@/../public/nutripeek.png';
+import { useRouter } from 'next/navigation';
 
 /**
  * Footer section component
@@ -12,6 +14,27 @@ import SectionContainer from './SectionContainer';
  */
 export default function FooterSection() {
   const currentYear = new Date().getFullYear();
+  const router = useRouter();
+
+  // Handle scroll to section
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Handle navigation - either scroll or route
+  const handleNavigation = (path: string) => {
+    if (path.startsWith('/#')) {
+      // It's an anchor link for the current page
+      const sectionId = path.substring(2); // Remove /# to get the section id
+      scrollToSection(sectionId);
+    } else {
+      // It's a different page route
+      router.push(path);
+    }
+  };
 
   return (
     <SectionContainer 
@@ -19,7 +42,7 @@ export default function FooterSection() {
       backgroundClasses="bg-green-800"
       className="py-12 text-white"
     >
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Logo and Description */}
         <motion.div 
           className="col-span-1 md:col-span-1"
@@ -30,24 +53,22 @@ export default function FooterSection() {
         >
           <div className="flex items-center mb-4">
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3">
-              <span className="text-green-600 font-bold">NP</span>
+              <div className="flex items-center justify-center w-6 h-6">
+                <Image
+                  src={nutriPeekLogo}
+                  alt="NutriPeek Logo"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                  priority
+                />
+              </div>
             </div>
             <h3 className="text-xl font-bold">NutriPeek</h3>
           </div>
           <p className="text-green-200 text-sm mb-4">
             Empowering Australian parents to prepare healthier school lunches with confidence.
           </p>
-          <div className="flex space-x-4">
-            <a href="#" className="text-white hover:text-green-300 transition-colors">
-              <FacebookLogo size={24} weight="fill" />
-            </a>
-            <a href="#" className="text-white hover:text-green-300 transition-colors">
-              <InstagramLogo size={24} weight="fill" />
-            </a>
-            <a href="#" className="text-white hover:text-green-300 transition-colors">
-              <TwitterLogo size={24} weight="fill" />
-            </a>
-          </div>
         </motion.div>
 
         {/* Quick Links */}
@@ -61,19 +82,20 @@ export default function FooterSection() {
           <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
           <ul className="space-y-2">
             {[
-              { name: 'Home', path: '/Welcome' },
+              { name: 'Home', path: '/#hero' },
               { name: 'Features', path: '/#features' },
-              { name: 'Build Plate', path: '/BuildPlate' },
-              { name: 'NutriScan', path: '/NutriScan' },
+              { name: 'Benefits', path: '/#benefits' },
+              { name: 'Use Cases', path: '/#use-cases' },
+              { name: 'Tools', path: '/#tools' },
               { name: 'FAQ', path: '/#faq' }
             ].map((link, index) => (
               <li key={index}>
-                <Link 
-                  href={link.path}
-                  className="text-green-200 hover:text-white transition-colors"
+                <button 
+                  onClick={() => handleNavigation(link.path)}
+                  className="text-green-200 hover:text-white transition-colors cursor-pointer"
                 >
                   {link.name}
-                </Link>
+                </button>
               </li>
             ))}
           </ul>
@@ -90,10 +112,10 @@ export default function FooterSection() {
           <h3 className="text-lg font-semibold mb-4">Legal</h3>
           <ul className="space-y-2">
             {[
-              { name: 'Privacy Policy', path: '/privacy' },
-              { name: 'Terms of Service', path: '/terms' },
-              { name: 'Cookie Policy', path: '/cookies' },
-              { name: 'Data Usage', path: '/data-usage' }
+              { name: 'Privacy Policy', path: '/' }, // TODO: Add privacy policy page
+              { name: 'Terms of Service', path: '/' }, // TODO: Add terms of service page
+              { name: 'Cookie Policy', path: '/' }, // TODO: Add cookie policy page
+              { name: 'Data Usage', path: '/' } // TODO: Add data usage page
             ].map((link, index) => (
               <li key={index}>
                 <Link 
@@ -105,27 +127,6 @@ export default function FooterSection() {
               </li>
             ))}
           </ul>
-        </motion.div>
-
-        {/* Contact */}
-        <motion.div 
-          className="col-span-1"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
-          <div className="text-green-200 space-y-3">
-            <p>Melbourne, Australia</p>
-            <p>support@nutripeek.com.au</p>
-            <div className="pt-4">
-              <button className="flex items-center text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded transition-colors">
-                <EnvelopeSimple size={20} className="mr-2" />
-                <span>Contact Support</span>
-              </button>
-            </div>
-          </div>
         </motion.div>
       </div>
 

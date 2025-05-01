@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Card from '../ui/Card';
-import { Users, Clock, Warning } from 'phosphor-react';
+import { Hamburger, Barbell, GameController } from 'phosphor-react';
 import SectionContainer from './SectionContainer';
 
 /**
@@ -13,19 +13,19 @@ import SectionContainer from './SectionContainer';
 export default function ApplyCasesSection() {
   const applyCases = [
     {
-      title: "Busy Morning Parents",
-      description: "Perfect for parents with limited time who need to quickly prepare nutritious lunches.",
-      icon: <Clock size={40} weight="duotone" className="text-orange-500" />,
+      title: "Ingredient-First Meal Planners",
+      description: "Supports parents who want to use what's already at home to create healthy, balanced lunches.",
+      icon: <Hamburger size={40} weight="duotone" className="text-orange-500" />,
     },
     {
-      title: "Dietary Restrictions",
-      description: "Ideal for families managing allergies, intolerances, or specific dietary needs.",
-      icon: <Warning size={40} weight="duotone" className="text-red-500" />,
+      title: "Activity-Aware Families",
+      description: "Supports parents who want meal ideas linked to their child's daily physical activity levels for better energy balance.",
+      icon: <Barbell size={40} weight="duotone" className="text-green-500" />,
     },
     {
-      title: "Health-Conscious Families",
-      description: "For parents who want to ensure their children develop healthy eating habits.",
-      icon: <Users size={40} weight="duotone" className="text-green-500" />,
+      title: "Gamified Nutrition Parents",
+      description: "For parents who want their children to develop healthy eating behaviors through fun, gamified experiences.",
+      icon: <GameController size={40} weight="duotone" className="text-purple-500" />,
     }
   ];
 
@@ -48,7 +48,7 @@ export default function ApplyCasesSection() {
         {applyCases.map((useCase, index) => (
           <motion.div
             key={index}
-            initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
+            initial={{ opacity: 0, x: index === 0 ? -20 : index === 1 ? 0 : 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: index * 0.1 }}

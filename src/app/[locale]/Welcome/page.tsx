@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
-import nutriPeekLogo from '@/../public/nutripeek.png';
 import {
   HeroSection,
-  FeatureSection,
+  CoreFeaturesSection,
+  PlateBuilderSection,
+  MatchAndLearnSection,
   BenefitsSection,
   ApplyCasesSection,
   ToolsIntegrationSection,
@@ -29,13 +28,14 @@ import {
  * Each section takes 100% of viewport height for a modern, immersive experience
  */
 export default function WelcomePage() {
-  const [showNavbar, setShowNavbar] = useState(false);
   const [activeSection, setActiveSection] = useState(0);
   
   // Section IDs for navigation
   const sectionIds = [
     'hero',
     'features',
+    'plate-builder',
+    'match-and-learn',
     'benefits',
     'use-cases',
     'tools',
@@ -43,31 +43,90 @@ export default function WelcomePage() {
     'footer'
   ];
 
-  // Track active section
+  // Determine which section is most visible in the viewport
+  const determineActiveSection = useCallback(() => {
+    // Get all section elements
+    const sectionElements = sectionIds.map(id => document.getElementById(id));
+    
+    // Calculate which section is most visible in the viewport
+    let maxVisibleSection = 0;
+    let maxVisibleArea = 0;
+    
+    sectionElements.forEach((section, index) => {
+      if (!section) return;
+      
+      const rect = section.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      
+      // Calculate how much of the section is visible in the viewport
+      const visibleTop = Math.max(0, rect.top);
+      const visibleBottom = Math.min(windowHeight, rect.bottom);
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+      
+      // If this section has more visible area than previous maximum, update
+      if (visibleHeight > maxVisibleArea) {
+        maxVisibleArea = visibleHeight;
+        maxVisibleSection = index;
+      }
+    });
+    
+    setActiveSection(maxVisibleSection);
+  }, [sectionIds]);
+  
   useEffect(() => {
+    // Main scroll handler
     const handleScroll = () => {
-      const pageHeight = window.innerHeight;
-      const scrollTop = window.scrollY;
-      const currentSection = Math.round(scrollTop / pageHeight);
-      setActiveSection(Math.min(currentSection, sectionIds.length - 1));
+      requestAnimationFrame(() => {
+        determineActiveSection();
+      });
     };
+    
+    // More responsive scroll event listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Handle initial load
+    determineActiveSection();
+    
+    // Handle section changes from snap scrolling
+    const snapObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+          const sectionId = entry.target.id;
+          const sectionIndex = sectionIds.indexOf(sectionId);
+          if (sectionIndex !== -1) {
+            setActiveSection(sectionIndex);
+          }
+        }
+      });
+    }, { threshold: 0.5 });
+    
+    // Observe all sections
+    sectionIds.forEach(id => {
+      const element = document.getElementById(id);
+      if (element) snapObserver.observe(element);
+    });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      sectionIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) snapObserver.unobserve(element);
+      });
+    };
+  }, [sectionIds, determineActiveSection]);
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [sectionIds.length]);
+  // Function to check if scroll indicator should be visible
+  const shouldShowScrollIndicator = () => {
+    // Hide in features sections (1,2,3) and footer (8)
+    return activeSection !== 1 && 
+           activeSection !== 2 && 
+           activeSection !== 7 &&
+           activeSection !== 8;
+  };
 
-  // Show navbar after a delay for a cleaner initial experience
-  useEffect(() => {
-    const timer = setTimeout(() => setShowNavbar(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Smooth scroll to section
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+  // Handle section change from SectionIndicator
+  const handleSectionChange = (index: number) => {
+    setActiveSection(index);
   };
 
   return (
@@ -76,7 +135,12 @@ export default function WelcomePage() {
       backgroundClasses="min-h-screen flex flex-col w-full bg-gradient-to-b from-green-50 to-green-100"
     >
       {/* Section navigation dots */}
-      <SectionIndicator totalSections={sectionIds.length} sections={sectionIds} />
+      <SectionIndicator 
+        totalSections={sectionIds.length} 
+        sections={sectionIds} 
+        activeSection={activeSection} 
+        onSectionChange={handleSectionChange}
+      />
 
       {/* Scroll snap container */}
       <div 
@@ -88,7 +152,13 @@ export default function WelcomePage() {
           <HeroSection />
         </div>
         <div id="features" className="snap-start snap-always w-full">
-          <FeatureSection />
+          <CoreFeaturesSection />
+        </div>
+        <div id="plate-builder" className="snap-start snap-always w-full">
+          <PlateBuilderSection />
+        </div>
+        <div id="match-and-learn" className="snap-start snap-always w-full">
+          <MatchAndLearnSection />
         </div>
         <div id="benefits" className="snap-start snap-always w-full">
           <BenefitsSection />
@@ -107,74 +177,34 @@ export default function WelcomePage() {
         </div>
       </div>
 
-      {/* Navigation Bar */}
-      <motion.header 
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md shadow-md"
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ 
-          y: showNavbar ? 0 : -100, 
-          opacity: showNavbar ? 1 : 0 
-        }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="flex items-center space-x-2">
-          <Link href="/Welcome" className="flex items-center space-x-2">
-            <Image
-              src={nutriPeekLogo}
-              alt="NutriPeek Logo"
-              width={40}
-              height={40}
-              className="object-contain"
-              priority
-            />
-            <span className="text-xl font-bold text-gray-800 tracking-tight">NutriPeek</span>
-          </Link>
-        </div>
-
-        <nav className="hidden md:flex items-center space-x-6">
-          <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors">
-            Profile
-          </Link>
-          <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors">
-            Build Plate
-          </Link>
-          <Link
-            href="/NutriScan"
-            className="ml-4 px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
-          >
-            Launch Scan
-          </Link>
-        </nav>
-      </motion.header>
-
-      {/* Floating Scroll Indicator - only visible on first section */}
-      <AnimatePresence>
-        {activeSection === 0 && (
-          <motion.div
-            className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-md flex items-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.4 }}
-          >
+      {/* Floating Scroll Indicator - hidden in features sections and footer */}
+      {shouldShowScrollIndicator() && (
+        <AnimatePresence>
             <motion.div
-              animate={{ opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="text-green-600 text-sm font-medium flex items-center gap-2"
+              className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-md flex items-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.4 }}
             >
-              <span>Scroll to explore</span>
-              <motion.div 
-                animate={{ y: [0, 3, 0] }} 
-                transition={{ duration: 1.2, repeat: Infinity }}
+              <motion.div
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-green-600 text-sm font-medium flex items-center gap-2"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L10 14.586l5.293-5.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+                <span>Scroll to explore</span>
+                <motion.div 
+                  animate={{ y: [0, 3, 0] }} 
+                  transition={{ duration: 1.2, repeat: Infinity }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L10 14.586l5.293-5.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </motion.div>
               </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      )}
     </FloatingEmojisLayout>
   );
 }
