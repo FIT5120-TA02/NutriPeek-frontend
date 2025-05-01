@@ -13,7 +13,7 @@ import { getAvatarImageUrl } from '@/utils/assetHelpers';
 
 interface AvatarFeedbackProps {
   emotion: AvatarEmotion;
-  message: string;
+  message?: string;
 }
 
 /**
@@ -90,7 +90,10 @@ const speechBubbleVariants = {
 /**
  * Avatar feedback component with enhanced animations and visual effects
  */
-export default function AvatarFeedback({ emotion, message }: AvatarFeedbackProps) {
+export default function AvatarFeedback({ 
+  emotion, 
+  message
+}: AvatarFeedbackProps) {
   const avatarImage = AVATAR_IMAGES[emotion];
   const animation = avatarAnimations[emotion];
   const [previousEmotion, setPreviousEmotion] = useState<AvatarEmotion>(emotion);
@@ -185,39 +188,41 @@ export default function AvatarFeedback({ emotion, message }: AvatarFeedbackProps
         </motion.div>
       </div>
       
-      {/* Speech bubble with message */}
-      <motion.div
-        className="relative mt-4 bg-white px-5 py-3 rounded-2xl shadow-md w-full max-w-xs 
-                  border-2 border-indigo-100 transform origin-top"
-        variants={speechBubbleVariants}
-        initial="initial"
-        animate="animate"
-      >
-        {/* Speech bubble pointer */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-45 w-4 h-4 bg-white border-l-2 border-t-2 border-indigo-100" />
-        
-        <p className="text-center text-gray-700 font-medium">{message}</p>
-        
-        {/* Animated indicator dots for a more interactive feel */}
-        <div className="flex justify-center mt-2 space-x-1">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={`dot-${i}`}
-              className="w-2 h-2 bg-indigo-300 rounded-full"
-              animate={{ 
-                scale: [1, 1.5, 1],
-                opacity: [0.5, 1, 0.5]
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 1.5,
-                delay: i * 0.2,
-                ease: "easeInOut"
-              }}
-            />
-          ))}
-        </div>
-      </motion.div>
+      {/* Speech bubble with message - conditionally rendered */}
+      {message && (
+        <motion.div
+          className="relative mt-4 bg-white px-5 py-3 rounded-2xl shadow-md w-full max-w-xs 
+                    border-2 border-indigo-100 transform origin-top"
+          variants={speechBubbleVariants}
+          initial="initial"
+          animate="animate"
+        >
+          {/* Speech bubble pointer */}
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-45 w-4 h-4 bg-white border-l-2 border-t-2 border-indigo-100" />
+          
+          <p className="text-center text-gray-700 font-medium">{message}</p>
+          
+          {/* Animated indicator dots for a more interactive feel */}
+          <div className="flex justify-center mt-2 space-x-1">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={`dot-${i}`}
+                className="w-2 h-2 bg-indigo-300 rounded-full"
+                animate={{ 
+                  scale: [1, 1.5, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1.5,
+                  delay: i * 0.2,
+                  ease: "easeInOut"
+                }}
+              />
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 } 
