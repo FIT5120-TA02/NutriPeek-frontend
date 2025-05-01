@@ -16,6 +16,10 @@ import {
   FoodCategoryFunFactResponse,
   FoodCategoryFunFactsResponse,
   FoodRecommendation,
+  ActivityResponse,
+  ActivityResult,
+  ChildEnergyRequirementsResponse,
+  ActivityEntry,
 } from './types';
 
 /**
@@ -187,6 +191,35 @@ export class NutriPeekApi {
    */
   async getFoodCategoryFunFact(category: string): Promise<FoodCategoryFunFactResponse> {
     return apiClient.get<FoodCategoryFunFactResponse>(`/api/v1/food-category/fun-facts/${category}`);
+  }
+
+  /**
+   * Get all activities
+   * @returns List of all activities
+   */
+  async getAllActivities(): Promise<ActivityResponse> {
+    return apiClient.get<ActivityResponse>('/api/v1/activity/activities');
+  }
+
+  /**
+   * Calculate the PAL for a child
+   * @param age - The age of the child
+   * @param activities - The activities the child is doing with their durations
+   * @returns The PAL for the child
+   */
+  async calculatePAL(age: number, activities: ActivityEntry[]): Promise<ActivityResult> {
+    return apiClient.post<ActivityResult>('/api/v1/activity/calculate-pal', { age, activities });
+  }
+
+  /**
+   * Get the target energy for a child
+   * @param age - The age of the child
+   * @param gender - The gender of the child
+   * @param pal - The PAL of the child
+   * @returns The target energy for the child
+   */
+  async getTargetEnergy(age: number, gender: string, physical_activity_level: number): Promise<ChildEnergyRequirementsResponse> {
+    return apiClient.post<ChildEnergyRequirementsResponse>('/api/v1/child-energy-requirements/find-nearest-pal', { age, gender, physical_activity_level });
   }
 }
 

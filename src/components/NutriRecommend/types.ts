@@ -20,4 +20,5 @@ export interface ExtendedNutrientGap extends NutrientGapDetails {
   percentage: number;
   updatedPercentage: number;
   recommendedFoods: FoodItem[];
+  isAdjustedForActivity?: boolean;
 }

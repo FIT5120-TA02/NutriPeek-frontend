@@ -1,5 +1,5 @@
 import { nutripeekApi } from '@/api/nutripeekApi';
-import { NutrientGapResponse, NutrientGapRequest } from '@/api/types';
+import { NutrientGapResponse, NutrientGapRequest, ChildEnergyRequirementsResponse } from '@/api/types';
 import { ChildProfile } from '@/types/profile';
 import { NutritionalNote, calculateNutritionalScore } from '@/types/notes';
 import { getFoodImageUrl } from '@/utils/assetHelpers';
@@ -26,8 +26,46 @@ export const NutriRecommendService = {
   }> {
     const totalEnergy = result.total_calories || 0;
     
-    // Get missing nutrients
-    const missingNutrientsArray = Object.entries(result.nutrient_gaps)
+    // Apply energy requirements adjustment if available
+    const energyRequirements = storageService.getLocalItem<ChildEnergyRequirementsResponse | null>({
+      key: 'energyRequirements',
+      defaultValue: null
+    });
+    
+    let adjustedResult = { ...result };
+    
+    // If we have energy requirements that are higher than the base recommendation,
+    // adjust the energy nutrient target in the result
+    if (energyRequirements) {
+      const energyNutrientKey = Object.keys(result.nutrient_gaps).find(key => 
+        key.toLowerCase().includes('energy')
+      );
+      
+      if (energyNutrientKey) {
+        const baseEnergy = result.nutrient_gaps[energyNutrientKey];
+        const adjustedTarget = energyRequirements.estimated_energy_requirement;
+        
+        // Only adjust if the estimated requirement is higher
+        if (adjustedTarget > baseEnergy.recommended_intake) {
+          adjustedResult = {
+            ...result,
+            nutrient_gaps: {
+              ...result.nutrient_gaps,
+              [energyNutrientKey]: {
+                ...baseEnergy,
+                recommended_intake: adjustedTarget,
+                gap: Math.max(0, adjustedTarget - baseEnergy.current_intake),
+                // Mark this as adjusted so UI can show it appropriately
+                isAdjustedForActivity: true
+              }
+            }
+          };
+        }
+      }
+    }
+    
+    // Get missing nutrients from the potentially adjusted result
+    const missingNutrientsArray = Object.entries(adjustedResult.nutrient_gaps)
       .filter(([_, info]) => info.recommended_intake > 0 && info.current_intake / info.recommended_intake < 1)
       .map(([name, info]) => {
         const percentage = (info.current_intake / info.recommended_intake) * 100;
@@ -39,6 +77,7 @@ export const NutriRecommendService = {
           current_intake: info.current_intake,
           percentage: percentage,
           updatedPercentage: percentage,
+          isAdjustedForActivity: (info as any).isAdjustedForActivity || false,
           recommendedFoods: []
         };
       });
@@ -113,8 +152,8 @@ export const NutriRecommendService = {
     );
 
     // Store gap results in local storage for future reference
-    // without creating a note
-    storageService.setLocalItem('nutripeekGapResults', result);
+    // without creating a note - store the adjusted result
+    storageService.setLocalItem('nutripeekGapResults', adjustedResult);
 
     return {
       missingNutrients: enrichedNutrients,
@@ -309,7 +348,7 @@ export const NutriRecommendService = {
   },
 
   /**
-   * Process stored nutrient gap results from local storage
+   * Process stored results when the page is loaded from localStorage
    */
   async processStoredResults(
     result: NutrientGapResponse, 
@@ -322,11 +361,58 @@ export const NutriRecommendService = {
     const childProfile = this.getChildProfile(selectedChildId);
     
     if (!childProfile) {
-      return { missingNutrients: [], totalEnergy: null, childProfile: null };
+      return {
+        missingNutrients: [],
+        totalEnergy: null,
+        childProfile: null
+      };
     }
     
-    const { missingNutrients, totalEnergy } = await this.processNutrientGapResult(result, childProfile);
+    // Apply energy requirements adjustment if available
+    const energyRequirements = storageService.getLocalItem<ChildEnergyRequirementsResponse | null>({
+      key: 'energyRequirements',
+      defaultValue: null
+    });
     
-    return { missingNutrients, totalEnergy, childProfile };
+    let adjustedResult = { ...result };
+    
+    // If we have energy requirements that are higher than the base recommendation,
+    // adjust the energy nutrient target in the result
+    if (energyRequirements) {
+      const energyNutrientKey = Object.keys(result.nutrient_gaps).find(key => 
+        key.toLowerCase().includes('energy')
+      );
+      
+      if (energyNutrientKey) {
+        const baseEnergy = result.nutrient_gaps[energyNutrientKey];
+        const adjustedTarget = energyRequirements.estimated_energy_requirement;
+        
+        // Only adjust if the estimated requirement is higher
+        if (adjustedTarget > baseEnergy.recommended_intake) {
+          adjustedResult = {
+            ...result,
+            nutrient_gaps: {
+              ...result.nutrient_gaps,
+              [energyNutrientKey]: {
+                ...baseEnergy,
+                recommended_intake: adjustedTarget,
+                gap: Math.max(0, adjustedTarget - baseEnergy.current_intake),
+                // Mark this as adjusted so UI can show it appropriately
+                isAdjustedForActivity: true
+              }
+            }
+          };
+        }
+      }
+    }
+
+    // Get missing nutrients from the potentially adjusted result
+    const { missingNutrients, totalEnergy } = await this.processNutrientGapResult(adjustedResult, childProfile);
+    
+    return {
+      missingNutrients,
+      totalEnergy,
+      childProfile
+    };
   }
 };
