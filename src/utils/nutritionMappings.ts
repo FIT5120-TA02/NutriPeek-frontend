@@ -62,3 +62,66 @@ export function mapNutrientNameToDbField(nutrientName: string): string | null {
   return mapping[nutrientName] || null;
 }
 
+/**
+ * Maps database field names back to readable nutrient display names
+ */
+export function mapDbFieldToNutrientName(dbField: string): string | null {
+  // Create a reverse mapping from the existing mapping
+  const reverseMapping: Record<string, string> = {};
+  
+  const mapping: Record<string, string> = {
+    'energy_with_fibre_kj': 'Energy(a)',
+    'energy_without_fibre_kj': 'Energy(b)',
+    'moisture_g': 'Moisture(b)',
+    'protein_g': 'Protein',
+    'total_fat_g': 'Total fat',
+    'carbs_with_sugar_alcohols_g': 'Carbohydrate(c)',
+    'starch_g': 'Starch',
+    'total_sugars_g': 'Total sugars',
+    'added_sugars_g': 'Added sugars',
+    'free_sugars_g': 'Free sugars',
+    'dietary_fibre_g': 'Dietary Fibre',
+    'alcohol_g': 'Alcohol(d)',
+    'ash_g': 'Ash',
+    'vitamin_a_retinol_ug': 'Vitamin A retinol equivalent',
+    'beta_carotene_ug': 'Beta-carotene',
+    'vitamin_a_re_ug': 'Vitamin A RE',
+    'thiamin_b1_mg': 'Thiamin',
+    'riboflavin_b2_mg': 'Riboflavin',
+    'niacin_b3_mg': 'Niacin',
+    'niacin_equivalents_mg': 'Niacin equivalent',
+    'folate_natural_ug': 'Folate, natural',
+    'folic_acid_ug': 'Folic acid',
+    'total_folates_ug': 'Total Folates',
+    'dietary_folate_equivalents_ug': 'Folate equivalent',
+    'vitamin_b6_mg': 'Vitamin B6',
+    'vitamin_b12_ug': 'Vitamin B12',
+    'vitamin_c_mg': 'Vitamin C',
+    'vitamin_e_mg': 'Vitamin E',
+    'calcium_mg': 'Calcium',
+    'iodine_ug': 'Iodine',
+    'iron_mg': 'Iron',
+    'magnesium_mg': 'Magnesium',
+    'phosphorus_mg': 'Phosphorus',
+    'potassium_mg': 'Potassium',
+    'selenium_ug': 'Selenium',
+    'sodium_mg': 'Sodium(e)',
+    'zinc_mg': 'Zinc',
+    'caffeine_mg': 'Caffeine',
+    'cholesterol_mg': 'Cholesterol',
+    'tryptophan_mg': 'Tryptophan',
+    'saturated_fat_g': 'Saturated fat',
+    'monounsaturated_fat_g': 'Monounsaturated fat',
+    'polyunsaturated_fat_g': 'Polyunsaturated fat(c)',
+    'linoleic_acid_g': 'Linoleic acid',
+    'alpha_linolenic_acid_g': 'Alpha-Linolenic acid',
+    'epa_c20_5w3_mg': 'EPA',
+    'dpa_c22_5w3_mg': 'DPA',
+    'dha_c22_6w3_mg': 'DHA',
+    'omega3_long_chain_total_mg': 'Total long chain omega 3 fatty acids',
+    'trans_fatty_acids_mg': 'Trans fatty acids'
+  };
+  
+  return mapping[dbField] || null;
+}
+

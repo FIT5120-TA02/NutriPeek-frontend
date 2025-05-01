@@ -175,7 +175,10 @@ export interface NutrientIntakeResponse {
  */
 export interface FoodRecommendation {
   id: string;
+  food_name: string;
   food_category: string;
+  nutrient_value: number;
+  nutrients?: Record<string, number>;
 }
 
 /**

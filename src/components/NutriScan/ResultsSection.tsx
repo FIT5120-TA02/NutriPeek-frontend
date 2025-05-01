@@ -117,6 +117,22 @@ export default function ResultsSection({
       
       // Store the selected child profile index
       setSelectedChildId(currentProfileIndex);
+
+      // Save the finalized ingredients list as scannedFoods for use in notes
+      // Convert EditableFoodItem to FoodItem format
+      const scannedFoods = ingredients.map(item => ({
+        id: item.id || `food-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        name: item.name,
+        category: item.name.toLowerCase().includes('fruit') ? 'Fruits' : 
+                 item.name.toLowerCase().includes('vegetable') ? 'Vegetables' : 'Other',
+        imageUrl: '', // Use default empty string since EditableFoodItem doesn't have imageUrl / food category
+        nutrients: item.nutrients || {},
+        selected: true,
+        quantity: item.quantity || 1
+      }));
+      
+      // Store in localStorage
+      storageService.setLocalItem('scannedFoods', scannedFoods);
       
       // Navigate to the results page (locale-aware routing)
       router.push('/NutriGap');
@@ -300,6 +316,8 @@ export default function ResultsSection({
         <button
           onClick={() => {
             if (ingredients.length > 0) {
+              // Extract the IDs without worrying about quantities here,
+              // as handleCalculateGap will handle the quantities
               const ingredientIds = ingredients
                 .filter(item => item.id)
                 .map(item => item.id as string);
