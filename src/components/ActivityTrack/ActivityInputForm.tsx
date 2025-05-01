@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ActivityEntry, MetyActivity } from '@/types/activity';
-import { ChildProfile } from '@/types/profile';
+import { ActivityEntry, MetyActivity, ChildProfile } from '@/api/types';
 
 interface Props {
   activities: MetyActivity[];
@@ -51,8 +50,8 @@ export default function ActivityInputForm({
         >
           <option value="">Select activity</option>
           {activities.map((activity, index) => (
-            <option key={index} value={activity}>
-              {activity}
+            <option key={index} value={activity.specificActivity}>
+              {activity.specificActivity}
             </option>
           ))}
         </select>

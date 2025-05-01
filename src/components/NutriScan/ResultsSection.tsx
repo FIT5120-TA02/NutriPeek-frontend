@@ -8,6 +8,9 @@ import { useNutrition } from '../../contexts/NutritionContext';
 import storageService from '@/libs/StorageService';
 import { motion } from 'framer-motion';
 import { ChildProfile } from '@/types/profile';
+import { Calendar } from './ActivityCalendar';
+import { ActivityEntry } from '@/api/types';
+import { nutripeekApi } from '@/api/nutripeekApi';
 
 interface ResultsSectionProps {
   detectedItems: FoodItemDisplay[];
@@ -26,7 +29,9 @@ export default function ResultsSection({
   const [isCalculating, setIsCalculating] = useState(false);
   const [childProfiles, setChildProfiles] = useState<ChildProfile[]>([]);
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
-
+  const [selectedActivities, setSelectedActivities] = useState<ActivityEntry[]>([]);
+  const [activityPAL, setActivityPAL] = useState<number | null>(null);
+  
   const CHILDREN_KEY = "user_children";
 
   // Load child profiles
@@ -80,11 +85,6 @@ export default function ResultsSection({
     );
   };
 
-  // Get gender for API in expected format
-  const getGenderForApi = (gender: string): 'boy' | 'girl' => {
-    return gender.toLowerCase() === 'female' ? 'girl' : 'boy';
-  };
-
   // Handle nutritional gap calculation
   const handleCalculateGap = async (ingredientIds: string[]) => {
     if (ingredientIds.length === 0) return;
@@ -133,6 +133,25 @@ export default function ResultsSection({
       
       // Store in localStorage
       storageService.setLocalItem('scannedFoods', scannedFoods);
+      
+      // Check if activity data is present
+      const hasActivityData = selectedActivities && selectedActivities.length > 0;
+      
+      // If we have activity data but haven't calculated PAL yet, calculate it now
+      if (hasActivityData && !activityPAL) {
+        // Get the current child's age
+        const childProfile = childProfiles[currentProfileIndex];
+        const childAge = parseInt(childProfile.age, 10);
+        
+        // If we have activities, calculate PAL directly using the ActivityEntry objects
+        try {
+          const activityResult = await nutripeekApi.calculatePAL(childAge, selectedActivities);
+          storageService.setLocalItem('activityResult', activityResult);
+          storageService.setLocalItem('activityPAL', activityResult.pal);
+        } catch (error) {
+          console.error("Error calculating PAL:", error);
+        }
+      }
       
       // Navigate to the results page (locale-aware routing)
       router.push('/NutriGap');
@@ -217,9 +236,38 @@ export default function ResultsSection({
     );
   };
 
+  // Handle activity result from ActivityCalendar
+  const handleActivityResult = async (pal: number) => {
+    setActivityPAL(pal);
+    
+    try {
+      // Get the current child profile
+      const childProfile = childProfiles[currentProfileIndex];
+      if (!childProfile) return;
+      
+      // Get the child's age
+      const childAge = parseInt(childProfile.age, 10);
+      
+      // Make sure we have activities
+      if (selectedActivities.length === 0) return;
+      
+      // Call the API to calculate PAL with the array of ActivityEntry objects
+      const activityResult = await nutripeekApi.calculatePAL(childAge, selectedActivities);
+      
+      // Store the full activity result for later use
+      storageService.setLocalItem('activityResult', activityResult);
+      
+      // Also store individual values for backward compatibility
+      storageService.setLocalItem('activityPAL', activityResult.pal);
+      storageService.setLocalItem('selectedActivities', selectedActivities);
+    } catch (error) {
+      console.error('Error calculating PAL:', error);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center w-full max-w-5xl">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
         {/* Image Preview Section */}
         <div className="bg-white rounded-lg shadow-md p-6 w-full flex flex-col min-h-[400px]">
           <h2 className="text-xl font-semibold mb-4 text-center">Your Food</h2>
@@ -311,6 +359,23 @@ export default function ResultsSection({
         </div>
       </div>
       
+      {/* Activity Tracking Section (Refactored) */}
+      <div className="w-full mt-8 bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold mb-4 text-center">Daily Activity Tracker</h2>
+        <p className="text-gray-600 mb-6 text-center">
+          Add your child's activities to calculate their Physical Activity Level (PAL) for more accurate nutritional recommendations.
+        </p>
+        
+        <Calendar
+          selectedActivities={selectedActivities}
+          setSelectedActivities={setSelectedActivities}
+          childAge={childProfiles[currentProfileIndex]?.age ? 
+            parseInt(childProfiles[currentProfileIndex].age.toString()) : 
+            undefined}
+          onActivityResult={handleActivityResult}
+        />
+      </div>
+      
       {/* CTA Button - Prominent Calculate Nutritional Gap button */}
       <div className="w-full mt-8 mb-4">
         <button
@@ -336,7 +401,7 @@ export default function ResultsSection({
             <circle cx="16" cy="16" r="2" strokeWidth={2} />
             <line x1="6" y1="18" x2="18" y2="6" strokeWidth={2} strokeLinecap="round" />
           </svg>
-          Calculate Nutritional Gap
+          Calculate Nutritional & Activity Analysis
         </button>
         {ingredients.length === 0 && 
           <p className="text-center text-red-500 mt-2 text-sm">Please add ingredients to continue</p>
@@ -344,6 +409,27 @@ export default function ResultsSection({
         {ingredients.length > 0 && childProfiles.length === 0 && 
           <p className="text-center text-red-500 mt-2 text-sm">Please create a child profile to continue</p>
         }
+        
+        {/* Activity status indicator */}
+        {ingredients.length > 0 && childProfiles.length > 0 && (
+          <div className="text-center mt-2 text-sm">
+            {selectedActivities.length > 0 ? (
+              <p className="text-green-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Activity data included in analysis
+              </p>
+            ) : (
+              <p className="text-yellow-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                Add activities for a complete analysis
+              </p>
+            )}
+          </div>
+        )}
       </div>
       
       {isCalculating && (

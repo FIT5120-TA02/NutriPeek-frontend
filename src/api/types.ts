@@ -200,6 +200,45 @@ export interface NutrientGapDetails {
   current_intake: number;
 }
 
+// Activity
+export interface ActivityResponse {
+  activities: string[];
+}
+
+export interface ActivityEntry {
+  name: string;
+  hours: number;
+}
+
+export interface MetyActivity {
+  category: string;
+  specificActivity: string;
+}
+
+export interface ActivityDetail {
+  activity: string;
+  hours: number;
+  mety_level: number;
+  mety_minutes: number;
+}
+
+export interface ActivityResult {
+  pal: number;
+  total_mety_minutes: number;
+  details: ActivityDetail[];
+}
+
+// Child Energy Requirements
+export interface ChildEnergyRequirementsResponse {
+  input_physical_activity_level: number;
+  matched_physical_activity_level: number;
+  age: number;
+  gender: Gender;
+  unit: string;
+  estimated_energy_requirement: number;
+}
+
+
 // API Error Responses
 export interface ValidationError {
   loc: (string | number)[];

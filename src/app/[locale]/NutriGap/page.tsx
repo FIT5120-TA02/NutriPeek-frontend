@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { NutrientGapResponse } from '../../../api/types';
+import { NutrientGapResponse, ActivityResult } from '../../../api/types';
 import { useNutrition } from '../../../contexts/NutritionContext';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import storageService from '@/libs/StorageService';
@@ -14,16 +14,19 @@ import ProfileSummary from '@/components/NutriGap/ProfileSummary';
 import AnalysisTabs, { AnalysisType } from '@/components/NutriGap/AnalysisTabs';
 import ImportantNutrientsDashboard from '@/components/NutriGap/ImportantNutrientsDashboard';
 import AllNutrientsView from '@/components/NutriGap/AllNutrientsView';
+import ActivityAnalysisView from '@/components/NutriGap/ActivityAnalysisView';
 
 export default function ResultsPage() {
   const router = useRouter();
   const { ingredientIds, clearIngredientIds, selectedChildId } = useNutrition();
   const [results, setResults] = useState<NutrientGapResponse | null>(null);
+  const [activityResult, setActivityResult] = useState<ActivityResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
   const [currentTab, setCurrentTab] = useState<AnalysisType>('nutrients');
   const [showAllNutrients, setShowAllNutrients] = useState(false);
+  const [isActivityEnabled, setIsActivityEnabled] = useState(false);
 
   const CHILDREN_KEY = 'user_children';
 
@@ -36,10 +39,10 @@ export default function ResultsPage() {
           const storedResults = localStorage.getItem('nutripeekGapResults');
           if (storedResults) {
             setResults(JSON.parse(storedResults));
+          } else {
+            setError('No ingredients selected');
             return;
           }
-          setError('No ingredients selected');
-          return;
         }
 
         const childProfiles = storageService.getLocalItem({ key: CHILDREN_KEY, defaultValue: [] }) as ChildProfile[];
@@ -57,18 +60,28 @@ export default function ResultsPage() {
 
         setSelectedChild(childProfile);
 
-        const apiGender = childProfile.gender.toLowerCase() === 'female' ? 'girl' : 'boy';
-        const result = await nutripeekApi.calculateNutrientGap({
-          child_profile: {
-            age: parseInt(childProfile.age, 10),
-            gender: apiGender,
-          },
-          ingredient_ids: ingredientIds,
-        });
+        // Fetch nutrient gap if not already loaded from localStorage
+        if (ingredientIds.length > 0) {
+          const apiGender = childProfile.gender.toLowerCase() === 'female' ? 'girl' : 'boy';
+          const result = await nutripeekApi.calculateNutrientGap({
+            child_profile: {
+              age: parseInt(childProfile.age, 10),
+              gender: apiGender,
+            },
+            ingredient_ids: ingredientIds,
+          });
 
-        setResults(result);
-        // Store results for later use
-        localStorage.setItem('nutripeekGapResults', JSON.stringify(result));
+          setResults(result);
+          // Store results for later use
+          localStorage.setItem('nutripeekGapResults', JSON.stringify(result));
+        }
+
+        // Check for activity result in localStorage
+        const storedActivityResult = storageService.getLocalItem({ key: 'activityResult', defaultValue: null });
+        if (storedActivityResult) {
+          setActivityResult(storedActivityResult);
+          setIsActivityEnabled(true);
+        }
       } catch (error) {
         console.error('Error calculating nutritional gap:', error);
         setError('Failed to calculate nutritional gap. Please try again.');
@@ -154,10 +167,10 @@ export default function ResultsPage() {
         {/* Title */}
         <div className="text-center mb-12 w-full">
           <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
-            Nutritional Gap Analysis
+            Nutritional & Activity Analysis
           </h1>
           <p className="mt-2 text-lg text-gray-600">
-            Review your child's nutrition and get personalized recommendations
+            Review your child's nutrition and activity levels for personalized recommendations
           </p>
         </div>
 
@@ -171,6 +184,7 @@ export default function ResultsPage() {
               missingNutrients={results.missing_nutrients?.length || 0}
               excessNutrients={results.excess_nutrients?.length || 0}
               allNutrients={results.nutrient_gaps}
+              activityPAL={activityResult?.pal}
               onViewRecommendations={handleViewRecommendations}
             />
           </div>
@@ -180,7 +194,7 @@ export default function ResultsPage() {
             <AnalysisTabs 
               currentTab={currentTab} 
               onTabChange={handleTabChange}
-              isActivityEnabled={false} // Future feature
+              isActivityEnabled={isActivityEnabled}
             >
               {currentTab === 'nutrients' && (
                 <div className="space-y-8 w-full">
@@ -219,13 +233,7 @@ export default function ResultsPage() {
               )}
               
               {currentTab === 'activity' && (
-                <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500 w-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
-                  </svg>
-                  <h3 className="text-xl font-medium mb-2">Activity Analysis Coming Soon</h3>
-                  <p>We're working on adding physical activity tracking and analysis.</p>
-                </div>
+                <ActivityAnalysisView activityResult={activityResult} />
               )}
             </AnalysisTabs>
           </div>

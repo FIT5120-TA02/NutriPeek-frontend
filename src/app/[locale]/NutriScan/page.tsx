@@ -309,7 +309,7 @@ export default function NutriScanPage() {
   const isLoading = isDetecting || isQrProcessing || processingStep !== 'idle';
 
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6">
+    <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6 pt-25">
       <h1 className="text-4xl font-bold mb-6 text-gray-800">
         {showResults ? 'NutriScan Results' : 'Start Your NutriScan'}
       </h1>

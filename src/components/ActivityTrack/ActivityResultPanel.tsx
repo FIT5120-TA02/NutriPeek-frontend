@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ActivityResult } from '@/types/activity';
+import { ActivityResult } from '@/api/types';
 
 interface Props {
   result: ActivityResult;

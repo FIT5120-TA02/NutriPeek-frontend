@@ -17,6 +17,7 @@ interface ProfileSummaryProps {
   missingNutrients: number;
   excessNutrients: number;
   allNutrients?: Record<string, NutrientData>;
+  activityPAL?: number;
   onViewRecommendations?: () => void;
 }
 
@@ -26,6 +27,7 @@ export default function ProfileSummary({
   missingNutrients,
   excessNutrients,
   allNutrients = {},
+  activityPAL,
   onViewRecommendations
 }: ProfileSummaryProps) {
   const avatarGradient = profile?.gender?.toLowerCase() === 'female'
@@ -58,6 +60,16 @@ export default function ProfileSummary({
 
   const score = getOverallScore();
   const scoreColor = score < 60 ? 'text-red-500' : score < 80 ? 'text-yellow-500' : 'text-green-500';
+  
+  // Determine PAL status text and color
+  const getPALStatus = () => {
+    if (!activityPAL) return { text: 'Not tracked', color: 'text-gray-500' };
+    if (activityPAL < 1.4) return { text: 'Low', color: 'text-yellow-500' };
+    if (activityPAL > 1.8) return { text: 'High', color: 'text-blue-500' };
+    return { text: 'Moderate', color: 'text-green-500' };
+  };
+  
+  const { text: palText, color: palColor } = getPALStatus();
   
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -100,6 +112,26 @@ export default function ProfileSummary({
           <p className="text-xl font-bold">{excessNutrients}</p>
         </div>
       </div>
+      
+      {/* Activity PAL */}
+      {activityPAL && (
+        <div className="px-6 py-4 border-t">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Physical Activity Level:</p>
+              <p className={`text-lg font-semibold ${palColor}`}>
+                {activityPAL.toFixed(2)} <span className="text-sm font-normal">({palText})</span>
+              </p>
+            </div>
+            <div className="bg-gray-100 p-2 rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Recommendations Button */}
       {onViewRecommendations && (

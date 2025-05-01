@@ -42,7 +42,6 @@ export default function Navbar() {
           <Link href="/MyNote" className="text-gray-600 hover:text-green-600 transition-colors">Notes</Link>
           <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors">Build Plate</Link>
           <Link href="/MatchAndLearn" className="text-gray-600 hover:text-green-600 transition-colors">Match & Learn</Link>
-          <Link href="/Activity" className="text-gray-600 hover:text-green-600 transition-colors">Activity</Link>
           <Link href="/NutriGap" className="text-gray-600 hover:text-green-600 transition-colors">NutriGap</Link>
           <Link
             href="/NutriScan"
@@ -67,7 +66,6 @@ export default function Navbar() {
             <Link href="/profile" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
             <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Build Plate</Link>
             <Link href="/MyNote" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>My Notes</Link>
-            <Link href="/Activity" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Activity</Link>
             <Link href="/NutriGap" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>NutriGap</Link>
             <Link
               href="/NutriScan"

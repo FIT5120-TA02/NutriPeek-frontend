@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getTargetEnergy } from '@/libs/energyApi';
+import { nutripeekApi } from '@/api/nutripeekApi';
 import { getEnergyStatus } from './useTargetEnergy';
 
 interface Props {
@@ -22,10 +22,10 @@ export default function EnergyComparisonPanel({
 
   useEffect(() => {
     async function fetchEnergyTarget() {
-      const target = await getTargetEnergy({ age, gender, pal });
+      const target = await nutripeekApi.getTargetEnergy(age, gender, pal);
       if (target !== null) {
-        setTargetEnergyKJ(target);
-        const statusResult = getEnergyStatus(mealEnergyKJ, target);
+        setTargetEnergyKJ(target.estimated_energy_requirement);
+        const statusResult = getEnergyStatus(mealEnergyKJ, target.estimated_energy_requirement);
         setStatus(statusResult);
       }
     }
