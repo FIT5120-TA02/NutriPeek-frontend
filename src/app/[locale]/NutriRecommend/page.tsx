@@ -6,6 +6,7 @@ import { nutripeekApi } from '@/api/nutripeekApi';
 import { useRouter } from 'next/navigation';
 import { ChildProfile } from '@/types/profile';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
+import storageService from '@/libs/StorageService';
 import {
   RecommendHeader,
   NutrientList,
@@ -56,6 +57,9 @@ export default function NutriRecommendPage() {
           setLoading(false);
           return;
         }
+
+        // Store ingredient IDs for future reference
+        storageService.setLocalItem('selectedIngredientIds', ingredientIds);
 
         // Get child profile
         const childProfile = NutriRecommendService.getChildProfile(selectedChildId);
@@ -207,10 +211,18 @@ export default function NutriRecommendPage() {
   }, [selectedFoods, missingNutrients.length]);
 
   // Save selection and go to scan again
-  const handleSaveAndScan = () => {
-    // Save the selected foods to the nutrition note if needed
-    NutriRecommendService.saveSelectedFoods(selectedFoods);
-    
+  const handleSaveSelection = () => {
+    // Only save a note if the user has selected foods
+    if (selectedFoods.length > 0) {
+      // Save the selected foods to create a new nutrition note
+      NutriRecommendService.saveSelectedFoods(selectedFoods);
+      // Navigate to notes page
+      router.push('/MyNote');
+    }
+  };
+  
+  // Just go scan more without saving
+  const handleScanMore = () => {
     clearIngredientIds();
     router.push('/NutriScan');
   };
@@ -259,14 +271,45 @@ export default function NutriRecommendPage() {
           />
         </div>
 
-        {/* Action Button */}
-        <div className="flex justify-center mt-8 w-full">
-          <button
-            onClick={handleSaveAndScan}
-            className="px-8 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition text-lg font-semibold"
-          >
-            {selectedFoods.length > 0 ? 'Save Selection & Scan More' : 'Scan Another Food'}
-          </button>
+        {/* Action Buttons */}
+        <div className="flex justify-center gap-4 mt-8 w-full">
+          {selectedFoods.length > 0 ? (
+            <>
+              {/* Save Selection button - only enabled if foods are selected */}
+              <button
+                onClick={handleSaveSelection}
+                className="px-8 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition text-lg font-semibold flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" />
+                </svg>
+                Save Selection & View Notes
+              </button>
+              
+              {/* Scan More button */}
+              <button
+                onClick={handleScanMore}
+                className="px-8 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition text-lg font-semibold flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                </svg>
+                Scan Another Food
+              </button>
+            </>
+          ) : (
+            // Just the Scan More button if no selections
+            <button
+              onClick={handleScanMore}
+              className="px-8 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition text-lg font-semibold flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Scan Another Food
+            </button>
+          )}
         </div>
       </div>
     </FloatingEmojisLayout>

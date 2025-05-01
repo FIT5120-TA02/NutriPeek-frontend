@@ -9,6 +9,7 @@ import { nutripeekApi } from "../../../api/nutripeekApi";
 import ScanningSection from "../../../components/NutriScan/ScanningSection";
 import ResultsSection from "../../../components/NutriScan/ResultsSection";
 import { FoodItemDisplay } from "../../../components/NutriScan/types";
+import storageService from '../../../libs/StorageService';
 
 export default function NutriScanPage() {
   const router = useRouter();
@@ -180,6 +181,7 @@ export default function NutriScanPage() {
         processDetectedFood(resultData.detected_items || [])
           .then(mappedItems => {
             setDetectedItems(mappedItems);
+            // We'll set scannedFoods in ResultsSection when user confirms
             setShowResults(true);
             setProcessingStep('complete');
             toast.success('Food analysis complete!', { id: 'qr-processing' });
@@ -187,7 +189,9 @@ export default function NutriScanPage() {
           .catch(error => {
             toast.error('Failed to map nutrients', { id: 'qr-processing' });
             // Fallback to basic mapping without nutrients
-            setDetectedItems(mapDetectionToDisplay(resultData.detected_items || []));
+            const basicItems = mapDetectionToDisplay(resultData.detected_items || []);
+            setDetectedItems(basicItems);
+            // We'll set scannedFoods in ResultsSection when user confirms
             setShowResults(true);
           });
       } else {
@@ -238,6 +242,7 @@ export default function NutriScanPage() {
         try {
           const mappedItems = await processDetectedFood(detectionData.detected_items);
           setDetectedItems(mappedItems);
+          // We'll set scannedFoods in ResultsSection when user confirms
           setShowResults(true);
           setProcessingStep('complete');
           toast.success('Food analysis complete!', { id: toastId });
@@ -245,7 +250,9 @@ export default function NutriScanPage() {
           console.error('Nutrient mapping failed, falling back to basic display', error);
           toast.error('Nutrient mapping failed, displaying basic results', { id: toastId });
           // Fallback to basic mapping without nutrients
-          setDetectedItems(mapDetectionToDisplay(detectionData.detected_items));
+          const basicItems = mapDetectionToDisplay(detectionData.detected_items);
+          setDetectedItems(basicItems);
+          // We'll set scannedFoods in ResultsSection when user confirms
           setShowResults(true);
           setProcessingStep('idle');
         }
@@ -289,6 +296,9 @@ export default function NutriScanPage() {
       URL.revokeObjectURL(imagePreviewUrl);
       setImagePreviewUrl(null);
     }
+    
+    // Clear the scanned foods when resetting
+    storageService.setLocalItem('scannedFoods', []);
     
     // If on desktop, generate a new QR code
     if (!isMobile) {

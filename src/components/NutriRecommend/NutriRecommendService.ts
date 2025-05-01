@@ -1,11 +1,12 @@
 import { nutripeekApi } from '@/api/nutripeekApi';
-import { NutrientGapResponse } from '@/api/types';
+import { NutrientGapResponse, NutrientGapRequest } from '@/api/types';
 import { ChildProfile } from '@/types/profile';
-import { NutritionalNote } from '@/types/notes';
+import { NutritionalNote, calculateNutritionalScore } from '@/types/notes';
 import { getFoodImageUrl } from '@/utils/assetHelpers';
 import { mapNutrientNameToDbField, mapDbFieldToNutrientName } from '@/utils/nutritionMappings';
 import storageService from '@/libs/StorageService';
 import { ExtendedNutrientGap, FoodItem } from './types';
+import noteService from '@/libs/NoteService';
 
 const CHILDREN_KEY = 'user_children';
 
@@ -111,8 +112,9 @@ export const NutriRecommendService = {
       })
     );
 
-    // Save a nutritional note
-    NutriRecommendService.saveNutritionalNote(result, childProfile);
+    // Store gap results in local storage for future reference
+    // without creating a note
+    storageService.setLocalItem('nutripeekGapResults', result);
 
     return {
       missingNutrients: enrichedNutrients,
@@ -121,56 +123,174 @@ export const NutriRecommendService = {
   },
 
   /**
-   * Save nutritional note to local storage
+   * Save selected foods - creates a new note with the selection
+   * Also recalculates nutritional data with the combined foods
    */
-  saveNutritionalNote(result: NutrientGapResponse, childProfile: ChildProfile): void {
-    const previousNotes = storageService.getLocalItem({
-      key: 'nutri_notes',
-      defaultValue: [],
-    }) as NutritionalNote[];
+  async saveSelectedFoods(selectedFoods: FoodItem[]): Promise<void> {
+    if (selectedFoods.length === 0) return;
+    
+    // Get the stored gap results
+    const storedResults = storageService.getLocalItem<NutrientGapResponse | null>({
+      key: 'nutripeekGapResults',
+      defaultValue: null
+    });
+    
+    if (!storedResults) {
+      console.error('Cannot save foods: No nutrient gap results found');
+      return;
+    }
+    
+    // Get the child profile
+    const childProfile = this.getChildProfile(null);
+    if (!childProfile) {
+      console.error('Cannot save foods: No child profile found');
+      return;
+    }
 
-    const newNote: NutritionalNote = {
-      id: Date.now(),
-      childName: childProfile.name,
-      childGender: childProfile.gender,
-      summary: {
-        totalCalories: result.total_calories,
-        missingCount: Object.keys(result.nutrient_gaps).filter(
-          key => result.nutrient_gaps[key].current_intake / result.nutrient_gaps[key].recommended_intake < 1
-        ).length,
-        excessCount: result.excess_nutrients?.length ?? 0,
-      },
-      nutrient_gaps: result.nutrient_gaps,
-      selectedFoods: [],
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      // Get the original ingredient IDs
+      const originalIngredientIds = storageService.getLocalItem<string[]>({
+        key: 'selectedIngredientIds',
+        defaultValue: []
+      }) || [];
 
-    const updatedNotes = [...previousNotes, newNote];
-    storageService.setLocalItem('nutri_notes', updatedNotes);
+      // Extract IDs from the selected (recommended) foods
+      const recommendedFoodIds = selectedFoods.map(food => food.id);
+      
+      // Combine all ingredient IDs
+      const allIngredientIds = [...originalIngredientIds, ...recommendedFoodIds];
+      
+      // Prepare API request 
+      const apiGender = childProfile.gender.toLowerCase() === 'female' ? 'girl' : 'boy';
+      
+      // Call API to recalculate nutrient data with all ingredients
+      const updatedResults = await nutripeekApi.calculateNutrientGap({
+        child_profile: {
+          age: parseInt(childProfile.age, 10),
+          gender: apiGender
+        },
+        ingredient_ids: allIngredientIds
+      });
+      
+      // Get missing and excess nutrient counts
+      const missingCount = Object.keys(updatedResults.nutrient_gaps).filter(
+        key => updatedResults.nutrient_gaps[key].current_intake / updatedResults.nutrient_gaps[key].recommended_intake < 1
+      ).length;
+      
+      // Create a note with the updated nutritional data
+      this.saveNutritionalNote(
+        updatedResults, 
+        childProfile, 
+        selectedFoods,
+        missingCount,
+        updatedResults.excess_nutrients?.length ?? 0,
+        updatedResults.total_calories
+      );
+    } catch (error) {
+      console.error('Error recalculating nutritional data:', error);
+      
+      // Fallback: create note with existing data if recalculation fails
+      const missingCount = Object.keys(storedResults.nutrient_gaps).filter(
+        key => storedResults.nutrient_gaps[key].current_intake / storedResults.nutrient_gaps[key].recommended_intake < 1
+      ).length;
+      
+      this.saveNutritionalNote(
+        storedResults, 
+        childProfile, 
+        selectedFoods,
+        missingCount,
+        storedResults.excess_nutrients?.length ?? 0
+      );
+    }
   },
 
   /**
-   * Save selected foods to the latest nutritional note
+   * Save nutritional note to local storage
+   * This is only called explicitly when the user chooses to save
    */
-  saveSelectedFoods(selectedFoods: FoodItem[]): void {
-    if (selectedFoods.length === 0) return;
+  saveNutritionalNote(
+    result: NutrientGapResponse, 
+    childProfile: ChildProfile, 
+    selectedFoods: FoodItem[] = [],
+    missingCount?: number,
+    excessCount?: number,
+    totalCalories?: number
+  ): void {
+    // Calculate the overall score for nutrition
+    const overallScore = calculateNutritionalScore(
+      result.nutrient_gaps, 
+      missingCount || 0,
+      excessCount || 0
+    );
     
-    const notes = storageService.getLocalItem({
-      key: 'nutri_notes',
-      defaultValue: [],
-    }) as NutritionalNote[];
+    // Use provided counts or calculate if not provided
+    const actualMissingCount = missingCount !== undefined ? missingCount :
+      Object.keys(result.nutrient_gaps).filter(
+        key => result.nutrient_gaps[key].current_intake / result.nutrient_gaps[key].recommended_intake < 1
+      ).length;
     
-    if (notes.length > 0) {
-      const latestNote = notes[notes.length - 1];
-      latestNote.selectedFoods = selectedFoods.map(food => ({
-        id: food.id,
-        name: food.name,
-        imageUrl: food.imageUrl,
-        nutrients: food.nutrients
-      }));
+    const actualExcessCount = excessCount !== undefined ? excessCount :
+      result.excess_nutrients?.length ?? 0;
       
-      storageService.setLocalItem('nutri_notes', notes);
+    // Get original ingredient IDs for tracking original foods
+    const originalIngredientIds = storageService.getLocalItem<string[]>({
+      key: 'selectedIngredientIds',
+      defaultValue: []
+    }) || [];
+    
+    // Get originally scanned foods if available
+    const scannedFoods = storageService.getLocalItem<FoodItem[]>({
+      key: 'scannedFoods',
+      defaultValue: []
+    }) || [];
+        
+    // Process original foods to ensure they have unique IDs and proper names
+    let originalFoods: FoodItem[] = [];
+    
+    if (scannedFoods.length > 0) {
+      // Use scanned foods and ensure uniqueness
+      originalFoods = scannedFoods.map((food, index) => ({
+        ...food,
+        // Ensure the id is unique by appending the index
+        id: `${food.id}-original-${index}`
+      }));
+    } else {
+      // Fallback to create placeholder foods with unique IDs if no scanned foods found
+      // This should rarely happen after our fix, but keeping as fallback
+      originalFoods = originalIngredientIds.map((id, index) => ({
+        id: `${id}-original-${index}`, // Make ID unique with index suffix
+        name: `Food ${index + 1}`,
+        category: 'Unknown',
+        imageUrl: '',
+        nutrients: {},
+        selected: false,
+        quantity: 1
+      }));
     }
+    
+    // Ensure additional foods have unique IDs too
+    const processedAdditionalFoods = selectedFoods.map((food, index) => ({
+      ...food,
+      id: `${food.id}-additional-${index}`
+    }));
+    
+    // Create note with all the data
+    const noteData = {
+      childName: childProfile.name,
+      childGender: childProfile.gender,
+      childAge: childProfile.age,
+      nutrient_gaps: result.nutrient_gaps,
+      missingCount: actualMissingCount,
+      excessCount: actualExcessCount,
+      totalCalories: totalCalories || result.total_calories,
+      // Include foods
+      originalFoods: originalFoods, // Original foods from scan with unique IDs
+      additionalFoods: processedAdditionalFoods, // Foods selected from recommendations with unique IDs
+      selectedFoods: [...originalFoods, ...processedAdditionalFoods] // All combined foods
+    };
+        
+    // Use the noteService to create the note
+    noteService.createNote(noteData);
   },
 
   /**

@@ -1,57 +1,146 @@
-import { FoodItem } from '@/types/notes';
+import { FoodItem, NutrientComparison } from '@/types/notes';
 import { NutrientInfo } from '@/api/types';
 
 interface NoteData {
-  id: string;
+  id: string | number;
   timestamp: number;
   selectedFoods: FoodItem[];
   nutrient_gaps: Record<string, NutrientInfo>;
+  originalFoods?: FoodItem[];
+  additionalFoods?: FoodItem[];
 }
 
-interface ComparisonResult {
-  name: string;
-  unit: string;
-  added: number;
-  updated: number;
-  recommended: number;
-  percentBefore: number;
-  percentAfter: number;
-}
-
+/**
+ * Calculates a summary of how selected foods impact nutrient gaps
+ * Shows nutrient information before and after adding selected foods
+ * 
+ * @param note Note data with food and nutrient information
+ * @returns Object with total percentage met and detailed comparisons
+ */
 export function calculateGapSummary(note: NoteData): {
   totalMet: number;
-  comparison: ComparisonResult[];
+  comparison: NutrientComparison[];
 } {
-  const { nutrient_gaps, selectedFoods } = note;
+  const { nutrient_gaps, selectedFoods, originalFoods, additionalFoods } = note;
 
+  // Calculate nutrients added from all selected foods
   const addedNutrients: Record<string, number> = {};
-  selectedFoods.forEach((food) => {
+  
+  // Use the foods list in priority: selectedFoods > (originalFoods + additionalFoods) > empty
+  const foodsToProcess = selectedFoods && selectedFoods.length > 0 
+    ? selectedFoods 
+    : [...(originalFoods || []), ...(additionalFoods || [])];
+  
+  // Calculate total added nutrients from all foods
+  foodsToProcess.forEach((food) => {
     if (food.nutrients) {
       for (const [nutrient, value] of Object.entries(food.nutrients)) {
-        addedNutrients[nutrient] = (addedNutrients[nutrient] || 0) + value;
+        // Multiple by quantity if available
+        const actualValue = food.quantity ? value * food.quantity : value;
+        addedNutrients[nutrient] = (addedNutrients[nutrient] || 0) + actualValue;
       }
     }
   });
 
-  const comparison: ComparisonResult[] = Object.entries(nutrient_gaps).map(([name, info]) => {
+  // Create comparison data for each nutrient
+  const comparison: NutrientComparison[] = Object.entries(nutrient_gaps).map(([name, info]) => {
     const added = addedNutrients[name] || 0;
-    const updated = info.current_intake + added;
-    const percentBefore = (info.current_intake / info.recommended_intake) * 100;
-    const percentAfter = (updated / info.recommended_intake) * 100;
+    const beforeValue = info.current_intake;
+    const afterValue = beforeValue + added;
+    const recommendedValue = info.recommended_intake;
+    
+    const percentBefore = recommendedValue > 0 
+      ? Math.min(100, (beforeValue / recommendedValue) * 100) 
+      : 0;
+      
+    const percentAfter = recommendedValue > 0 
+      ? Math.min(100, (afterValue / recommendedValue) * 100) 
+      : 0;
 
     return {
       name,
       unit: info.unit,
+      beforeValue,
+      afterValue,
+      recommendedValue,
+      percentBefore,
+      percentAfter,
       added,
-      updated,
-      recommended: info.recommended_intake,
-      percentBefore: Math.min(percentBefore, 100),
-      percentAfter: Math.min(percentAfter, 100),
     };
   });
 
-  const totalMet =
-    comparison.reduce((sum, item) => sum + item.percentAfter, 0) / (comparison.length || 1);
+  // Calculate total percentage of nutrients met across all nutrients
+  const totalMetBefore = comparison.reduce((sum, item) => sum + item.percentBefore, 0) / (comparison.length || 1);
+  const totalMetAfter = comparison.reduce((sum, item) => sum + item.percentAfter, 0) / (comparison.length || 1);
+  
+  // Sort comparison by the percentage improvement (descending)
+  comparison.sort((a, b) => {
+    // Calculate percentage improvement for each
+    const improvementA = a.percentAfter - a.percentBefore;
+    const improvementB = b.percentAfter - b.percentBefore;
+    return improvementB - improvementA;
+  });
 
-  return { totalMet, comparison };
+  return { 
+    totalMet: totalMetAfter,
+    comparison
+  };
+}
+
+/**
+ * Generate nutrient comparisons for a note
+ * This can be used when creating or updating a note
+ * 
+ * @param nutrientGaps Current nutrient information
+ * @param foods Foods to calculate added nutrients from
+ * @returns Array of nutrient comparisons
+ */
+export function generateNutrientComparisons(
+  nutrientGaps: Record<string, NutrientInfo>,
+  foods: FoodItem[]
+): NutrientComparison[] {
+  const addedNutrients: Record<string, number> = {};
+  
+  // Calculate added nutrients from foods
+  foods.forEach((food) => {
+    if (food.nutrients) {
+      for (const [nutrient, value] of Object.entries(food.nutrients)) {
+        // Multiple by quantity if available
+        const actualValue = food.quantity ? value * food.quantity : value;
+        addedNutrients[nutrient] = (addedNutrients[nutrient] || 0) + actualValue;
+      }
+    }
+  });
+
+  // Create comparison data for each nutrient
+  return Object.entries(nutrientGaps).map(([name, info]) => {
+    const added = addedNutrients[name] || 0;
+    const beforeValue = info.current_intake;
+    const afterValue = beforeValue + added;
+    const recommendedValue = info.recommended_intake;
+    
+    const percentBefore = recommendedValue > 0 
+      ? Math.min(100, (beforeValue / recommendedValue) * 100) 
+      : 0;
+      
+    const percentAfter = recommendedValue > 0 
+      ? Math.min(100, (afterValue / recommendedValue) * 100) 
+      : 0;
+
+    return {
+      name,
+      unit: info.unit,
+      beforeValue,
+      afterValue,
+      recommendedValue,
+      percentBefore,
+      percentAfter,
+      added,
+    };
+  }).sort((a, b) => {
+    // Sort by improvement (descending)
+    const improvementA = a.percentAfter - a.percentBefore;
+    const improvementB = b.percentAfter - b.percentBefore;
+    return improvementB - improvementA;
+  });
 }
