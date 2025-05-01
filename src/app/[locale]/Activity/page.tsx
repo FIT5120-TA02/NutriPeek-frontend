@@ -115,6 +115,8 @@ export default function ActivityPage() {
           onCalculate={handleCalculate}
           loading={loading}
           child={selectedChild}
+          selectedActivities={selectedActivities}
+          setSelectedActivities={setSelectedActivities}
         />
 
         {result && selectedChild && (
