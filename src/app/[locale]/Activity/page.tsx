@@ -39,6 +39,7 @@ export default function ActivityPage() {
     setChildIndex(newIndex);
     setSelectedChild(children[newIndex]);
     localStorage.setItem('selectedChild', JSON.stringify(children[newIndex]));
+    handleAvatarClick();
   };
 
   const handleNextChild = () => {
@@ -46,6 +47,7 @@ export default function ActivityPage() {
     setChildIndex(newIndex);
     setSelectedChild(children[newIndex]);
     localStorage.setItem('selectedChild', JSON.stringify(children[newIndex]));
+    handleAvatarClick();
   };
 
   const handleAvatarClick = () => {
@@ -115,13 +117,18 @@ export default function ActivityPage() {
           child={selectedChild}
         />
 
-        {result && (
+        {result && selectedChild && (
           <>
             <div className="mt-8">
               <ActivityResultPanel result={result} />
             </div>
             <div className="mt-6">
-              <EnergyComparisonPanel result={result} mealEnergy={mealEnergy} />
+              <EnergyComparisonPanel
+                mealEnergyKJ={mealEnergy}
+                age={selectedChild.age}
+                gender={selectedChild.gender}
+                pal={result.pal}
+              />
             </div>
           </>
         )}
@@ -129,4 +136,5 @@ export default function ActivityPage() {
     </div>
   );
 }
+
 
