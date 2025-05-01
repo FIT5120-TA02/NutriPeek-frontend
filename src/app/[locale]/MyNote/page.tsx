@@ -1,20 +1,31 @@
 'use client';
 
-import { motion } from "framer-motion";
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import storageService from '@/libs/StorageService';
+import { NutrientGapResponse } from '@/api/types';
 import NoteCard from '@/components/Note/NoteCard';
-import { NutritionalNote, isValidNote } from '@/types/notes';
 import { ChildProfile } from '@/types/profile';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import { useRouter } from 'next/navigation';
+import BackButton from '@/components/ui/BackButton';
 
 const NOTES_KEY = 'nutri_notes';
 const CHILDREN_KEY = 'user_children';
 
+const isValidNote = (note: any): note is NutrientGapResponse => {
+  return (
+    note &&
+    typeof note.id === 'string' &&
+    typeof note.timestamp === 'number' &&
+    Array.isArray(note.selectedFoods) &&
+    typeof note.nutrient_gaps === 'object'
+  );
+};
+
 export default function MyNotePage() {
   const router = useRouter();
-  const [notes, setNotes] = useState<NutritionalNote[]>([]);
+  const [notes, setNotes] = useState<NutrientGapResponse[]>([]);
   const [children, setChildren] = useState<ChildProfile[]>([]);
 
   useEffect(() => {
@@ -26,8 +37,8 @@ export default function MyNotePage() {
     setChildren(Array.isArray(savedChildren) ? savedChildren : []);
   }, []);
 
-  const deleteNote = (noteId: string | number) => {
-    const updated = notes.filter(note => note.id !== noteId);
+  const deleteNote = (index: number) => {
+    const updated = notes.filter((_, i) => i !== index);
     storageService.setLocalItem(NOTES_KEY, updated);
     setNotes(updated);
   };
@@ -36,63 +47,46 @@ export default function MyNotePage() {
     router.push('/NutriScan');
   };
 
-  const renderContent = () => {
-    if (notes.length === 0) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6">
-          <motion.div 
-            className="flex flex-col items-center text-center"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-          >
-            <motion.img 
-              src="/images/empty-notes.png" 
-              alt="No notes found" 
-              className="w-40 h-40 mb-6"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              onError={(e) => {
-                // Fallback if image doesn't exist
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <motion.h1 
-              className="text-3xl md:text-4xl font-bold text-center mb-4 text-green-700"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              No Nutrition Notes Yet!
-            </motion.h1>
-            <motion.p
-              className="text-lg text-gray-600 max-w-md mb-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              Let's discover what nutrients your child needs. Start by scanning some food items!
-            </motion.p>
-            <motion.button
-              onClick={handleNavigateToScan}
-              className="px-6 py-3 bg-green-500 text-white rounded-full font-medium shadow-md hover:bg-green-600 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              Scan Food Now 🍎
-            </motion.button>
-          </motion.div>
-        </div>
-      );
-    }
-
+  if (notes.length === 0) {
     return (
+      <FloatingEmojisLayout backgroundClasses="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex items-center justify-center text-gray-600">
+        <motion.div
+          className="flex flex-col items-center text-center px-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <img
+            src="/images/empty-notes.png"
+            alt="No notes"
+            className="w-40 h-40 mb-6"
+            onError={(e) => (e.currentTarget.style.display = 'none')}
+          />
+          <h2 className="text-3xl font-bold text-green-700 mb-4">No Nutrition Notes Yet!</h2>
+          <p className="text-gray-600 text-lg mb-6">
+            Let’s discover what nutrients your child needs. Start by scanning some food items!
+          </p>
+          <button
+            onClick={handleNavigateToScan}
+            className="px-6 py-3 bg-green-500 text-white rounded-full font-medium shadow hover:bg-green-600 transition-transform transform hover:scale-105"
+          >
+            Scan Food Now 🍎
+          </button>
+        </motion.div>
+      </FloatingEmojisLayout>
+    );
+  }
+
+  return (
+    <FloatingEmojisLayout
+      emojisCount={20}
+      backgroundClasses="min-h-screen flex flex-col bg-gradient-to-b from-green-50 to-green-100"
+    >
       <div className="w-full px-6 py-20 max-w-7xl mx-auto">
-        <motion.h1 
+        {/* Added Back Button */}
+        <BackButton to="/recommendation" label="Back to Recommendations" />
+
+        <motion.h1
           className="text-3xl font-bold text-center text-green-700 mb-10"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -101,17 +95,14 @@ export default function MyNotePage() {
           My Nutrition Notes
         </motion.h1>
 
-        <motion.div 
+        <motion.div
           className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
         >
           {notes.map((note, index) => {
-            const child = { 
-              name: note.childName, 
-              gender: note.childGender 
-            };
+            const child = children[index] || { name: 'Unknown', gender: 'male' };
 
             return (
               <motion.div
@@ -121,11 +112,11 @@ export default function MyNotePage() {
                 transition={{ duration: 0.3, delay: index * 0.1 }}
               >
                 <NoteCard
-                  id={String(note.id)}
-                  timestamp={new Date(note.createdAt).getTime()}
-                  selectedFoods={note.selectedFoods || []}
+                  id={note.id}
+                  timestamp={note.timestamp}
+                  selectedFoods={note.selectedFoods}
                   nutrient_gaps={note.nutrient_gaps}
-                  onDelete={() => deleteNote(note.id)}
+                  onDelete={() => deleteNote(index)}
                   child={child}
                 />
               </motion.div>
@@ -133,15 +124,6 @@ export default function MyNotePage() {
           })}
         </motion.div>
       </div>
-    );
-  };
-
-  return (
-    <FloatingEmojisLayout
-      emojisCount={20}
-      backgroundClasses="min-h-screen flex flex-col bg-gradient-to-b from-green-50 to-green-100"
-    >
-      {renderContent()}
     </FloatingEmojisLayout>
   );
 }

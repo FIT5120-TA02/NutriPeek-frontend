@@ -38,6 +38,7 @@ export default function NoteCard({
     return isNaN(date.getTime()) ? 'Invalid Date' : format(date, 'yyyy-MM-dd HH:mm');
   })();
 
+  console.log('[DEBUG selectedFoods]', selectedFoods);
   const { totalMet, comparison } = calculateGapSummary({
     id,
     timestamp,
