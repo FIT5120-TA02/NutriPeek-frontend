@@ -7,6 +7,7 @@ import { useNutrition } from '../../../contexts/NutritionContext';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import storageService from '@/libs/StorageService';
 import { ChildProfile } from '@/types/profile';
+import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 
 // Components
 import ProfileSummary from '@/components/NutriGap/ProfileSummary';
@@ -144,7 +145,10 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-green-50">
+    <FloatingEmojisLayout
+      backgroundClasses="min-h-screen w-full bg-gradient-to-b from-green-50 to-green-100"
+      emojisCount={20}
+    >
       <div className="max-w-7xl mx-auto pt-24 pb-16 px-6 lg:px-8 w-full">
         
         {/* Title */}
@@ -241,7 +245,7 @@ export default function ResultsPage() {
           </button>
         </div>
       </div>
-    </div>
+    </FloatingEmojisLayout>
   );
 }
 
