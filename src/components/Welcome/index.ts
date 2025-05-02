@@ -1,5 +1,6 @@
 export { default as HeroSection } from './HeroSection';
 export { default as CoreFeaturesSection } from './CoreFeaturesSection';
+export { default as FeatureSection } from './FeatureSection';
 export { default as PlateBuilderSection } from './PlateBuilderSection';
 export { default as MatchAndLearnSection } from './MatchAndLearnSection';
 export { default as BenefitsSection } from './BenefitsSection';

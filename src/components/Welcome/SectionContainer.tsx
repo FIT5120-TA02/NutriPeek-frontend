@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface SectionContainerProps {
@@ -28,6 +28,23 @@ export default function SectionContainer({
   removeMinHeight = false,
   backgroundClasses = ''
 }: SectionContainerProps) {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Check if mobile view
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Check on mount
+    checkIfMobile();
+    
+    // Update on resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
   return (
     <motion.section
       id={id}
@@ -37,21 +54,21 @@ export default function SectionContainer({
       transition={{ duration: 0.7 }}
       className={`
         relative 
-        ${removeMinHeight ? '' : 'min-h-screen h-screen'} 
+        ${removeMinHeight ? '' : 'min-h-[100vh] h-auto md:h-screen'} 
         w-full 
         flex 
         flex-col 
         justify-center 
         items-center 
-        py-16 
+        ${isMobile ? 'pt-20 pb-8' : 'py-8 sm:py-12 md:py-16'}
         px-4 
         overflow-visible
-        scroll-mt-16
+        ${isMobile ? 'scroll-mt-20' : 'scroll-mt-8 sm:scroll-mt-16'}
         ${backgroundClasses}
         ${className}
       `}
     >
-      <div className="container mx-auto max-w-7xl z-10">
+      <div className="container mx-auto max-w-7xl z-10 w-full">
         {children}
       </div>
     </motion.section>

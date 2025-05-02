@@ -1,9 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Card from '../ui/Card';
-import { Database, ArrowSquareOut, FileCsv, Calendar, Shield, Activity, Lightning } from 'phosphor-react';
+import Link from 'next/link';
+import { Database, ArrowSquareOut, FileCsv, Calendar, Shield, Activity, Lightning, CaretRight } from 'phosphor-react';
 import SectionContainer from './SectionContainer';
+import MobileCarousel, { CarouselItem } from '../ui/MobileCarousel';
 
 /**
  * Tools & Integration section component
@@ -11,6 +14,8 @@ import SectionContainer from './SectionContainer';
  * Builds trust by showing reliable sources of information
  */
 export default function ToolsIntegrationSection() {
+  const [isMobile, setIsMobile] = useState(false);
+  
   const integrations = [
     {
       name: "Food Nutrition Dataset",
@@ -50,63 +55,116 @@ export default function ToolsIntegrationSection() {
     }
   ];
 
+  // Check if mobile view
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Check on mount
+    checkIfMobile();
+    
+    // Update on resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  // Generate carousel items
+  const carouselItems: CarouselItem[] = integrations.map((integration, index) => ({
+    key: index,
+    content: (
+      <Card className="h-full bg-gray-50/80 backdrop-blur-sm border border-white/20">
+        <div className="flex flex-col h-full p-4">
+          <div className="flex items-start mb-3">
+            <div className="p-1.5 bg-white rounded-full shadow-sm mr-3 flex-shrink-0">
+              {integration.icon}
+            </div>
+            <h3 className="text-base font-bold text-gray-800 leading-tight">{integration.name}</h3>
+          </div>
+          <p className="text-sm text-gray-600 mb-3 flex-grow">{integration.description}</p>
+          <a 
+            href={integration.link} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-xs text-green-600 font-medium flex items-center hover:text-green-700 transition-colors"
+          >
+            View Source
+            <ArrowSquareOut size={14} className="ml-1" />
+          </a>
+        </div>
+      </Card>
+    )
+  }));
+
   return (
-    <SectionContainer>
+    <SectionContainer id="tools">
       <motion.div 
-        className="text-center mb-12"
+        className="text-center mb-8 md:mb-12"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.7 }}
       >
-        <h2 className="text-3xl md:text-4xl font-bold text-green-600 mb-4">Tools & Integrations</h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-600 mb-3 md:mb-4">Tools & Integrations</h2>
+        <p className="text-sm md:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto px-4">
           NutriPeek leverages reliable datasets to provide accurate nutritional information for Australian families.
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {integrations.map((integration, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
-            <Card className="h-full bg-gray-50/80 backdrop-blur-sm hover:bg-green-50/60 transition-all duration-300 border border-white/20">
-              <div className="flex flex-col h-full">
-                <div className="flex items-center mb-3">
-                  <div className="p-1.5 bg-white rounded-full shadow-sm mr-3">
-                    {integration.icon}
+      {/* Desktop View - Grid Layout */}
+      {!isMobile ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 px-4 sm:px-0">
+          {integrations.map((integration, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Card className="h-full bg-gray-50/80 backdrop-blur-sm hover:bg-green-50/60 transition-all duration-300 border border-white/20">
+                <div className="flex flex-col h-full">
+                  <div className="flex items-start sm:items-center mb-2 sm:mb-3">
+                    <div className="p-1.5 bg-white rounded-full shadow-sm mr-2 sm:mr-3 flex-shrink-0">
+                      {integration.icon}
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold text-gray-800 leading-tight">{integration.name}</h3>
                   </div>
-                  <h3 className="text-base font-bold text-gray-800">{integration.name}</h3>
+                  <p className="text-xs text-gray-600 mb-2 sm:mb-3 flex-grow">{integration.description}</p>
+                  <a 
+                    href={integration.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-green-600 font-medium flex items-center hover:text-green-700 transition-colors"
+                  >
+                    View Source
+                    <ArrowSquareOut size={14} className="ml-1" />
+                  </a>
                 </div>
-                <p className="text-xs text-gray-600 mb-3 flex-grow">{integration.description}</p>
-                <a 
-                  href={integration.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs text-green-600 font-medium flex items-center hover:text-green-700 transition-colors"
-                >
-                  View Source
-                  <ArrowSquareOut size={14} className="ml-1" />
-                </a>
-              </div>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        /* Mobile View - Carousel */
+        <div className="md:hidden px-4">
+          <MobileCarousel 
+            items={carouselItems}
+            className="mb-8"
+          />
+        </div>
+      )}
 
       <motion.div 
-        className="max-w-4xl mx-auto mt-12 bg-green-50/70 backdrop-blur-sm p-6 rounded-xl border border-white/30"
+        className="max-w-4xl mx-auto mt-8 md:mt-12 bg-green-50/70 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-white/30"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.7, delay: 0.4 }}
       >
-        <h3 className="text-lg font-bold text-green-700 mb-3 text-center">Data-Driven Nutritional Guidance</h3>
-        <p className="text-sm text-gray-700 text-center">
+        <h3 className="text-base sm:text-lg font-bold text-green-700 mb-2 sm:mb-3 text-center">Data-Driven Nutritional Guidance</h3>
+        <p className="text-xs sm:text-sm text-gray-700 text-center">
           Our nutritional recommendations are powered by high-quality datasets focused on 
           Australian dietary guidelines and children's nutritional needs, updated regularly 
           to ensure accuracy and relevance.

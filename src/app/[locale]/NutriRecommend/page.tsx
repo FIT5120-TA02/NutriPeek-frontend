@@ -244,7 +244,7 @@ export default function NutriRecommendPage() {
       // Save the selected foods to create a new nutrition note
       NutriRecommendService.saveSelectedFoods(selectedFoods);
       // Navigate to notes page
-      router.push('/MyNote');
+      router.push('/Note');
     }
   };
   
