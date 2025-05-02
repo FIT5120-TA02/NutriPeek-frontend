@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import UnitFormatter from '@/components/UnitFormatter/UnitFormatter';
+import UnitFormatter from '@/utils/UnitFormatter';
 import { ChildEnergyRequirementsResponse } from '@/api/types';
 
 interface NutrientData {

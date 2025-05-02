@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Trash2, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import UnitFormatter from '@/components/UnitFormatter/UnitFormatter';
+import UnitFormatter from '@/utils/UnitFormatter';
 import ChildAvatar from '@/components/ui/ChildAvatar';
 import { FoodItem, NutrientComparison, calculateNutritionalScore } from '@/types/notes';
 import { NutrientInfo } from '@/api/types';

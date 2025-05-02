@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import UnitFormatter from '@/components/UnitFormatter/UnitFormatter';
+import UnitFormatter from '@/utils/UnitFormatter';
 
 // Dynamically import the Chart component to prevent SSR issues
 const Chart = dynamic(() => import('react-apexcharts').then((mod) => mod.default), { ssr: false });

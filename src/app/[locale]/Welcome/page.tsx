@@ -14,7 +14,7 @@ import {
   FAQSection,
   FooterSection,
   SectionIndicator
-} from '@/components/landing';
+} from '@/components/Welcome';
 
 /**
  * Welcome page component - Main landing page
