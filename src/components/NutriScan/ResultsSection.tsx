@@ -33,6 +33,22 @@ export default function ResultsSection({
   const [activityPAL, setActivityPAL] = useState<number | null>(null);
   
   const CHILDREN_KEY = "user_children";
+  
+  /**
+   * Important: Clear any previously stored activity data when component mounts
+   * This fixes the bug where old activity data persists when users revisit the page
+   */
+  useEffect(() => {
+    // Clear previously stored activity data to prevent using stale data
+    storageService.removeLocalItem('activityResult');
+    storageService.removeLocalItem('activityPAL');
+    storageService.removeLocalItem('selectedActivities');
+    storageService.removeLocalItem('energyRequirements');
+    
+    // Reset the state values
+    setSelectedActivities([]);
+    setActivityPAL(null);
+  }, []);
 
   // Load child profiles
   useEffect(() => {
@@ -137,8 +153,8 @@ export default function ResultsSection({
       // Check if activity data is present
       const hasActivityData = selectedActivities && selectedActivities.length > 0;
       
-      // If we have activity data but haven't calculated PAL yet, calculate it now
-      let calculatedPAL = activityPAL;
+      // Always use the current activity data for PAL calculation, not previous data
+      let calculatedPAL = null;
       let energyRequirements = null;
       
       if (hasActivityData) {
@@ -148,13 +164,14 @@ export default function ResultsSection({
         const childGender = childProfile.gender.toLowerCase() === 'female' || childProfile.gender.toLowerCase() === 'girl' ? 'girl' : 'boy';
         
         try {
-          if (!calculatedPAL) {
-            // Calculate PAL first if we don't have it
-            const activityResult = await nutripeekApi.calculatePAL(childAge, selectedActivities);
-            calculatedPAL = activityResult.pal;
-            storageService.setLocalItem('activityResult', activityResult);
-            storageService.setLocalItem('activityPAL', activityResult.pal);
-          }
+          // Always calculate fresh PAL based on current selected activities
+          const activityResult = await nutripeekApi.calculatePAL(childAge, selectedActivities);
+          calculatedPAL = activityResult.pal;
+          
+          // Store the latest activity data
+          storageService.setLocalItem('activityResult', activityResult);
+          storageService.setLocalItem('activityPAL', calculatedPAL);
+          storageService.setLocalItem('selectedActivities', selectedActivities);        
           
           // Now get the target energy based on the PAL
           if (calculatedPAL) {
@@ -164,6 +181,12 @@ export default function ResultsSection({
         } catch (error) {
           console.error("Error calculating PAL or target energy:", error);
         }
+      } else {
+        // Clear any previous activity data if no activities are selected
+        storageService.removeLocalItem('activityResult');
+        storageService.removeLocalItem('activityPAL');
+        storageService.removeLocalItem('selectedActivities');
+        storageService.removeLocalItem('energyRequirements');
       }
       
       // Navigate to the results page (locale-aware routing)
@@ -249,7 +272,10 @@ export default function ResultsSection({
     );
   };
 
-  // Handle activity result from ActivityCalendar
+  /**
+   * Handle activity result from ActivityCalendar
+   * This callback receives the calculated PAL from the Calendar component
+   */
   const handleActivityResult = async (pal: number) => {
     setActivityPAL(pal);
     
@@ -267,12 +293,10 @@ export default function ResultsSection({
       // Call the API to calculate PAL with the array of ActivityEntry objects
       const activityResult = await nutripeekApi.calculatePAL(childAge, selectedActivities);
       
-      // Store the full activity result for later use
-      storageService.setLocalItem('activityResult', activityResult);
-      
-      // Also store individual values for backward compatibility
-      storageService.setLocalItem('activityPAL', activityResult.pal);
-      storageService.setLocalItem('selectedActivities', selectedActivities);
+      // We do NOT store the activity results here anymore.
+      // Instead, we wait until the user proceeds to calculation and store it there.
+      // This prevents stale data from persisting.
+      console.log('Activity PAL calculated:', activityResult.pal, '(not storing yet)');
     } catch (error) {
       console.error('Error calculating PAL:', error);
     }
