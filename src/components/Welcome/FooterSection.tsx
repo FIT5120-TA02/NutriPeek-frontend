@@ -38,49 +38,50 @@ export default function FooterSection() {
 
   return (
     <SectionContainer 
-      removeMinHeight={true} 
       backgroundClasses="bg-green-800"
-      className="py-12 text-white"
+      className="py-8 text-white"
+      removeMinHeight={true} 
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Logo and Description */}
-        <motion.div 
-          className="col-span-1 md:col-span-1"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex items-center mb-4">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3">
-              <div className="flex items-center justify-center w-6 h-6">
-                <Image
-                  src={nutriPeekLogo}
-                  alt="NutriPeek Logo"
-                  width={24}
-                  height={24}
-                  className="object-contain"
-                  priority
-                />
-              </div>
+      {/* Logo and Description */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
+        <div className="flex items-center mb-4">
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3">
+            <div className="flex items-center justify-center w-6 h-6">
+              <Image
+                src={nutriPeekLogo}
+                alt="NutriPeek Logo"
+                width={24}
+                height={24}
+                className="object-contain"
+                priority
+              />
             </div>
-            <h3 className="text-xl font-bold">NutriPeek</h3>
           </div>
-          <p className="text-green-200 text-sm mb-4">
-            Empowering Australian parents to prepare healthier school lunches with confidence.
-          </p>
-        </motion.div>
+          <h3 className="text-xl font-bold">NutriPeek</h3>
+        </div>
+        <p className="text-green-200 text-sm">
+          Empowering Australian parents to prepare healthier school lunches with confidence.
+        </p>
+      </motion.div>
 
+      {/* Links section - side by side on all screens */}
+      <motion.div 
+        className="grid grid-cols-2 gap-x-4 gap-y-8 mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
         {/* Quick Links */}
-        <motion.div 
-          className="col-span-1"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-          <ul className="space-y-2">
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Quick Links</h3>
+          <ul className="space-y-1.5">
             {[
               { name: 'Home', path: '/#hero' },
               { name: 'Features', path: '/#features' },
@@ -99,23 +100,17 @@ export default function FooterSection() {
               </li>
             ))}
           </ul>
-        </motion.div>
+        </div>
 
         {/* Legal */}
-        <motion.div 
-          className="col-span-1"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <h3 className="text-lg font-semibold mb-4">Legal</h3>
-          <ul className="space-y-2">
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Legal</h3>
+          <ul className="space-y-1.5">
             {[
-              { name: 'Privacy Policy', path: '/' }, // TODO: Add privacy policy page
-              { name: 'Terms of Service', path: '/' }, // TODO: Add terms of service page
-              { name: 'Cookie Policy', path: '/' }, // TODO: Add cookie policy page
-              { name: 'Data Usage', path: '/' } // TODO: Add data usage page
+              { name: 'Privacy Policy', path: '/' },
+              { name: 'Terms of Service', path: '/' },
+              { name: 'Cookie Policy', path: '/' },
+              { name: 'Data Usage', path: '/' }
             ].map((link, index) => (
               <li key={index}>
                 <Link 
@@ -127,11 +122,11 @@ export default function FooterSection() {
               </li>
             ))}
           </ul>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
-      <div className="border-t border-green-700 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
-        <p className="text-green-300 text-sm mb-4 md:mb-0">
+      <div className="border-t border-green-700 pt-6 flex flex-col sm:flex-row justify-between items-center">
+        <p className="text-green-300 text-sm mb-4 sm:mb-0">
           © {currentYear} NutriPeek. All rights reserved.
         </p>
         <p className="text-green-300 text-sm">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CaretDown, CaretUp } from 'phosphor-react';
 import SectionContainer from './SectionContainer';
@@ -12,11 +12,8 @@ import SectionContainer from './SectionContainer';
  */
 export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  const toggleFAQ = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
-  };
-
+  const [isMobile, setIsMobile] = useState(false);
+  
   const faqs = [
     {
       question: "How does the image recognition feature work?",
@@ -56,17 +53,36 @@ export default function FAQSection() {
     }
   ];
 
+  // Check if mobile view
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Check on mount
+    checkIfMobile();
+    
+    // Update on resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  const toggleFAQ = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
   return (
-    <SectionContainer id="faq" backgroundClasses="bg-green-50/40 backdrop-blur-sm">
+    <SectionContainer id="faq" backgroundClasses="bg-green-50/40 backdrop-blur-sm" removeMinHeight={true}>
       <motion.div 
-        className="text-center mb-16"
+        className="text-center mb-8 md:mb-12"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.7 }}
       >
-        <h2 className="text-3xl md:text-4xl font-bold text-green-600 mb-4">FAQ</h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-600 mb-3 md:mb-4">FAQ</h2>
+        <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-4">
           Got questions? We've got answers to help you get started with NutriPeek.
         </p>
       </motion.div>
@@ -76,24 +92,23 @@ export default function FAQSection() {
           <motion.div 
             key={index}
             initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="mb-4"
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.05 }}
+            className="mb-3 md:mb-4 px-4 sm:px-0"
           >
             <div 
               className={`bg-white/80 backdrop-blur-sm rounded-lg shadow-md overflow-hidden border ${openIndex === index ? 'border-green-300' : 'border-white/30'}`}
             >
               <button
-                className="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none"
+                className="w-full px-4 py-3 md:px-6 md:py-4 text-left flex justify-between items-center focus:outline-none"
                 onClick={() => toggleFAQ(index)}
                 aria-expanded={openIndex === index}
               >
-                <span className="font-semibold text-gray-800">{faq.question}</span>
+                <span className="font-semibold text-sm sm:text-base text-gray-800">{faq.question}</span>
                 {openIndex === index ? (
-                  <CaretUp size={20} className="text-green-600" />
+                  <CaretUp size={18} className="text-green-600 flex-shrink-0" />
                 ) : (
-                  <CaretDown size={20} className="text-green-600" />
+                  <CaretDown size={18} className="text-green-600 flex-shrink-0" />
                 )}
               </button>
               
@@ -106,7 +121,7 @@ export default function FAQSection() {
                     transition={{ duration: 0.3 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-6 pb-4 text-gray-600">
+                    <div className="px-4 pb-3 md:px-6 md:pb-4 text-gray-600 text-sm sm:text-base">
                       {faq.answer}
                     </div>
                   </motion.div>
@@ -116,17 +131,19 @@ export default function FAQSection() {
           </motion.div>
         ))}
       </div>
-
+    
       <motion.div 
-        className="text-center mt-12"
+        className="text-center mt-6 md:mt-8 mb-4"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.7, delay: 0.5 }}
+        transition={{ duration: 0.7, delay: 0.3 }}
       >
-        <p className="text-gray-700">
-          Have more questions? <a href="#" className="text-green-600 font-medium hover:underline">Contact us</a>
-        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <p className="text-gray-700 text-sm sm:text-base">
+            Have more questions? <a href="#" className="text-green-600 font-medium hover:underline">Contact us</a>
+          </p>
+        </div>
       </motion.div>
     </SectionContainer>
   );
