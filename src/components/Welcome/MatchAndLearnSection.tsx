@@ -20,23 +20,7 @@ export default function MatchAndLearnSection() {
   ];
 
   return (
-    <SectionContainer id="match-and-learn" backgroundClasses="bg-gradient-to-b from-orange-50/30 to-purple-50/30 relative">
-      {/* Visual connection elements - connection to previous section */}
-      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1 sm:w-2 h-16 sm:h-32 bg-gradient-to-b from-orange-200 to-purple-200 hidden sm:block"></div>
-      <div className="absolute top-10 sm:top-20 left-1/2 transform -translate-x-1/2 w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-purple-200 z-10 animate-pulse hidden sm:block"></div>
-      
-      {/* Connection label - previous */}
-      <div className="hidden sm:block absolute top-21 left-1/2 transform -translate-x-1/2 z-20 px-3 py-1 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-purple-100 text-xs font-medium text-purple-600">
-        Previous Feature
-      </div>
-      
-      {/* Up arrow indicator */}
-      <div className="absolute top-8 sm:top-16 left-1/2 transform -translate-x-1/2 rotate-180 z-20 hidden sm:block">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="animate-bounce">
-          <path d="M12 17L5 10H19L12 17Z" fill="#f97316" />
-        </svg>
-      </div>
-      
+    <SectionContainer id="match-and-learn" backgroundClasses="bg-gradient-to-b from-orange-50/30 to-purple-50/30 relative" removeMinHeight={true}>
       <div className="bg-gradient-to-br from-purple-50 to-white rounded-3xl overflow-hidden py-8 sm:py-12 px-4 sm:px-6 lg:px-12 shadow-md border border-purple-100">
         <div className="flex flex-col lg:flex-row-reverse items-center justify-between gap-6 lg:gap-12">
           {/* Text Content Side */}

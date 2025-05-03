@@ -133,22 +133,16 @@ export default function WelcomePage() {
     };
   }, [sectionIds, determineActiveSection]);
 
-  // Function to check if scroll indicator should be visible
-  const shouldShowScrollIndicator = () => {
-    // Hide in features sections (1,2,3) and footer (8)
-    return (activeSection !== 1 && 
-           activeSection !== 2 && 
-           activeSection !== 7 &&
-           activeSection !== 8) || isMobile;
-  };
-
   // Handle section change from SectionIndicator
   const handleSectionChange = (index: number) => {
     setActiveSection(index);
   };
 
+  // Inside the component definition, after state variables
+  const floatingEmojisLayoutKey = "welcome-page-emojis";
+
   return (
-    <FloatingEmojisLayout 
+    <FloatingEmojisLayout key={floatingEmojisLayoutKey} 
       emojisCount={isMobile ? 10 : 20}
       backgroundClasses="min-h-screen flex flex-col w-full bg-gradient-to-b from-green-50 to-green-100"
     >
@@ -162,7 +156,7 @@ export default function WelcomePage() {
 
       {/* Scroll snap container */}
       <div 
-        className="h-screen w-full overflow-y-auto snap-y snap-mandatory md:snap-mandatory scroll-smooth scrollbar-hide"
+        className="h-screen w-full overflow-y-auto scrollbar-hide"
         id="main-scroll-container"
       >
         {/* Using the new components with IDs for scrolling */}
@@ -196,7 +190,7 @@ export default function WelcomePage() {
       </div>
 
       {/* Floating Scroll Indicator - hidden in features sections and footer */}
-      {shouldShowScrollIndicator() && (
+      {!isMobile && (
         <AnimatePresence>
             <motion.div
               className="fixed bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-white/80 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 shadow-md flex items-center"

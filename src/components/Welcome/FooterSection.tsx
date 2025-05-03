@@ -40,6 +40,7 @@ export default function FooterSection() {
     <SectionContainer 
       backgroundClasses="bg-green-800"
       className="py-8 text-white"
+      removeMinHeight={true} 
     >
       {/* Logo and Description */}
       <motion.div

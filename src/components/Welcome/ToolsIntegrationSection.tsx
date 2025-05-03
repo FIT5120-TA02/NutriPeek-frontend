@@ -98,7 +98,7 @@ export default function ToolsIntegrationSection() {
   }));
 
   return (
-    <SectionContainer id="tools">
+    <SectionContainer id="tools" removeMinHeight={true}>
       <motion.div 
         className="text-center mb-8 md:mb-12"
         initial={{ opacity: 0, y: 20 }}
@@ -114,7 +114,7 @@ export default function ToolsIntegrationSection() {
 
       {/* Desktop View - Grid Layout */}
       {!isMobile ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 px-4 sm:px-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 px-4 sm:px-0">
           {integrations.map((integration, index) => (
             <motion.div
               key={index}
@@ -152,6 +152,8 @@ export default function ToolsIntegrationSection() {
           <MobileCarousel 
             items={carouselItems}
             className="mb-8"
+            autoAdvance={true}
+            autoAdvanceInterval={4000}
           />
         </div>
       )}

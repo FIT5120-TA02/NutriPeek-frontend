@@ -77,7 +77,7 @@ export default function ApplyCasesSection() {
   const carouselItems: CarouselItem[] = applyCases.map((useCase, index) => ({
     key: index,
     content: (
-      <Card className="h-full flex flex-col items-center text-center p-6 bg-white/80 backdrop-blur-sm border border-white/20">
+      <Card className="h-full flex flex-col items-center text-center bg-white/80 backdrop-blur-sm border border-white/20">
         <div className="bg-white p-3 rounded-full shadow-sm mb-4">
           {useCase.icon}
         </div>
@@ -88,7 +88,7 @@ export default function ApplyCasesSection() {
   }));
 
   return (
-    <SectionContainer>
+    <SectionContainer removeMinHeight={true}>
       <motion.div 
         className="text-center mb-6 md:mb-16"
         initial={{ opacity: 0, y: 20 }}
@@ -129,6 +129,9 @@ export default function ApplyCasesSection() {
           <MobileCarousel 
             items={carouselItems}
             className="mb-4"
+            autoAdvance={true}
+            autoAdvanceInterval={4000}
+            transitionType="zoom"
           />
         </div>
       )}

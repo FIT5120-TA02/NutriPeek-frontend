@@ -53,7 +53,7 @@ export default function BenefitsSection() {
     key: index,
     content: (
       <Card className="h-full bg-white/80 backdrop-blur-sm border border-white/20">
-        <div className="flex flex-col items-center text-center h-full p-5">
+        <div className="flex flex-col items-center text-center h-full">
           <div className="mb-4 p-3 rounded-full bg-green-50/60">
             {benefit.icon}
           </div>
@@ -65,7 +65,7 @@ export default function BenefitsSection() {
   }));
 
   return (
-    <SectionContainer>
+    <SectionContainer className="bg-gradient-to-b from-white to-green-50/30" nextIsMinHeight={true}>
       <motion.div 
         className="text-center mb-6 md:mb-16"
         initial={{ opacity: 0, y: 20 }}
@@ -91,9 +91,9 @@ export default function BenefitsSection() {
               transition={{ duration: 0.5, delay: index * 0.2 }}
               className="flex h-full"
             >
-              <Card className="h-full bg-white/80 backdrop-blur-sm hover:shadow-xl border border-white/20">
+              <Card className="h-full bg-white/80 backdrop-blur-sm hover:bg-green-50/60 border border-white/20">
                 <div className="flex flex-col items-center text-center h-full p-6">
-                  <div className="mb-6 p-4 rounded-full bg-green-50/60">
+                  <div className="bg-white p-4 rounded-full shadow-sm mb-6">
                     {benefit.icon}
                   </div>
                   <h3 className="text-xl font-bold mb-3 text-gray-800">{benefit.title}</h3>
@@ -109,6 +109,9 @@ export default function BenefitsSection() {
           <MobileCarousel 
             items={carouselItems}
             className="mb-4"
+            autoAdvance={true}
+            autoAdvanceInterval={4000}
+            transitionType="fade"
           />
         </div>
       )}
