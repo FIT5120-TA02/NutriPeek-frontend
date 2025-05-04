@@ -131,7 +131,14 @@
     "carb_foods": "Carbs",
     "extra_foods": "Extras",
     "showing_x_foods": "Showing {count} foods",
-    "category": "Category"
+    "category": "Category",
+    "summary_view": "Summary View",
+    "detailed_view": "Detailed View",
+    "nutrient_breakdown": "Detailed Nutrient Breakdown",
+    "food": "Food",
+    "total": "Total",
+    "showing_items": "Showing {count} of {total} items",
+    "click_column_to_sort": "Click column headers to sort"
   },
   "MatchAndLearn": {
     "meta_title": "Match & Learn Nutrient Game",

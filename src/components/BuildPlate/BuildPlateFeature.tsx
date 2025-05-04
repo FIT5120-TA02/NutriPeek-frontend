@@ -9,7 +9,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { DndContext } from '@dnd-kit/core';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ChartPie } from 'phosphor-react';
+import { ArrowLeft, ArrowRight, ChartPie, Table, ChartBar } from 'phosphor-react';
 
 import { nutripeekApi } from '@/api/nutripeekApi';
 import { NutrientIntakeResponse } from '@/api/types';
@@ -37,6 +37,7 @@ import FoodPalette from './FoodPalette';
 import NutritionChart from './NutritionChart';
 import AvatarFeedback from './AvatarFeedback';
 import ProfileSelectionModal from './ProfileSelectionModal';
+import FoodNutrientTable from './FoodNutrientTable';
 
 import { ChildProfile } from '@/types/profile';
 
@@ -463,6 +464,7 @@ export default function BuildPlateFeature() {
                 modeKey={reviewModeKey}
                 nutrientMaxValues={nutrientMaxValues}
                 selectedProfile={selectedProfile}
+                placedFoods={placedFoods}
               />
             </motion.div>
           )}
@@ -547,7 +549,8 @@ function ReviewMode({
   onReset,
   modeKey,
   nutrientMaxValues,
-  selectedProfile
+  selectedProfile,
+  placedFoods
 }: {
   groupedFoodsByCategory: CategoryFoods;
   nutritionSummary: PlateSummary;
@@ -562,8 +565,10 @@ function ReviewMode({
     fibre: number;
   } | null;
   selectedProfile: ChildProfile | null;
+  placedFoods: PlacedFood[];
 }) {
   const t = useTranslations('BuildPlate');
+  const [viewMode, setViewMode] = useState<'summary' | 'detailed'>('summary');
   
   return (
     <div className="pt-6">
@@ -575,61 +580,128 @@ function ReviewMode({
             t('nutrition_description')
           }
         </p>
+        
+        {/* View toggle buttons */}
+        <div className="flex justify-center mt-4">
+          <div className="bg-gray-100 rounded-full p-1 inline-flex">
+            <button
+              onClick={() => setViewMode('summary')}
+              className={`px-4 py-2 rounded-full flex items-center text-sm font-medium ${
+                viewMode === 'summary' 
+                  ? 'bg-white text-indigo-600 shadow-sm' 
+                  : 'text-gray-600 hover:text-indigo-500'
+              }`}
+              aria-current={viewMode === 'summary' ? 'page' : undefined}
+            >
+              <ChartBar size={18} weight="bold" className="mr-1.5" />
+              {t('summary_view')}
+            </button>
+            <button
+              onClick={() => setViewMode('detailed')}
+              className={`px-4 py-2 rounded-full flex items-center text-sm font-medium ${
+                viewMode === 'detailed' 
+                  ? 'bg-white text-indigo-600 shadow-sm' 
+                  : 'text-gray-600 hover:text-indigo-500'
+              }`}
+              aria-current={viewMode === 'detailed' ? 'page' : undefined}
+            >
+              <Table size={18} weight="bold" className="mr-1.5" />
+              {t('detailed_view')}
+            </button>
+          </div>
+        </div>
       </div>
       
-      <div className="flex flex-col lg:flex-row gap-8 items-center">
-        {/* Left Side - Nutrition Summary */}
-        <div className="lg:w-1/2 flex flex-col justify-center">
-          <div className="bg-white bg-opacity-80 rounded-2xl p-6 shadow-sm mb-6">
-            <h3 className="text-xl font-bold text-indigo-600 mb-6">{t('nutrition_summary')}</h3>
-            
-            <div className="w-full max-w-md mx-auto">
-              <NutritionChart 
-                summary={nutritionSummary} 
-                maxValues={nutrientMaxValues || undefined}
-              />
+      <AnimatePresence mode="wait">
+        {viewMode === 'summary' ? (
+          <motion.div 
+            key="summary-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col lg:flex-row gap-8 items-center"
+          >
+            {/* Left Side - Nutrition Summary */}
+            <div className="lg:w-1/2 flex flex-col justify-center">
+              <div className="bg-white bg-opacity-80 rounded-2xl p-6 shadow-sm mb-6">
+                <h3 className="text-xl font-bold text-indigo-600 mb-6">{t('nutrition_summary')}</h3>
+                
+                <div className="w-full max-w-md mx-auto">
+                  <NutritionChart 
+                    summary={nutritionSummary} 
+                    maxValues={nutrientMaxValues || undefined}
+                  />
+                </div>
+              </div>
+              
+              {/* Reset Button */}
+              <div className="flex justify-center">
+                <motion.button 
+                  onClick={onReset}
+                  className="py-3 px-6 bg-gradient-to-r from-red-400 to-pink-400 text-white font-bold rounded-full 
+                          hover:from-red-500 hover:to-pink-500 transition-all duration-300 shadow-md"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {t('reset_button')}
+                </motion.button>
+              </div>
             </div>
-          </div>
-          
-          {/* Reset Button */}
-          <div className="flex justify-center">
-            <motion.button 
-              onClick={onReset}
-              className="py-3 px-6 bg-gradient-to-r from-red-400 to-pink-400 text-white font-bold rounded-full 
-                      hover:from-red-500 hover:to-pink-500 transition-all duration-300 shadow-md"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {t('reset_button')}
-            </motion.button>
-          </div>
-        </div>
-        
-        {/* Right Side - Avatar and Plate */}
-        <div className="lg:w-1/2 flex flex-col">
-          {/* Avatar Feedback */}
-          <div className="rounded-2xl p-6 mb-6">
-            <AvatarFeedback 
-              emotion={avatarEmotion} 
-              message={getFeedbackMessage(avatarEmotion, t)} 
-            />
-          </div>
-          
-          {/* Plate (readonly version) */}
-          <div>            
-            <DndContext>
-              <SectionedPlate 
-                key={modeKey}
-                selectedFoods={groupedFoodsByCategory}
-                plateSections={PLATE_SECTIONS}
-                onRemoveFood={() => {}} // Empty function as we're in read-only mode
-                onFoodPositioned={() => {}} // Empty function as we're in read-only mode
-                readOnly={true} // Set to true to indicate read-only state
-              />
-            </DndContext>
-          </div>
-        </div>
-      </div>
+            
+            {/* Right Side - Avatar and Plate */}
+            <div className="lg:w-1/2 flex flex-col">
+              {/* Avatar Feedback */}
+              <div className="rounded-2xl p-6 mb-6">
+                <AvatarFeedback 
+                  emotion={avatarEmotion} 
+                  message={getFeedbackMessage(avatarEmotion, t)} 
+                />
+              </div>
+              
+              {/* Plate (readonly version) */}
+              <div>            
+                <DndContext>
+                  <SectionedPlate 
+                    key={modeKey}
+                    selectedFoods={groupedFoodsByCategory}
+                    plateSections={PLATE_SECTIONS}
+                    onRemoveFood={() => {}} // Empty function as we're in read-only mode
+                    onFoodPositioned={() => {}} // Empty function as we're in read-only mode
+                    readOnly={true} // Set to true to indicate read-only state
+                  />
+                </DndContext>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="detailed-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Detailed nutrition breakdown */}
+            <div className="mb-6">
+              <FoodNutrientTable placedFoods={placedFoods} />
+            </div>
+            
+            {/* Reset Button */}
+            <div className="flex justify-center">
+              <motion.button 
+                onClick={onReset}
+                className="py-3 px-6 bg-gradient-to-r from-red-400 to-pink-400 text-white font-bold rounded-full 
+                        hover:from-red-500 hover:to-pink-500 transition-all duration-300 shadow-md"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {t('reset_button')}
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 } 
