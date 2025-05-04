@@ -135,18 +135,32 @@ export default function PlateBuilderSection() {
               transition={{ duration: 0.4, delay: 0.6 }}
               className="mt-2 mb-6 md:mb-8 lg:mb-0"
             >
-              <Link href="/BuildPlate" passHref>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-medium transition-colors shadow-md"
-                >
-                  Try Building a Plate <CaretRight size={18} weight="bold" />
-                </motion.button>
-              </Link>
-              <p className="text-xs text-gray-500 mt-2 hidden md:block">
-                This is a demonstration. Try the full feature by clicking above.
-              </p>
+              <div className="flex flex-col">
+                <div className="flex items-center">
+                  <Link href="/BuildPlate" passHref className="hidden md:block">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full text-sm md:text-base font-medium transition-colors shadow-md"
+                    >
+                      Try Building a Plate <CaretRight size={18} weight="bold" />
+                    </motion.button>
+                  </Link>
+                  <div className="md:hidden flex items-center gap-2 bg-gray-200 text-gray-500 px-4 py-2 rounded-full text-sm font-medium cursor-not-allowed">
+                    Try Building a Plate
+                  </div>
+                  <div className="ml-2 flex items-center">
+                    <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full">Desktop/Tablet Only</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  <span className="hidden md:inline">This is a demonstration. Try the full feature by clicking above.</span>
+                  <span className="md:hidden">For the best experience, please use a desktop or tablet device to access this feature.</span>
+                </p>
+                <p className="text-xs text-red-500 mt-1 md:hidden">
+                  The interactive plate builder requires drag-and-drop functionality that works best on larger screens.
+                </p>
+              </div>
             </motion.div>
           </motion.div>
           
