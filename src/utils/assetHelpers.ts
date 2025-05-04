@@ -32,5 +32,21 @@ export function getPlateImageUrl(imageName: string): string {
  */
 export function getAvatarImageUrl(emotionType: string): string {
   return `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/${emotionType}_avatar.png`;
+}
+
+/**
+ * Gets the CDN URL for a child avatar image
+ * @param gender - Gender of the child ('boy' or 'girl')
+ * @param avatarNumber - Avatar number (1-5)
+ * @returns Full URL to the child avatar image
+ */
+export function getChildAvatarUrl(gender: string, avatarNumber: number): string {
+  // Normalize gender to ensure it's either 'boy' or 'girl'
+  const normalizedGender = gender.toLowerCase() === 'female' ? 'girl' : 'boy';
+  
+  // Ensure avatar number is between 1-5
+  const avatarNum = Math.max(1, Math.min(5, avatarNumber));
+  
+  return `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/${normalizedGender}_avatar_${avatarNum}.png`;
 } 
 

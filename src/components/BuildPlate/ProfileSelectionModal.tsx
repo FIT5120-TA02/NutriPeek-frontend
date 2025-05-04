@@ -72,7 +72,7 @@ export default function ProfileSelectionModal({
           </div>
           <p className="text-gray-600 mb-2 text-center">No child profiles available</p>
           <button
-            onClick={() => router.push('/profile')}
+            onClick={() => router.push('/Profile')}
             className="px-4 py-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 transition-colors"
           >
             Create a Profile
@@ -200,7 +200,7 @@ export default function ProfileSelectionModal({
             <div className="flex justify-between items-center mt-6">
               {childProfiles.length === 0 ? (
                 <button
-                  onClick={() => router.push('/profile')}
+                  onClick={() => router.push('/Profile')}
                   className="w-full py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
                 >
                   Create Profile

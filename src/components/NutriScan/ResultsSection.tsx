@@ -108,7 +108,7 @@ export default function ResultsSection({
     // Check if child profiles exist
     if (childProfiles.length === 0) {
       alert("Please create a child profile first to get personalized nutritional analysis.");
-      router.push('/profile');
+      router.push('/Profile');
       return;
     }
 
@@ -212,7 +212,7 @@ export default function ResultsSection({
           </div>
           <p className="text-gray-600 mb-2 text-center">No child profiles available</p>
           <button
-            onClick={() => router.push('/profile')}
+            onClick={() => router.push('/Profile')}
             className="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
           >
             Create a Profile
@@ -386,7 +386,7 @@ export default function ResultsSection({
           {childProfiles.length > 0 && (
             <div className="mt-4 text-center">
               <button
-                onClick={() => router.push('/profile')}
+                onClick={() => router.push('/Profile')}
                 className="text-green-600 hover:underline text-sm font-medium"
               >
                 Manage Profiles

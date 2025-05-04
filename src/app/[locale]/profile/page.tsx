@@ -4,58 +4,79 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { showConfirmDialog } from "@/components/ui/ConfirmDialog";
 import storageService from "@/libs/StorageService";
-import Card from "@/components/ui/Card";
-import Dropdown from "@/components/ui/Dropdown";
 import { motion } from "framer-motion";
 import FloatingEmojisLayout from "@/components/layouts/FloatingEmojisLayout";
-import ChildAvatar from '@/components/ui/ChildAvatar';
-import { ChildProfile } from "@/types/profile";
+import { ProfileForm, ProfileList, ChildProfile } from "@/components/Profile";
 
+// Storage key for child profiles
 const CHILDREN_KEY = "user_children";
 
+// Type for compatibility with old profile data
+interface LegacyChildProfile {
+  name: string;
+  age: string;
+  gender: string;
+  avatarNumber?: number;
+}
+
+/**
+ * ProfilePage Component
+ * Child profile management page for creating, viewing, editing, and deleting child profiles
+ * Uses a modular component structure with separate components for form, list, and cards
+ */
 export default function ProfilePage() {
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editChild, setEditChild] = useState<ChildProfile | null>(null);
-  
-  // New child form state
-  const [newChildName, setNewChildName] = useState('');
-  const [newChildAge, setNewChildAge] = useState('');
-  const [newChildGender, setNewChildGender] = useState('');
-  const [newChildAllergies, setNewChildAllergies] = useState<string[]>([]);
-  const [otherAllergy, setOtherAllergy] = useState('');
 
-  // Load saved children profiles from local storage using useEffect
+  // Load saved children profiles from local storage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = storageService.getLocalItem({ key: CHILDREN_KEY, defaultValue: [] });
+      const saved = storageService.getLocalItem<LegacyChildProfile[]>({ key: CHILDREN_KEY, defaultValue: [] });
       if (saved && saved.length > 0) {
-        setChildren(saved);
+        // Ensure all children have the avatarNumber property
+        const updatedChildren = saved.map(child => ({
+          ...child,
+          avatarNumber: child.avatarNumber || 1
+        }));
+        setChildren(updatedChildren as ChildProfile[]);
+        storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
       }
     }
   }, []);
 
+  /**
+   * Handles clearing all child profiles
+   */
   const handleClearAll = async () => {
-    const confirmed = await showConfirmDialog({
+    await showConfirmDialog({
       message: "Are you sure you want to clear all saved child profiles?",
       header: "Clear All Profiles",
       onConfirm: () => {
         storageService.removeLocalItem(CHILDREN_KEY);
         setChildren([]);
         toast.success("All child profiles have been cleared successfully!");
-      }
+      },
+      confirmLabel: "Clear All",
+      confirmButtonClass: "bg-red-600 border-none hover:bg-red-700 text-white px-6 py-2.5 rounded-full text-sm font-medium shadow-sm transition-colors"
     });
   };
 
+  /**
+   * Handles editing a child profile
+   */
   const handleEdit = (index: number) => {
     setEditingIndex(index);
     setEditChild(children[index]);
   };
 
-  const handleSave = () => {
-    if (editChild && editingIndex !== null) {
+  /**
+   * Handles saving an edited child profile
+   */
+  const handleSave = (updatedChild: ChildProfile) => {
+    if (editingIndex !== null) {
       const updatedChildren = [...children];
-      updatedChildren[editingIndex] = editChild;
+      updatedChildren[editingIndex] = updatedChild;
       setChildren(updatedChildren);
       storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
       setEditingIndex(null);
@@ -64,13 +85,19 @@ export default function ProfilePage() {
     }
   };
 
+  /**
+   * Handles canceling an edit
+   */
   const handleCancel = () => {
     setEditingIndex(null);
     setEditChild(null);
   };
 
+  /**
+   * Handles deleting a child profile
+   */
   const handleDelete = async (index: number) => {
-    const confirmed = await showConfirmDialog({
+    await showConfirmDialog({
       message: "Are you sure you want to delete this child's profile?",
       header: "Delete Child",
       onConfirm: () => {
@@ -79,55 +106,26 @@ export default function ProfilePage() {
         setChildren(updatedChildren);
         storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
         toast.success("Child profile deleted successfully!");
-      }
+      },
+      confirmLabel: "Delete",
+      confirmButtonClass: "bg-red-600 border-none hover:bg-red-700 text-white px-6 py-2.5 rounded-full text-sm font-medium shadow-sm transition-colors"
     });
   };
   
-  const toggleAllergy = (value: string) => {
-    if (newChildAllergies.includes(value)) {
-      setNewChildAllergies(newChildAllergies.filter(item => item !== value));
-    } else {
-      setNewChildAllergies([...newChildAllergies, value]);
-    }
-  };
-  
-  const handleAddChild = () => {
-    const newChild: ChildProfile = {
-      name: newChildName.trim(),
-      age: newChildAge,
-      gender: newChildGender,
-      allergies: otherAllergy.trim() 
-        ? [...newChildAllergies, otherAllergy.trim()] 
-        : newChildAllergies,
-    };
-
-    if (!newChild.name || !newChild.age || !newChild.gender) {
-      toast.error("Please complete all required fields.");
-      return;
-    }
-
+  /**
+   * Handles adding a new child profile
+   */
+  const handleAddChild = (newChild: ChildProfile) => {
     setChildren([...children, newChild]);
     storageService.setLocalItem(CHILDREN_KEY, [...children, newChild]);
-    
-    // Reset form
-    setNewChildName('');
-    setNewChildAge('');
-    setNewChildGender('');
-    setNewChildAllergies([]);
-    setOtherAllergy('');
-    
     toast.success("Child profile added successfully!");
   };
 
-  const allergyOptions = [
-    "Peanut", "Milk", "Egg", "Soy", "Wheat", "Fish", "Shellfish", "Tree nuts", "Chicken", "Celery"
-  ];
-
   return (
     <FloatingEmojisLayout>
-      <div className="w-full max-w-5xl mx-auto px-4 py-16 flex flex-col items-center justify-center min-h-screen">
+      <div className="w-full max-w-6xl mx-auto px-4 pt-20 md:pt-24 pb-16 flex flex-col items-center justify-center min-h-screen">
         <motion.h1 
-          className="text-3xl md:text-4xl font-bold text-center mb-10 text-green-700"
+          className="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12 text-green-700 mt-2 md:mt-0"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
@@ -136,254 +134,26 @@ export default function ProfilePage() {
         </motion.h1>
         
         <motion.div 
-          className="flex flex-col lg:flex-row gap-8 w-full"
+          className="flex flex-col lg:flex-row gap-6 md:gap-10 w-full"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
         >
           {/* Left column - Add Child Form */}
           <div className="lg:w-1/3 w-full flex-shrink-0">
-            <Card className="w-full sticky top-20 backdrop-blur-sm bg-white/90 shadow-lg">
-              <h2 className="text-xl font-semibold mb-4 text-green-700">Add New Child</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block mb-1 font-semibold">Child Name</label>
-                  <input
-                    type="text"
-                    value={newChildName}
-                    onChange={(e) => setNewChildName(e.target.value)}
-                    className="border rounded px-3 py-2 w-full"
-                    placeholder="Enter child's name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1 font-semibold">Age</label>
-                  <Dropdown
-                    value={newChildAge}
-                    onChange={setNewChildAge}
-                    placeholder="Select Age"
-                    options={[5,6,7,8,9,10,11,12].map(num => ({
-                      label: `${num} years`,
-                      value: String(num),
-                    }))}
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1 font-semibold">Gender</label>
-                  <Dropdown
-                    value={newChildGender}
-                    onChange={setNewChildGender}
-                    placeholder="Select Gender"
-                    options={[
-                      { label: "Male", value: "male" },
-                      { label: "Female", value: "female" },
-                      { label: "Other", value: "other" },
-                    ]}
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1 font-semibold">Allergies</label>
-                  <div className="flex flex-wrap gap-2">
-                    {allergyOptions.map((item) => (
-                      <span
-                        key={item}
-                        onClick={() => toggleAllergy(item)}
-                        className={`cursor-pointer px-3 py-1 rounded-full text-sm font-medium ${
-                          newChildAllergies.includes(item)
-                            ? 'bg-green-200 text-green-800'
-                            : 'bg-gray-200 text-gray-700'
-                        }`}
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-
-                  <input
-                    type="text"
-                    value={otherAllergy}
-                    onChange={(e) => setOtherAllergy(e.target.value)}
-                    placeholder="Enter other allergy if any"
-                    className="mt-2 border rounded px-3 py-2 w-full"
-                  />
-                </div>
-
-                <motion.button
-                  onClick={handleAddChild}
-                  whileHover={{ scale: 1.02, backgroundColor: "#22c55e" }}
-                  whileTap={{ scale: 0.98 }}
-                  className="mt-4 bg-green-500 text-white py-2 px-4 rounded-full hover:bg-green-600 w-full transition-colors"
-                >
-                  Save Child Profile
-                </motion.button>
-              </div>
-            </Card>
+            <ProfileForm onAddChild={handleAddChild} />
           </div>
           
           {/* Right column - Profiles List */}
           <div className="lg:w-2/3 w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-green-800">
-                {children.length > 0 ? 'Saved Profiles' : 'No Profiles Yet'}
-              </h2>
-              
-              {children.length > 0 && (
-                <motion.button
-                  onClick={handleClearAll}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="text-red-500 text-sm font-medium hover:text-red-600 flex items-center gap-1"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Clear All
-                </motion.button>
-              )}
-            </div>
-            
-            {children.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {children.map((child, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                  >
-                    <Card className="w-full backdrop-blur-sm bg-white/90 shadow-lg">
-                      {editingIndex === index ? (
-                        <div className="space-y-4">
-                          <input
-                            value={editChild?.name || ''}
-                            onChange={(e) => setEditChild(prev => prev ? { ...prev, name: e.target.value } : null)}
-                            className="border rounded px-3 py-2 w-full"
-                            placeholder="Name"
-                          />
-                          <Dropdown
-                            value={editChild?.age || ''}
-                            onChange={(value) => setEditChild(prev => prev ? { ...prev, age: value } : null)}
-                            options={[5,6,7,8,9,10,11,12].map(num => ({ label: `${num} years`, value: String(num) }))}
-                            placeholder="Select Age"
-                          />
-                          <Dropdown
-                            value={editChild?.gender || ''}
-                            onChange={(value) => setEditChild(prev => prev ? { ...prev, gender: value } : null)}
-                            options={[
-                              { label: "Male", value: "male" },
-                              { label: "Female", value: "female" },
-                              { label: "Other", value: "other" }
-                            ]}
-                            placeholder="Select Gender"
-                          />
-                          <div>
-                            <p className="font-semibold text-sm mb-1">Allergies</p>
-                            <div className="flex flex-wrap gap-2">
-                              {allergyOptions.map((item) => (
-                                <span
-                                  key={item}
-                                  onClick={() => {
-                                    if (editChild?.allergies && editChild?.allergies.includes(item)) {
-                                      setEditChild(prev => prev && prev.allergies ? { ...prev, allergies: prev.allergies.filter(a => a !== item) } : null);
-                                    } else {
-                                      setEditChild(prev => prev && prev.allergies ? { ...prev, allergies: [...prev.allergies, item] } : null);
-                                    }
-                                  }}
-                                  className={`cursor-pointer px-3 py-1 rounded-full text-sm font-medium ${
-                                    editChild?.allergies && editChild?.allergies.includes(item)
-                                      ? 'bg-green-200 text-green-800'
-                                      : 'bg-gray-200 text-gray-700'
-                                  }`}
-                                >
-                                  {item}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="flex gap-4 mt-4">
-                            <motion.button 
-                              onClick={handleSave} 
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600"
-                            >
-                              Save
-                            </motion.button>
-                            <motion.button 
-                              onClick={handleCancel} 
-                              whileHover={{ scale: 1.05 }}
-                              className="text-gray-600 hover:underline"
-                            >
-                              Cancel
-                            </motion.button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center mb-4">
-                            <ChildAvatar name={child.name} gender={child.gender} />
-                          </div>
-                          <p><strong>Age:</strong> {child.age} years</p>
-                          <p><strong>Gender:</strong> {child.gender}</p>
-                          <div className="mt-4">
-                            <p className="font-semibold mb-2">Allergies:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {child.allergies && child.allergies.length > 0 ? (
-                                child.allergies.map((allergy, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium"
-                                  >
-                                    {allergy}
-                                  </span>
-                                ))
-                              ) : (
-                                <p className="text-gray-500 text-sm">No allergies recorded</p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex gap-4 mt-4">
-                            <motion.button
-                              onClick={() => handleEdit(index)}
-                              whileHover={{ scale: 1.05 }}
-                              className="text-sm text-blue-600 hover:underline"
-                            >
-                              Edit
-                            </motion.button>
-
-                            <motion.button
-                              onClick={() => handleDelete(index)}
-                              whileHover={{ scale: 1.05 }}
-                              className="text-sm text-red-500 hover:underline"
-                            >
-                              Delete
-                            </motion.button>
-                          </div>
-                        </>
-                      )}
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <motion.div 
-                className="w-full flex flex-col items-center justify-center py-12 px-4 bg-white/50 backdrop-blur-sm rounded-lg"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <p className="text-gray-500 text-lg mb-4">No child profiles available.</p>
-                <p className="text-gray-500">Add a profile using the form on the left.</p>
-              </motion.div>
-            )}
+            <ProfileList
+              children={children}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onClearAll={handleClearAll}
+              editingIndex={editingIndex}
+              onSave={handleSave}
+            />
           </div>
         </motion.div>
       </div>
