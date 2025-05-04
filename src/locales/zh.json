@@ -72,6 +72,7 @@
     "meta_description": "制作健康均衡膳食的互动活动",
     "title": "制作均衡餐盘",
     "description": "将食物拖到便当盒上，创建均衡膳食。尝试包括所有三种食物组别，打造营养餐！",
+    "nutrient_portion_info": "显示的营养信息基于每食物100克可食用部分。",
     "protein_section": "蛋白质食物",
     "carbs_section": "碳水化合物",
     "extras_section": "水果和蔬菜",
@@ -130,7 +131,14 @@
     "carb_foods": "碳水",
     "extra_foods": "附加食品",
     "showing_x_foods": "显示 {count} 种食物",
-    "category": "类别"
+    "category": "类别",
+    "summary_view": "摘要视图",
+    "detailed_view": "详细视图",
+    "nutrient_breakdown": "详细营养成分分析",
+    "food": "食物",
+    "total": "总计",
+    "showing_items": "显示 {count} 项（共 {total} 项）",
+    "click_column_to_sort": "点击列标题排序"
   },
   "MatchAndLearn": {
     "meta_title": "对配学习营养游戏",
