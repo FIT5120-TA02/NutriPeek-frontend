@@ -72,6 +72,7 @@
     "meta_description": "制作健康均衡膳食的互动活动",
     "title": "制作均衡餐盘",
     "description": "将食物拖到便当盒上，创建均衡膳食。尝试包括所有三种食物组别，打造营养餐！",
+    "nutrient_portion_info": "显示的营养信息基于每食物100克可食用部分。",
     "protein_section": "蛋白质食物",
     "carbs_section": "碳水化合物",
     "extras_section": "水果和蔬菜",

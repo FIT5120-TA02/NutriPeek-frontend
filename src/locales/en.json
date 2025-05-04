@@ -72,6 +72,7 @@
     "meta_description": "Interactive activity to build a healthy and balanced meal",
     "title": "Build a Balanced Plate",
     "description": "Drag food items onto the lunchbox to create a balanced meal. Try to include foods from all three food groups for a nutritious meal!",
+    "nutrient_portion_info": "Nutrition information shown is based on per 100g edible portion of each food.",
     "protein_section": "Protein Foods",
     "carbs_section": "Carbohydrates",
     "extras_section": "Fruits & Vegetables",

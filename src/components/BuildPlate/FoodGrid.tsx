@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import { PlateFood, FoodGridProps } from "./types";
 import DraggableFoodItem from "./DraggableFoodItem";
 import { ITEMS_PER_PAGE } from "./constants";
+import NutrientInfoBanner from "./NutrientInfoBanner";
 
 /**
  * Grid of food items with pagination controls
@@ -59,8 +60,16 @@ const FoodGrid: React.FC<FoodGridProps> = ({
     <div className="flex flex-col space-y-4 w-full">
       {/* Title (optional) */}
       {title && (
-        <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
+        <div className="flex flex-col space-y-2">
+          <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
+          
+          {/* Nutrient portion info banner - positioned right after the title for context */}
+          <NutrientInfoBanner />
+        </div>
       )}
+      
+      {/* Show banner without title if no title is provided */}
+      {!title && <NutrientInfoBanner />}
 
       {/* Food grid with fixed height to maintain layout */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 min-h-[300px]">
