@@ -3,7 +3,7 @@
  * React hooks for using storage with state synchronization
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import storageService, { StorageItem } from '@/libs/StorageService';
 
 /**

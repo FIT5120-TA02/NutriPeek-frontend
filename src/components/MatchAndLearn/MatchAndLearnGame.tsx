@@ -20,19 +20,18 @@ import { Card, Food, DifficultyLevel } from './types';
 import { getFoodImageUrl } from '@/utils/assetHelpers';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import { FoodCategoryFunFactResponse } from '@/api/types';
-
-// Define difficulty levels with corresponding card counts
-const DIFFICULTY_LEVELS: Record<DifficultyLevel, number> = {
-  easy: 12, // 6 pairs (will form a 3x4 grid)
-  medium: 24, // 12 pairs (will form a 4x6 grid)
-  hard: 40, // 20 pairs (will form a 5x8 grid)
-};
+import useDeviceDetection from '@/hooks/useDeviceDetection';
+import { DIFFICULTY_LEVELS } from './constants';
 
 /**
  * Prepares the food cards for the game based on difficulty and available fun facts
  */
-function prepareCards(difficulty: DifficultyLevel, funFacts: FoodCategoryFunFactResponse[] = []): Card[] {
-  const cardCount = DIFFICULTY_LEVELS[difficulty];
+function prepareCards(difficulty: DifficultyLevel, isMobile: boolean, funFacts: FoodCategoryFunFactResponse[] = []): Card[] {
+  // Get appropriate card count based on device type
+  const cardCount = isMobile 
+    ? DIFFICULTY_LEVELS[difficulty].mobile 
+    : DIFFICULTY_LEVELS[difficulty].desktop;
+  
   const pairCount = cardCount / 2;
   
   // Create cards using fun facts from the API
@@ -109,6 +108,7 @@ function shuffleCards(cards: Card[]): Card[] {
 
 export default function MatchAndLearnGame() {
   const t = useTranslations('MatchAndLearn');
+  const { isMobile } = useDeviceDetection();
   
   // Game state
   const [difficulty, setDifficulty] = useState<DifficultyLevel | null>(null);
@@ -143,6 +143,9 @@ export default function MatchAndLearnGame() {
   
   // Flag to prevent race conditions in computer's turn
   const isProcessingRef = useRef<boolean>(false);
+  
+  // Add error state
+  const [error, setError] = useState<string | null>(null);
   
   // Helper function to manage timeouts
   const setGameTimeout = useCallback((callback: () => void, delay: number, key: string) => {
@@ -213,81 +216,87 @@ export default function MatchAndLearnGame() {
   }, [computerThinking]);
   
   /**
-   * Prepares card game data from existing fun facts
-   * This function allows reusing cached fun facts to avoid API calls
+   * Fetch and prepare cards for the game
+   * This function encapsulates the logic for fetching fun facts and preparing cards
    */
-  const prepareCardsFromExistingFunFacts = useCallback((selectedDifficulty: DifficultyLevel, existingFunFacts: FoodCategoryFunFactResponse[]) => {
-    if (existingFunFacts.length === 0) return [];
+  const fetchAndPrepareCards = useCallback(async (selectedDifficulty: DifficultyLevel) => {
+    if (!selectedDifficulty) return false;
     
-    const newCards = prepareCards(selectedDifficulty, existingFunFacts);
-    setCards(newCards);
-    return newCards;
-  }, []);
-  
-  // Fetch fun facts when component mounts or when needed
-  useEffect(() => {
-    const fetchFunFacts = async () => {
-      if (difficulty) {
-        try {
-          setIsLoadingFunFacts(true);
-          // Calculate how many fun facts we need based on difficulty
-          // We get N+10 fun facts where N is the number of pairs needed for the difficulty
-          const pairsNeeded = DIFFICULTY_LEVELS[difficulty] / 2;
-          const funFactsToRequest = pairsNeeded + 10; // Request 10 more than needed to ensure variety
-          
-          // Cap at API maximum (50)
-          const count = Math.min(funFactsToRequest, 50);
-          
-          const response = await nutripeekApi.getFoodCategoryFunFacts(count);
-          
-          if (response.fun_facts?.length > 0) {
-            // Store the new fun facts, replacing previous cached ones
-            setFunFacts(response.fun_facts);
-            setCachedFunFacts(response.fun_facts);
-            
-            // Always create new cards with the latest fun facts
-            const newCards = prepareCards(difficulty, response.fun_facts);
-            setCards(newCards);
-          } else {
-            console.warn('Received empty fun facts array from API');
-            // Show an error message or handle empty state
-            setFunFacts([]);
-            setCards([]);
-          }
-        } catch (error) {
-          console.error('Failed to fetch food category fun facts:', error);
-          // Clear any existing fun facts and cards
-          setFunFacts([]);
-          setCards([]);
-        } finally {
-          setIsLoadingFunFacts(false);
+    setIsLoadingFunFacts(true);
+    setError(null);
+    
+    try {
+      // Calculate how many fun facts we need based on difficulty
+      const pairsNeeded = isMobile 
+        ? DIFFICULTY_LEVELS[selectedDifficulty].mobile / 2 
+        : DIFFICULTY_LEVELS[selectedDifficulty].desktop / 2;
+      const funFactsToRequest = pairsNeeded + 10; // Request 10 more than needed to ensure variety
+      
+      // Cap at API maximum (50)
+      const count = Math.min(funFactsToRequest, 50);
+      
+      const response = await nutripeekApi.getFoodCategoryFunFacts(count);
+      
+      if (response.fun_facts?.length > 0) {
+        // Store the new fun facts
+        setFunFacts(response.fun_facts);
+        setCachedFunFacts(response.fun_facts);
+        
+        // Create new cards with the latest fun facts
+        const newCards = prepareCards(selectedDifficulty, isMobile, response.fun_facts);
+        setCards(newCards);
+        
+        // Reset game state
+        setFlippedCards([]);
+        setMatchedPairs(0);
+        setPlayerScore(0);
+        setComputerScore(0);
+        setIsPlayerTurn(true);
+        setComputerThinking(false);
+        setComputerMemory(new Map());
+        setGameOver(false);
+        setGameCompleted(false);
+        
+        return true;
+      } else {
+        // If no fun facts returned, try fallback to cached fun facts
+        if (cachedFunFacts.length > 0) {
+          const newCards = prepareCards(selectedDifficulty, isMobile, cachedFunFacts);
+          setCards(newCards);
+          return true;
+        } else {
+          // No cached facts either, set an error state
+          setError("Couldn't load food facts. Please try again.");
+          return false;
         }
       }
-    };
-    
-    fetchFunFacts();
-    // Only re-run when difficulty changes
-  }, [difficulty]);
+    } catch (error) {
+      console.error('Error fetching fun facts:', error);
+      setError("Couldn't connect to server. Please try again.");
+      
+      // Try fallback to cached fun facts
+      if (cachedFunFacts.length > 0) {
+        const newCards = prepareCards(selectedDifficulty, isMobile, cachedFunFacts);
+        setCards(newCards);
+        return true;
+      }
+      
+      return false;
+    } finally {
+      setIsLoadingFunFacts(false);
+    }
+  }, [isMobile, cachedFunFacts]);
   
   // Function to retry loading fun facts
-  const handleRetryLoading = useCallback(() => {
+  const handleRetryLoading = useCallback(async () => {
     if (difficulty) {
-      // Clear cached fun facts to force a new fetch
-      setCachedFunFacts([]);
-      
-      // Re-trigger the fetch by changing and resetting the difficulty
-      const currentDifficulty = difficulty;
-      setDifficulty(null);
-      
-      // Use a small timeout to ensure state updates properly
-      setTimeout(() => {
-        setDifficulty(currentDifficulty);
-      }, 100);
+      setError(null);
+      await fetchAndPrepareCards(difficulty);
     }
-  }, [difficulty]);
+  }, [difficulty, fetchAndPrepareCards]);
   
   // Initialize game with selected difficulty
-  const startGame = useCallback((selectedDifficulty: DifficultyLevel) => {
+  const startGame = useCallback(async (selectedDifficulty: DifficultyLevel) => {
     // Clear all timeouts when starting a new game
     Object.values(timeoutRef.current).forEach(clearTimeout);
     timeoutRef.current = {};
@@ -306,6 +315,7 @@ export default function MatchAndLearnGame() {
     setComputerMemory(new Map());
     setCheckingMatch(false);
     setTurnCount(0);
+    setError(null);
     isProcessingRef.current = false;
     
     // Reset quiz-related states
@@ -315,19 +325,14 @@ export default function MatchAndLearnGame() {
     setQuizCompleted(false);
     setQuizResult(null);
     
-    // If we have cached fun facts, use them right away instead of showing loading indicator
-    if (cachedFunFacts.length > 0) {
-      const newCards = prepareCards(selectedDifficulty, cachedFunFacts);
-      setCards(newCards);
-    } else {
-      // Otherwise, set cards to empty array initially
-      // The useEffect hook will fetch fun facts and create the cards
-      setCards([]);
-    }
-  }, [cachedFunFacts]);
+    // Fetch and prepare cards for the new difficulty
+    await fetchAndPrepareCards(selectedDifficulty);
+  }, [fetchAndPrepareCards]);
   
   // Total pairs in the game
-  const totalPairs = difficulty ? DIFFICULTY_LEVELS[difficulty] / 2 : 0;
+  const totalPairs = difficulty ? 
+    (isMobile ? DIFFICULTY_LEVELS[difficulty].mobile / 2 : DIFFICULTY_LEVELS[difficulty].desktop / 2) 
+    : 0;
   
   // Check if the game is over (all pairs found)
   useEffect(() => {
@@ -868,7 +873,7 @@ export default function MatchAndLearnGame() {
   }, [isPlayerTurn, gameOver, gameCompleted, cards, difficulty, handleCardFlip, checkingMatch, flippedCards, setGameTimeout, showMatch, turnCount, getCardsKnownToComputer]);
   
   // Reset game
-  const handleReset = useCallback(() => {
+  const handleReset = useCallback(async () => {
     if (difficulty) {
       // Clear all states before starting a new game
       setFlippedCards([]);
@@ -897,17 +902,13 @@ export default function MatchAndLearnGame() {
       Object.values(timeoutRef.current).forEach(clearTimeout);
       timeoutRef.current = {};
       
-      // Clear cached fun facts to force a new API fetch
-      setCachedFunFacts([]);
+      // Keep current difficulty but fetch new cards
+      const currentDifficulty = difficulty;
       
-      // Re-initialize the game with the same difficulty
-      // This will trigger the useEffect to fetch new fun facts
-      setDifficulty(null);
-      setTimeout(() => {
-        setDifficulty(difficulty);
-      }, 100);
+      // Fetch and prepare new cards
+      await fetchAndPrepareCards(currentDifficulty);
     }
-  }, [difficulty]);
+  }, [difficulty, fetchAndPrepareCards]);
   
   // Change difficulty
   const handleChangeDifficulty = useCallback(() => {
@@ -938,10 +939,7 @@ export default function MatchAndLearnGame() {
     setQuizCompleted(false);
     setQuizResult(null);
     
-    // Clear cached fun facts to force a new API fetch when new difficulty is selected
-    setCachedFunFacts([]);
-    
-    // Finally, set difficulty to null to show the difficulty selector
+    // Set difficulty to null to show the difficulty selector
     setDifficulty(null);
   }, []);
   
@@ -997,7 +995,8 @@ export default function MatchAndLearnGame() {
           onCardFlip={handleCardFlip}
           isPlayerTurn={isPlayerTurn}
           computerThinking={computerThinking}
-          difficulty={difficulty}
+          difficulty={difficulty as DifficultyLevel}
+          isMobile={isMobile}
         />
       )}
       

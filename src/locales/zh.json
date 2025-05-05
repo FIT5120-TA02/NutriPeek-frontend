@@ -151,9 +151,8 @@
     "easy": "简单",
     "medium": "中等",
     "hard": "困难",
-    "easy_description": "5对（10张卡片）",
-    "medium_description": "12对（24张卡片）",
-    "hard_description": "26对（52张卡片）",
+    "difficulty_format": "{pairs}对 ({cards}张卡片)",
+    "difficulty_format_mobile": "移动设备上{pairs}对",
     
     "your_score": "你的得分",
     "computer_score": "电脑得分",
