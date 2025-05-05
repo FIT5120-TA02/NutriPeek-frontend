@@ -36,6 +36,7 @@ export interface GameBoardProps {
   isPlayerTurn: boolean;
   computerThinking: boolean;
   difficulty: DifficultyLevel;
+  isMobile: boolean;
 }
 
 /**
@@ -45,13 +46,14 @@ export interface GameCardProps {
   card: Card;
   onFlip: (card: Card) => void;
   isDisabled: boolean;
+  isMobile: boolean;
 }
 
 /**
  * Props for the DifficultySelector component
  */
 export interface DifficultySelectorProps {
-  onSelectDifficulty: (difficulty: DifficultyLevel) => void;
+  onSelectDifficulty: (difficulty: DifficultyLevel) => Promise<void>;
 }
 
 /**

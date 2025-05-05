@@ -151,9 +151,8 @@
     "easy": "Easy",
     "medium": "Medium",
     "hard": "Hard",
-    "easy_description": "5 pairs (10 cards)",
-    "medium_description": "12 pairs (24 cards)",
-    "hard_description": "26 pairs (52 cards)",
+    "difficulty_format": "{pairs} pairs ({cards} cards)",
+    "difficulty_format_mobile": "{pairs} pairs on mobile",
     
     "your_score": "Your Score",
     "computer_score": "Computer Score",
