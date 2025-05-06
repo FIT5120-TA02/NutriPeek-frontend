@@ -108,7 +108,7 @@ export default function SelectedFoods({
             </div>
             
             {nutrientsWithImprovements.length > 0 ? (
-              <div className="space-y-2">
+              <div className={`space-y-2 ${showAllImprovements && nutrientsWithImprovements.length > 5 ? 'max-h-[210px] overflow-y-auto pr-2' : ''}`}>
                 {displayNutrients.map(nutrient => {
                   const improvement = nutrient.updatedPercentage - nutrient.percentage;
                   const percentComplete = Math.min(Math.round(nutrient.percentage), 100);

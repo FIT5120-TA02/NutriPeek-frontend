@@ -2,6 +2,8 @@
 
 import { motion } from 'framer-motion';
 import { ExtendedNutrientGap } from './types';
+import InfoPopup from '@/components/ui/InfoPopup';
+import { useEffect, useRef } from 'react';
 
 interface NutrientListProps {
   nutrients: ExtendedNutrientGap[];
@@ -11,20 +13,67 @@ interface NutrientListProps {
 
 /**
  * Displays a list of missing nutrients with progress bars
+ * Supports horizontal scrolling on small screens and vertical scrolling on large screens
  */
 export default function NutrientList({ 
   nutrients, 
   activeNutrient, 
   onSelectNutrient 
 }: NutrientListProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll active nutrient into view when it changes
+  useEffect(() => {
+    if (activeNutrient && scrollContainerRef.current) {
+      const activeElement = scrollContainerRef.current.querySelector(`[data-nutrient="${activeNutrient}"]`);
+      
+      if (activeElement) {
+        activeElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest'
+        });
+      }
+    }
+  }, [activeNutrient]);
+
+  // Content for the recommendation explanation
+  const recommendationContent = (
+    <div className="max-w-[300px]">
+      <p className="font-medium text-gray-800 mb-2">How are ingredients recommended?</p>
+      <p className="mb-2">
+        Our recommendation system identifies nutritional gaps in your meal plan and searches our database for ingredients rich in those missing nutrients.
+      </p>
+      <p className="mb-2">
+        We analyze your current ingredients, determine which food groups need supplementing, and suggest options that provide the highest nutritional value while complementing your existing food items.
+      </p>
+    </div>
+  );
+
   return (
     <div className="bg-white rounded-xl shadow-md p-4 overflow-hidden">
-      <h2 className="font-bold text-lg text-gray-800 mb-3">Missing Nutrients</h2>
-      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+      <div className="flex items-center mb-3">
+        <h2 className="font-bold text-lg text-gray-800">Missing Nutrients</h2>
+        <InfoPopup 
+          content={recommendationContent}
+          position="bottom"
+          iconSize={18}
+          iconClassName="ml-2 text-gray-400"
+        />
+      </div>
+      
+      {/* Responsive container that switches between horizontal and vertical layout */}
+      <div 
+        ref={scrollContainerRef}
+        className="lg:space-y-2 lg:max-h-[400px] lg:overflow-y-auto lg:pr-2 
+                  flex lg:flex-col overflow-x-auto pb-2 -mx-1 px-1 hide-scrollbar"
+      >
         {nutrients.map((nutrient) => (
           <motion.div
             key={nutrient.name}
-            className={`cursor-pointer rounded-lg p-3 transition-all ${
+            data-nutrient={nutrient.name}
+            className={`cursor-pointer rounded-lg p-3 transition-all flex-shrink-0 
+                      lg:w-auto w-[280px] mx-1 lg:mx-0 ${
               activeNutrient === nutrient.name
                 ? 'bg-green-100 border-l-4 border-green-500'
                 : nutrient.isAdjustedForActivity
@@ -83,4 +132,19 @@ export default function NutrientList({
       </div>
     </div>
   );
+}
+
+// Add a style to hide scrollbar but keep functionality
+const styleElement = document.createElement('style');
+styleElement.textContent = `
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+`;
+if (typeof document !== 'undefined') {
+  document.head.appendChild(styleElement);
 }
