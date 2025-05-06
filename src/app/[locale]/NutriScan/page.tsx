@@ -1,26 +1,29 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useDetectFoodItems, useQRCodeFlow } from "../../../api";
 import { FoodItemDetection, FoodMappingRequest } from "../../../api/types";
 import { nutripeekApi } from "../../../api/nutripeekApi";
 import ScanningSection from "../../../components/NutriScan/ScanningSection";
 import ResultsSection from "../../../components/NutriScan/ResultsSection";
-import { FoodItemDisplay } from "../../../components/NutriScan/types";
+import { FoodItemDisplay, MealType, MealImage } from "../../../components/NutriScan/types";
 import storageService from '../../../libs/StorageService';
+import useDeviceDetection from "../../../hooks/useDeviceDetection";
 
 export default function NutriScanPage() {
-  const router = useRouter();
-  const [image, setImage] = useState<File | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [detectedItems, setDetectedItems] = useState<FoodItemDisplay[]>([]);
+  const { isMobile } = useDeviceDetection();
+  
+  // Initialize meal images with default empty states
+  const initialMealImages: MealImage[] = [
+    { file: null, mealType: 'breakfast', imagePreviewUrl: null, processingStep: 'idle', isProcessing: false },
+    { file: null, mealType: 'lunch', imagePreviewUrl: null, processingStep: 'idle', isProcessing: false },
+    { file: null, mealType: 'dinner', imagePreviewUrl: null, processingStep: 'idle', isProcessing: false }
+  ];
+  
+  const [mealImages, setMealImages] = useState<MealImage[]>(initialMealImages);
   const [showResults, setShowResults] = useState(false);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [processingStep, setProcessingStep] = useState<'idle' | 'detecting' | 'mapping' | 'complete'>('idle');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [processingMealIndex, setProcessingMealIndex] = useState<number | null>(null);
 
   const { execute: detectFoodItems, isLoading: isDetecting } = useDetectFoodItems();
   const {
@@ -38,14 +41,6 @@ export default function NutriScanPage() {
     try {
       // Extract class names
       const detectedNames = detectedItems.map(item => item.class_name);
-      
-      // First, set the detecting state and update UI
-      setProcessingStep('detecting');
-      toast.loading('Detecting food items...', { id: 'processing' });
-      
-      // Prepare for mapping nutrients (second step)
-      setProcessingStep('mapping');
-      toast.loading('Mapping nutrients...', { id: 'processing' });
       
       // Call the map-nutrients API
       const mappingRequest: FoodMappingRequest = {
@@ -119,10 +114,6 @@ export default function NutriScanPage() {
         };
       });
       
-      // Process is complete
-      setProcessingStep('complete');
-      toast.success('Food analysis complete!', { id: 'processing' });
-      
       return displayItems;
     } catch (error) {
       console.error('Error mapping nutrients:', error);
@@ -141,15 +132,6 @@ export default function NutriScanPage() {
     }));
   }, []);
   
-  // Detect if the user is on a mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      setIsMobile(isMobileDevice);
-    };
-    checkMobile();
-  }, []);
-
   useEffect(() => {
     // Only run on initial render for desktop devices
     const shouldGenerateQR = !isMobile && !qrData && !isQrProcessing && !showResults;
@@ -169,101 +151,269 @@ export default function NutriScanPage() {
 
   useEffect(() => {
     if (uploadStatus === 'uploaded') {
-      setProcessingStep('detecting');
-      toast.loading('Food detection in progress...', { id: 'qr-processing' });
+      // Set processing state for the first available meal slot
+      const availableIndex = mealImages.findIndex(meal => meal.file === null);
+      if (availableIndex !== -1) {
+        setProcessingMealIndex(availableIndex);
+        setMealImages(prev => {
+          const updated = [...prev];
+          updated[availableIndex] = {
+            ...updated[availableIndex],
+            processingStep: 'detecting',
+            isProcessing: true
+          };
+          return updated;
+        });
+        toast.loading('Food detection in progress...', { id: 'qr-processing' });
+      }
     } else if (uploadStatus === 'processed' && resultData) {
       // QR processed, now map nutrients
-      if (resultData.detected_items && resultData.detected_items.length > 0) {
-        setProcessingStep('mapping');
+      if (resultData.detected_items && resultData.detected_items.length > 0 && processingMealIndex !== null) {
+        setMealImages(prev => {
+          const updated = [...prev];
+          updated[processingMealIndex] = {
+            ...updated[processingMealIndex],
+            processingStep: 'mapping'
+          };
+          return updated;
+        });
         toast.loading('Mapping nutrients...', { id: 'qr-processing' });
         
         // Process the detected items with nutrient mapping
         processDetectedFood(resultData.detected_items || [])
           .then(mappedItems => {
-            setDetectedItems(mappedItems);
-            // We'll set scannedFoods in ResultsSection when user confirms
+            setMealImages(prev => {
+              const updated = [...prev];
+              if (processingMealIndex !== null) {
+                // Get the imageUrl from the result data
+                const imageUrl = null;
+                
+                updated[processingMealIndex] = {
+                  ...updated[processingMealIndex],
+                  file: new File([], "qr_uploaded_image.jpg"), // Dummy file since we don't have the actual file
+                  imagePreviewUrl: imageUrl,
+                  detectedItems: mappedItems,
+                  processingStep: 'complete',
+                  isProcessing: false
+                };
+              }
+              return updated;
+            });
+            
+            setProcessingMealIndex(null);
             setShowResults(true);
-            setProcessingStep('complete');
             toast.success('Food analysis complete!', { id: 'qr-processing' });
           })
           .catch(error => {
             toast.error('Failed to map nutrients', { id: 'qr-processing' });
             // Fallback to basic mapping without nutrients
-            const basicItems = mapDetectionToDisplay(resultData.detected_items || []);
-            setDetectedItems(basicItems);
-            // We'll set scannedFoods in ResultsSection when user confirms
-            setShowResults(true);
+            if (processingMealIndex !== null) {
+              const basicItems = mapDetectionToDisplay(resultData.detected_items || []);
+              setMealImages(prev => {
+                const updated = [...prev];
+                // Get the imageUrl from the result data
+                const imageUrl = null;
+                
+                updated[processingMealIndex] = {
+                  ...updated[processingMealIndex],
+                  file: new File([], "qr_uploaded_image.jpg"), // Dummy file
+                  imagePreviewUrl: imageUrl,
+                  detectedItems: basicItems,
+                  processingStep: 'complete',
+                  isProcessing: false
+                };
+                return updated;
+              });
+              
+              setProcessingMealIndex(null);
+              setShowResults(true);
+            }
           });
       } else {
         toast.error('No food items detected in the uploaded image', { id: 'qr-processing' });
-        setProcessingStep('idle');
+        if (processingMealIndex !== null) {
+          setMealImages(prev => {
+            const updated = [...prev];
+            updated[processingMealIndex] = {
+              ...updated[processingMealIndex],
+              processingStep: 'idle',
+              isProcessing: false
+            };
+            return updated;
+          });
+          setProcessingMealIndex(null);
+        }
       }
     } else if (uploadStatus === 'error') {
       toast.error(errorMessage || 'An error occurred', { id: 'qr-processing' });
-      setProcessingStep('idle');
+      if (processingMealIndex !== null) {
+        setMealImages(prev => {
+          const updated = [...prev];
+          updated[processingMealIndex] = {
+            ...updated[processingMealIndex],
+            processingStep: 'idle',
+            isProcessing: false
+          };
+          return updated;
+        });
+        setProcessingMealIndex(null);
+      }
     }
-  }, [uploadStatus, resultData, errorMessage, mapDetectionToDisplay, processDetectedFood]);
+  }, [uploadStatus, resultData, errorMessage, mapDetectionToDisplay, processDetectedFood, processingMealIndex]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (mealType: MealType, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
-    if (file) {
-      setImage(file);
-      setImagePreviewUrl(URL.createObjectURL(file));
-      toast.success('Image selected successfully!');
-    }
+    if (!file) return;
+    
+    // Find the index of the meal with this type
+    const mealIndex = mealImages.findIndex(meal => meal.mealType === mealType);
+    if (mealIndex === -1) return;
+    
+    // Update the meal image
+    setMealImages(prev => {
+      const updated = [...prev];
+      updated[mealIndex] = {
+        ...updated[mealIndex],
+        file,
+        imagePreviewUrl: URL.createObjectURL(file)
+      };
+      return updated;
+    });
+    
+    toast.success(`${mealType === 'breakfast' ? 'Breakfast' : mealType === 'lunch' ? 'Lunch' : 'Dinner'} image selected!`);
   };
 
-  const handleCameraCapture = () => {
-    if (cameraInputRef.current) {
-      cameraInputRef.current.click();
+  const handleCameraCapture = (mealType: MealType) => {
+    // Find the corresponding meal's index
+    const mealIndex = mealImages.findIndex(meal => meal.mealType === mealType);
+    if (mealIndex === -1) return;
+    
+    // Get a reference to the hidden camera input
+    const input = document.getElementById(`camera-input-${mealType}`) as HTMLInputElement;
+    if (input) {
+      input.click();
     }
   };
 
 
   const handleScan = async () => {
-    if (!image) {
-      toast.error('Please upload an image or take a photo first!');
+    // Check if there are any images to scan
+    const mealsToScan = mealImages.filter(meal => meal.file !== null && !meal.isProcessing);
+    
+    if (mealsToScan.length === 0) {
+      toast.error('Please upload at least one meal image first!');
       return;
     }
 
-    const toastId = 'scan';
-    setProcessingStep('detecting');
-    toast.loading('Detecting food items...', { id: toastId });
-
-    try {
-      // Step 1: Detect food items
-      const detectionData = await detectFoodItems(image);
+    // Process each meal image in sequence
+    for (let i = 0; i < mealsToScan.length; i++) {
+      const mealIndex = mealImages.findIndex(meal => meal === mealsToScan[i]);
+      if (mealIndex === -1) continue;
       
-      if (detectionData.detected_items && detectionData.detected_items.length > 0) {
-        setProcessingStep('mapping');
-        toast.loading('Mapping nutrients...', { id: toastId });
+      const meal = mealImages[mealIndex];
+      if (!meal.file) continue;
+      
+      const toastId = `scan-${mealIndex}`;
+      const mealName = meal.mealType === 'breakfast' ? 'Breakfast' : 
+                       meal.mealType === 'lunch' ? 'Lunch' : 'Dinner';
+      
+      // Update processing state
+      setMealImages(prev => {
+        const updated = [...prev];
+        updated[mealIndex] = {
+          ...updated[mealIndex],
+          processingStep: 'detecting',
+          isProcessing: true
+        };
+        return updated;
+      });
+      
+      toast.loading(`Detecting food items in ${mealName}...`, { id: toastId });
+
+      try {
+        // Step 1: Detect food items
+        const detectionData = await detectFoodItems(meal.file);
         
-        // Step 2: Map nutrients to detected items
-        try {
-          const mappedItems = await processDetectedFood(detectionData.detected_items);
-          setDetectedItems(mappedItems);
-          // We'll set scannedFoods in ResultsSection when user confirms
-          setShowResults(true);
-          setProcessingStep('complete');
-          toast.success('Food analysis complete!', { id: toastId });
-        } catch (error) {
-          console.error('Nutrient mapping failed, falling back to basic display', error);
-          toast.error('Nutrient mapping failed, displaying basic results', { id: toastId });
-          // Fallback to basic mapping without nutrients
-          const basicItems = mapDetectionToDisplay(detectionData.detected_items);
-          setDetectedItems(basicItems);
-          // We'll set scannedFoods in ResultsSection when user confirms
-          setShowResults(true);
-          setProcessingStep('idle');
+        if (detectionData.detected_items && detectionData.detected_items.length > 0) {
+          // Update processing state to mapping
+          setMealImages(prev => {
+            const updated = [...prev];
+            updated[mealIndex] = {
+              ...updated[mealIndex],
+              processingStep: 'mapping'
+            };
+            return updated;
+          });
+          
+          toast.loading(`Mapping nutrients for ${mealName}...`, { id: toastId });
+          
+          // Step 2: Map nutrients to detected items
+          try {
+            const mappedItems = await processDetectedFood(detectionData.detected_items);
+            
+            // Update the meal with processed results
+            setMealImages(prev => {
+              const updated = [...prev];
+              updated[mealIndex] = {
+                ...updated[mealIndex],
+                detectedItems: mappedItems,
+                processingStep: 'complete',
+                isProcessing: false
+              };
+              return updated;
+            });
+            
+            toast.success(`${mealName} analysis complete!`, { id: toastId });
+          } catch (error) {
+            console.error('Nutrient mapping failed for ${mealName}, falling back to basic display', error);
+            toast.error(`Nutrient mapping failed for ${mealName}, displaying basic results`, { id: toastId });
+            
+            // Fallback to basic mapping without nutrients
+            const basicItems = mapDetectionToDisplay(detectionData.detected_items);
+            
+            setMealImages(prev => {
+              const updated = [...prev];
+              updated[mealIndex] = {
+                ...updated[mealIndex],
+                detectedItems: basicItems,
+                processingStep: 'complete',
+                isProcessing: false
+              };
+              return updated;
+            });
+          }
+        } else {
+          toast.error(`No food items detected in the ${mealName} image`, { id: toastId });
+          
+          setMealImages(prev => {
+            const updated = [...prev];
+            updated[mealIndex] = {
+              ...updated[mealIndex],
+              processingStep: 'idle',
+              isProcessing: false
+            };
+            return updated;
+          });
         }
-      } else {
-        toast.error('No food items detected in the image', { id: toastId });
-        setProcessingStep('idle');
+      } catch (error) {
+        console.error(`Error processing ${mealName} image:`, error);
+        toast.error(`Failed to process the ${mealName} image!`, { id: toastId });
+        
+        setMealImages(prev => {
+          const updated = [...prev];
+          updated[mealIndex] = {
+            ...updated[mealIndex],
+            processingStep: 'idle',
+            isProcessing: false
+          };
+          return updated;
+        });
       }
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to process the image!', { id: toastId });
-      setProcessingStep('idle');
+    }
+    
+    // If any meal was successfully processed, show results
+    if (mealImages.some(meal => meal.detectedItems && meal.detectedItems.length > 0)) {
+      setShowResults(true);
     }
   };
 
@@ -286,16 +436,62 @@ export default function NutriScanPage() {
     regenerate();
   }, [initializeQRCode, resetQrFlow, isQrProcessing]);
 
+  // Function to handle meal type changes
+  const handleMealTypeChange = (index: number, newType: MealType) => {
+    // Make sure the new type isn't already used
+    const existingIndex = mealImages.findIndex(meal => 
+      meal.mealType === newType && meal.file !== null
+    );
+    
+    if (existingIndex !== -1 && existingIndex !== index) {
+      // If this meal type is already used, swap the meal types
+      setMealImages(prev => {
+        const updated = [...prev];
+        // Get the current meal type at the target index
+        const currentType = updated[index].mealType;
+        
+        // Swap the meal types
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          mealType: currentType
+        };
+        
+        updated[index] = {
+          ...updated[index],
+          mealType: newType
+        };
+        
+        return updated;
+      });
+      
+      toast.info('Meal types have been swapped');
+    } else {
+      // Simply update the meal type
+      setMealImages(prev => {
+        const updated = [...prev];
+        updated[index] = {
+          ...updated[index],
+          mealType: newType
+        };
+        return updated;
+      });
+    }
+  };
+
   // Function to reset the scanning process
   const handleReset = () => {
     setShowResults(false);
-    setDetectedItems([]);
-    setImage(null);
-    setProcessingStep('idle');
-    if (imagePreviewUrl) {
-      URL.revokeObjectURL(imagePreviewUrl);
-      setImagePreviewUrl(null);
-    }
+    
+    // Clear all meal data but keep the meal types
+    setMealImages(prev => 
+      prev.map(meal => ({
+        file: null,
+        mealType: meal.mealType,
+        imagePreviewUrl: null,
+        processingStep: 'idle',
+        isProcessing: false
+      }))
+    );
     
     // Clear the scanned foods when resetting
     storageService.setLocalItem('scannedFoods', []);
@@ -306,7 +502,8 @@ export default function NutriScanPage() {
     }
   };
 
-  const isLoading = isDetecting || isQrProcessing || processingStep !== 'idle';
+  // Check if any processing is happening
+  const isLoading = isDetecting || isQrProcessing || mealImages.some(meal => meal.isProcessing);
 
   return (
     <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6 pt-25">
@@ -316,25 +513,21 @@ export default function NutriScanPage() {
 
       <p className="text-lg font-semibold text-gray-600 mb-6 text-center">
         {showResults 
-          ? 'Here are the ingredients detected in your food'
-          : 'Upload a photo of your food to analyze the nutritional contents!'}
+          ? 'Here are the ingredients detected in your meals'
+          : 'Upload photos of your meals to analyze the nutritional contents!'}
       </p>
 
       {showResults ? (
         <ResultsSection 
-          detectedItems={detectedItems}
-          imagePreviewUrl={imagePreviewUrl}
+          mealImages={mealImages}
           handleReset={handleReset}
+          onMealTypeChange={handleMealTypeChange}
         />
       ) : (
         <ScanningSection
-          image={image}
+          mealImages={mealImages}
           isMobile={isMobile}
           isLoading={isLoading}
-          processingStep={processingStep}
-          imagePreviewUrl={imagePreviewUrl}
-          fileInputRef={fileInputRef}
-          cameraInputRef={cameraInputRef}
           qrData={qrData}
           uploadStatus={uploadStatus}
           errorMessage={errorMessage || null}

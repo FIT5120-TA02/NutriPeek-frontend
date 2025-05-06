@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FoodItemDisplay, EditableFoodItem } from './types';
+import { FoodItemDisplay, EditableFoodItem, MealType, MealImage } from './types';
 import { IngredientsList } from './FoodIngredients';
 import { useNutrition } from '../../contexts/NutritionContext';
 import storageService from '@/libs/StorageService';
@@ -11,17 +11,18 @@ import { ChildProfile } from '@/types/profile';
 import { Calendar } from './ActivityCalendar';
 import { ActivityEntry } from '@/api/types';
 import { nutripeekApi } from '@/api/nutripeekApi';
+import MealResultCard from './MealCards/MealResultCard';
 
 interface ResultsSectionProps {
-  detectedItems: FoodItemDisplay[];
-  imagePreviewUrl: string | null;
+  mealImages: MealImage[];
   handleReset: () => void;
+  onMealTypeChange: (index: number, newType: MealType) => void;
 }
 
 export default function ResultsSection({
-  detectedItems,
-  imagePreviewUrl,
-  handleReset
+  mealImages,
+  handleReset,
+  onMealTypeChange
 }: ResultsSectionProps) {
   const router = useRouter();
   const { setIngredientIds, setSelectedChildId } = useNutrition();
@@ -63,22 +64,42 @@ export default function ResultsSection({
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   };
 
-  // Group identical ingredients and assign quantities
+  // Get all images that have been successfully processed
+  const processedMealImages = mealImages.filter(meal => 
+    meal.file !== null && meal.detectedItems && meal.detectedItems.length > 0
+  );
+
+  // Group all detected items from all meals into a single list for ingredients
   useEffect(() => {
-    // Since the backend already groups items and provides quantities,
-    // we can directly transform the detected items into editable items
-    const edibleIngredients: EditableFoodItem[] = detectedItems.map(item => {
+    // Collect all detected items from all processed meals
+    const allDetectedItems: FoodItemDisplay[] = [];
+    
+    processedMealImages.forEach(meal => {
+      if (meal.detectedItems) {
+        // Add each item with meal type metadata
+        meal.detectedItems.forEach(item => {
+          allDetectedItems.push({
+            ...item,
+            // mealType: meal.mealType // Add meal type to each item
+          });
+        });
+      }
+    });
+    
+    // Convert to editable ingredients
+    const editableIngredients: EditableFoodItem[] = allDetectedItems.map(item => {
       return {
         ...item,
-        name: item.name, // Remove any legacy quantity formatting
-        quantity: item.quantity || 1, // Use the quantity from the API
+        name: item.name,
+        quantity: item.quantity || 1,
         isCustomAdded: false,
-        uniqueId: generateUniqueId()
+        uniqueId: generateUniqueId(),
+        // mealType: item.mealType // Preserve meal type
       } as EditableFoodItem;
     });
 
-    setIngredients(edibleIngredients);
-  }, [detectedItems]);
+    setIngredients(editableIngredients);
+  }, [processedMealImages]);
 
   // Handle ingredient list changes (add/remove)
   const handleIngredientsChange = (updatedIngredients: EditableFoodItem[]) => {
@@ -304,34 +325,39 @@ export default function ResultsSection({
 
   return (
     <div className="flex flex-col items-center w-full max-w-5xl">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-        {/* Image Preview Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 w-full flex flex-col min-h-[400px]">
-          <h2 className="text-xl font-semibold mb-4 text-center">Your Food</h2>
-          <div className="flex-grow flex flex-col justify-center items-center space-y-4">
-            <div className="w-full max-h-64 overflow-hidden rounded-lg border-2 border-gray-200">
-              {imagePreviewUrl ? (
-                <img
-                  src={imagePreviewUrl}
-                  alt="Food"
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <div className="h-64 flex items-center justify-center bg-gray-50">
-                  <p className="text-gray-400">No image selected</p>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleReset}
-              className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition"
-              disabled={isCalculating}
-            >
-              Scan Another Image
-            </button>
+      {/* Meal Images Section */}
+      <div className="w-full mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-center">Your Meals</h2>
+        
+        {processedMealImages.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {processedMealImages.map((meal, index) => (
+              <MealResultCard
+                key={`${meal.mealType}-${index}`}
+                mealType={meal.mealType}
+                imagePreviewUrl={meal.imagePreviewUrl}
+                detectedItems={meal.detectedItems || []}
+                onMealTypeChange={(newType) => onMealTypeChange(index, newType)}
+              />
+            ))}
           </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <p className="text-gray-500">No meal images processed yet.</p>
+          </div>
+        )}
+        
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={handleReset}
+            className="bg-blue-500 text-white py-2 px-6 rounded-lg hover:bg-blue-600 transition"
+          >
+            Scan More Images
+          </button>
         </div>
-
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full">
         {/* Ingredients Management Section */}
         <div className="bg-white rounded-lg shadow-md p-6 w-full min-h-[400px]">
           <h2 className="text-xl font-semibold mb-4 text-center">Check Your Ingredients</h2>
@@ -396,7 +422,7 @@ export default function ResultsSection({
         </div>
       </div>
       
-      {/* Activity Tracking Section (Refactored) */}
+      {/* Activity Tracking Section */}
       <div className="w-full mt-8 bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold mb-4 text-center">Daily Activity Tracker</h2>
         <p className="text-gray-600 mb-6 text-center">
