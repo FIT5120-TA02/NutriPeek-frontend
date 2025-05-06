@@ -2,8 +2,8 @@
 
 import { useRef, useState } from 'react';
 import { QRCodeData, MealType, MealImage } from './types';
-import MealScanCard from './MealCards/MealScanCard';
-
+import MealScanCard from './Meal/MealScanCard';
+import { getMealTitle } from './utils';
 interface ScanningSectionProps {
   mealImages: MealImage[];
   isMobile: boolean;
@@ -15,7 +15,7 @@ interface ScanningSectionProps {
   regenerateQRCode: () => void;
   handleFileChange: (mealType: MealType, event: React.ChangeEvent<HTMLInputElement>) => void;
   handleCameraCapture: (mealType: MealType) => void;
-  handleScan: () => void;
+  handleScan: (newImages: MealImage[] | null) => void;
 }
 
 export default function ScanningSection({
@@ -86,16 +86,6 @@ export default function ScanningSection({
     setCurrentSlide((prev) => (prev === mealImages.length - 1 ? 0 : prev + 1));
   };
 
-  // Get readable meal title
-  const getMealTitle = (mealType: MealType) => {
-    switch(mealType) {
-      case 'breakfast': return 'Breakfast';
-      case 'lunch': return 'Lunch';
-      case 'dinner': return 'Dinner';
-      default: return 'Meal';
-    }
-  };
-
   return (
     <div className="w-full max-w-5xl">
       <div className="flex flex-col md:flex-row gap-6">
@@ -144,12 +134,12 @@ export default function ScanningSection({
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm font-medium text-blue-700">Processing...</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                           <div 
                             className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
                             style={{
-                              width: `${(mealImages.filter(m => m.processingStep === 'complete').length / 
-                                    Math.max(1, mealImages.filter(m => m.isProcessing).length)) * 100}%`
+                              width: `${Math.min(100, (mealImages.filter(m => m.processingStep === 'complete').length / 
+                                    Math.max(1, mealImages.filter(m => m.isProcessing).length)) * 100)}%`
                             }}
                           ></div>
                         </div>
@@ -357,12 +347,12 @@ export default function ScanningSection({
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-gray-700">{getProcessingStatusText()}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                       <div 
                         className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
                         style={{
-                          width: `${(mealImages.filter(m => m.processingStep === 'complete').length / 
-                                Math.max(1, mealImages.filter(m => m.isProcessing).length)) * 100}%`
+                          width: `${Math.min(100, (mealImages.filter(m => m.processingStep === 'complete').length / 
+                                Math.max(1, mealImages.filter(m => m.isProcessing).length)) * 100)}%`
                         }}
                       ></div>
                     </div>
@@ -371,7 +361,7 @@ export default function ScanningSection({
               </div>
               
               <button
-                onClick={handleScan}
+                onClick={() => handleScan(null)}
                 className={`w-full md:w-auto px-6 py-3 rounded-lg font-medium text-white flex items-center justify-center gap-2 ${
                   hasAnyImage && !isAnyMealProcessing 
                     ? 'bg-green-500 hover:bg-green-600' 

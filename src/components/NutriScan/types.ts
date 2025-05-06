@@ -42,4 +42,5 @@ export interface MealImage {
   detectedItems?: FoodItemDisplay[];
   processingStep: 'idle' | 'detecting' | 'mapping' | 'complete';
   isProcessing: boolean;
+  shouldReprocess?: boolean; // Flag to indicate if a meal should be processed again even if it has detectedItems
 }

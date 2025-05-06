@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MealType, FoodItemDisplay } from '../types';
+import { getMealTitle } from '../utils';
 
 interface MealResultCardProps {
   mealType: MealType;
@@ -18,15 +19,6 @@ export default function MealResultCard({
 }: MealResultCardProps) {
   const [isTypeSelectionOpen, setIsTypeSelectionOpen] = useState(false);
 
-  // Helper to get readable meal title
-  const getMealTitle = (type: MealType) => {
-    switch(type) {
-      case 'breakfast': return 'Breakfast';
-      case 'lunch': return 'Lunch';
-      case 'dinner': return 'Dinner';
-      default: return 'Meal'; // Keep default case for type safety
-    }
-  };
 
   // Get total number of items detected
   const totalItems = detectedItems.length;
@@ -124,10 +116,10 @@ export default function MealResultCard({
         <ul className="space-y-1 mb-3">
           {detectedItems.slice(0, 3).map((item, index) => (
             <li key={index} className="flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              <span className="truncate">{item.name}</span>
+              <span className="min-w-2 w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span>
+              <span className="truncate max-w-[calc(100%-3rem)]">{item.name}</span>
               {item.quantity && item.quantity > 1 && (
-                <span className="text-xs bg-gray-100 px-1.5 rounded-full">x{item.quantity}</span>
+                <span className="text-xs bg-gray-100 px-1.5 rounded-full flex-shrink-0">x{item.quantity}</span>
               )}
             </li>
           ))}

@@ -282,13 +282,21 @@ export default function NutriScanPage() {
     const mealIndex = mealImages.findIndex(meal => meal.mealType === mealType);
     if (mealIndex === -1) return;
     
+    // Check if this is a new file or an update to an existing one
+    const isReplacingExistingImage = mealImages[mealIndex].file !== null;
+    
     // Update the meal image
     setMealImages(prev => {
       const updated = [...prev];
       updated[mealIndex] = {
         ...updated[mealIndex],
         file,
-        imagePreviewUrl: URL.createObjectURL(file)
+        imagePreviewUrl: URL.createObjectURL(file),
+        // Clear any detected items if replacing existing image
+        ...(isReplacingExistingImage && {
+          detectedItems: undefined,
+          shouldReprocess: true
+        })
       };
       return updated;
     });
@@ -308,27 +316,90 @@ export default function NutriScanPage() {
     }
   };
 
-
-  const handleScan = async () => {
+  const handleScan = async (newImages: MealImage[] | null = null) => {
     // Check if there are any images to scan
-    const mealsToScan = mealImages.filter(meal => meal.file !== null && !meal.isProcessing);
-    
-    if (mealsToScan.length === 0) {
-      toast.error('Please upload at least one meal image first!');
-      return;
+    if (newImages !== null) {
+      // Update the meal images state - IMPORTANT: use a single update for all images
+      setMealImages(prev => {
+        const updated = [...prev];
+        
+        // Update each meal that has a matching mealType
+        for (const meal of newImages) {
+          const mealIndex = updated.findIndex(m => m.mealType === meal.mealType);
+          if (mealIndex === -1) continue;
+          
+          // Check if this is a new image (different from the current one)
+          const isNewImage = meal.file !== updated[mealIndex].file;
+          
+          // Only keep existing detected items if:
+          // 1. They exist AND
+          // 2. The image hasn't changed AND
+          // 3. The meal is not explicitly marked for reprocessing
+          const keepExistingItems = 
+            !isNewImage &&
+            updated[mealIndex].detectedItems && 
+            updated[mealIndex].detectedItems.length > 0 && 
+            !updated[mealIndex].shouldReprocess;
+          
+          updated[mealIndex] = {
+            ...updated[mealIndex],
+            file: meal.file,
+            imagePreviewUrl: meal.imagePreviewUrl,
+            // Only preserve detected items if they exist and we should keep them
+            ...(keepExistingItems ? {
+              detectedItems: updated[mealIndex].detectedItems
+            } : {
+              // Otherwise clear the detected items to ensure they get reprocessed
+              detectedItems: undefined,
+              shouldReprocess: false // Reset the flag after using it
+            })
+          };
+        }
+        
+        return updated;
+      });
+      
+      // Use a callback to ensure we have the latest state
+      setTimeout(() => {
+        // Get the most up-to-date state for scanning
+        processMealsBasedOnLatestState();
+      }, 100);
+    } else {
+      processMealsBasedOnLatestState();
     }
-
-    // Track if any meal was successfully processed
+  };
+  
+  // Extracted function to process meals sequentially
+  const processMealsSequentially = async (mealsToScan: MealImage[], updatedMeals: MealImage[]) => {
+    // Filter to meals that need processing:
+    // - No detected items OR
+    // - Explicitly marked for reprocessing
+    const mealsToProcess = mealsToScan.filter(meal => 
+      !meal.detectedItems || 
+      meal.detectedItems.length === 0 || 
+      meal.shouldReprocess === true
+    );
+    
+    // If no meals need processing, check if we had any processed meals
+    if (mealsToProcess.length === 0) {
+      // Return success if any of the meals have detected items
+      const hasProcessedMeals = mealsToScan.some(meal => 
+        meal.detectedItems && meal.detectedItems.length > 0
+      );
+      return hasProcessedMeals;
+    }
+    
     let successfullyProcessed = false;
-    // Create a copy of processed meals to avoid state update conflicts
-    const updatedMeals = [...mealImages];
-
+    
     // Process each meal image in sequence
-    for (let i = 0; i < mealsToScan.length; i++) {
-      const mealIndex = mealImages.findIndex(meal => meal === mealsToScan[i]);
+    for (let i = 0; i < mealsToProcess.length; i++) {
+      const meal = mealsToProcess[i];
+      
+      // Find the index in the original mealImages array
+      const mealIndex = mealImages.findIndex(m => m.mealType === meal.mealType);
+      
       if (mealIndex === -1) continue;
       
-      const meal = mealImages[mealIndex];
       if (!meal.file) continue;
       
       const toastId = `scan-${mealIndex}`;
@@ -339,7 +410,8 @@ export default function NutriScanPage() {
       updatedMeals[mealIndex] = {
         ...updatedMeals[mealIndex],
         processingStep: 'detecting',
-        isProcessing: true
+        isProcessing: true,
+        shouldReprocess: false // Reset the reprocessing flag
       };
       
       // Update the state only once per meal
@@ -370,7 +442,8 @@ export default function NutriScanPage() {
               ...updatedMeals[mealIndex],
               detectedItems: mappedItems,
               processingStep: 'complete',
-              isProcessing: false
+              isProcessing: false,
+              shouldReprocess: false // Ensure the flag is reset
             };
             
             // Flag success before updating state or showing toast
@@ -381,7 +454,7 @@ export default function NutriScanPage() {
             
             toast.success(`${mealName} analysis complete!`, { id: toastId });
           } catch (error) {
-            console.error(`Nutrient mapping failed for ${mealName}, falling back to basic display`, error);
+            console.error(`Nutrient mapping failed for ${mealName}:`, error);
             
             // Fallback to basic mapping without nutrients
             const basicItems = mapDetectionToDisplay(detectionData.detected_items);
@@ -391,7 +464,8 @@ export default function NutriScanPage() {
               ...updatedMeals[mealIndex],
               detectedItems: basicItems,
               processingStep: 'complete',
-              isProcessing: false
+              isProcessing: false,
+              shouldReprocess: false // Ensure the flag is reset
             };
             
             // Flag success before updating state
@@ -409,7 +483,8 @@ export default function NutriScanPage() {
           updatedMeals[mealIndex] = {
             ...updatedMeals[mealIndex],
             processingStep: 'idle',
-            isProcessing: false
+            isProcessing: false,
+            shouldReprocess: false // Ensure the flag is reset
           };
           
           // Updated state with all changes
@@ -423,7 +498,8 @@ export default function NutriScanPage() {
         updatedMeals[mealIndex] = {
           ...updatedMeals[mealIndex],
           processingStep: 'idle',
-          isProcessing: false
+          isProcessing: false,
+          shouldReprocess: false // Ensure the flag is reset
         };
         
         // Updated state with all changes
@@ -431,14 +507,65 @@ export default function NutriScanPage() {
       }
     }
     
-    // If any meal was successfully processed, show results
-    // Make sure this is a separate operation after all processing is done
-    if (successfullyProcessed) {
-      // Delay showing results slightly to ensure meal data updates have been applied
-      setTimeout(() => {
-        setShowResults(true);
-      }, 50); // Small delay to make sure UI updates happen first
+    // Return true if any meal was processed successfully or already had detected items
+    return successfullyProcessed || mealsToScan.some(meal => 
+      meal.detectedItems && meal.detectedItems.length > 0
+    );
+  };
+
+  // Function to process meals based on the latest state
+  const processMealsBasedOnLatestState = () => {
+    // Get a fresh reference to mealImages from the component's current state
+    const currentMealImages = [...mealImages];
+    
+    // First, check if we have any meals that need processing
+    const mealsWithFiles = currentMealImages.filter(meal => meal.file !== null);
+    
+    if (mealsWithFiles.length === 0) {
+      toast.error('Please upload at least one meal image first!');
+      return;
     }
+
+    // Get meals that need processing:
+    // 1. Has a file AND
+    // 2. Either doesn't have detected items OR is marked for reprocessing
+    const mealsToScan = mealsWithFiles.filter(meal => 
+      !meal.detectedItems || 
+      meal.detectedItems.length === 0 || 
+      meal.shouldReprocess === true
+    );
+    
+    // Check if there's anything to process
+    if (mealsToScan.length === 0) {
+      // If nothing needs processing but we have processed meals, just show results
+      const hasProcessedMeals = mealsWithFiles.some(meal => 
+        meal.detectedItems && meal.detectedItems.length > 0
+      );
+      
+      if (hasProcessedMeals) {
+        setShowResults(true);
+      } else {
+        toast.error('Something went wrong. Please try uploading your images again.');
+      }
+      return;
+    }
+    
+    // Create a copy of processed meals to avoid state update conflicts
+    const updatedMeals = [...currentMealImages];
+
+    // Process each meal image in sequence
+    processMealsSequentially(mealsToScan, updatedMeals)
+      .then(success => {
+        if (success) {
+          // Delay showing results slightly to ensure meal data updates have been applied
+          setTimeout(() => {
+            setShowResults(true);
+          }, 50); // Small delay to make sure UI updates happen first
+        }
+      })
+      .catch(error => {
+        console.error("Error processing meals:", error);
+      });
   };
 
   // Function to regenerate QR code
@@ -529,6 +656,16 @@ export default function NutriScanPage() {
   // Check if any processing is happening
   const isLoading = isDetecting || isQrProcessing || mealImages.some(meal => meal.isProcessing);
 
+  // Toggle between scanning and results view
+  const toggleView = () => {
+    setShowResults(prev => !prev);
+    
+    // If going back to scanning view, regenerate QR code on desktop
+    if (showResults && !isMobile) {
+      regenerateQRCode();
+    }
+  };
+
   return (
     <div className="w-full flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100 p-6 pt-25">
       <h1 className="text-4xl font-bold mb-6 text-gray-800">
@@ -544,8 +681,8 @@ export default function NutriScanPage() {
       {showResults ? (
         <ResultsSection 
           mealImages={mealImages}
-          handleReset={handleReset}
           onMealTypeChange={handleMealTypeChange}
+          toggleView={toggleView}
         />
       ) : (
         <ScanningSection

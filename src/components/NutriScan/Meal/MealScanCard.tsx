@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MealType } from '../types';
+import { getMealTitle } from '../utils';
 
 interface MealScanCardProps {
   mealType: MealType;
@@ -29,16 +30,6 @@ export default function MealScanCard({
   onCameraCapture
 }: MealScanCardProps) {
   const [isImageExpanded, setIsImageExpanded] = useState(false);
-  
-  // Helper to get readable meal title
-  const getMealTitle = () => {
-    switch(mealType) {
-      case 'breakfast': return 'Breakfast';
-      case 'lunch': return 'Lunch';
-      case 'dinner': return 'Dinner';
-      default: return 'Meal';
-    }
-  };
 
   // Helper to get processing progress percentage
   const getProcessingProgress = () => {
@@ -83,7 +74,7 @@ export default function MealScanCard({
             >
               <img 
                 src={imagePreviewUrl} 
-                alt={`${getMealTitle()} Preview`} 
+                alt={`${getMealTitle(mealType)} Preview`} 
                 className={`${isImageExpanded ? 'max-h-[90vh] max-w-[90vw] object-contain' : 'w-full h-full object-contain'}`}
               />
               
@@ -125,7 +116,7 @@ export default function MealScanCard({
               </svg>
             </div>
             <p className="text-gray-500 text-sm mb-3">
-              Upload your {getMealTitle().toLowerCase()} photo
+              Upload your {getMealTitle(mealType).toLowerCase()} photo
             </p>
           </div>
         )}
