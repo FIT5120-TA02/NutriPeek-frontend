@@ -40,15 +40,27 @@ export default function ResultsSection({
    * This fixes the bug where old activity data persists when users revisit the page
    */
   useEffect(() => {
-    // Clear previously stored activity data to prevent using stale data
-    storageService.removeLocalItem('activityResult');
-    storageService.removeLocalItem('activityPAL');
-    storageService.removeLocalItem('selectedActivities');
-    storageService.removeLocalItem('energyRequirements');
+    // Use a cleanup function to ensure this only runs once
+    const cleanup = () => {
+      // Clear previously stored activity data to prevent using stale data
+      storageService.removeLocalItem('activityResult');
+      storageService.removeLocalItem('activityPAL');
+      storageService.removeLocalItem('selectedActivities');
+      storageService.removeLocalItem('energyRequirements');
+    };
     
-    // Reset the state values
-    setSelectedActivities([]);
-    setActivityPAL(null);
+    // Clear data on mount
+    cleanup();
+    
+    // Reset the state values only once when component mounts
+    if (selectedActivities.length > 0) {
+      setSelectedActivities([]);
+    }
+    if (activityPAL !== null) {
+      setActivityPAL(null);
+    }
+    
+    // No cleanup needed since this runs only once
   }, []);
 
   // Load child profiles
@@ -71,6 +83,9 @@ export default function ResultsSection({
 
   // Group all detected items from all meals into a single list for ingredients
   useEffect(() => {
+    // Skip effect if no processed meals
+    if (processedMealImages.length === 0) return;
+    
     // Collect all detected items from all processed meals
     const allDetectedItems: FoodItemDisplay[] = [];
     
@@ -80,7 +95,6 @@ export default function ResultsSection({
         meal.detectedItems.forEach(item => {
           allDetectedItems.push({
             ...item,
-            // mealType: meal.mealType // Add meal type to each item
           });
         });
       }
@@ -94,11 +108,14 @@ export default function ResultsSection({
         quantity: item.quantity || 1,
         isCustomAdded: false,
         uniqueId: generateUniqueId(),
-        // mealType: item.mealType // Preserve meal type
       } as EditableFoodItem;
     });
 
-    setIngredients(editableIngredients);
+    // Only update state if there's actually a change
+    // This prevents unnecessary re-renders
+    if (JSON.stringify(ingredients.map(i => i.name)) !== JSON.stringify(editableIngredients.map(i => i.name))) {
+      setIngredients(editableIngredients);
+    }
   }, [processedMealImages]);
 
   // Handle ingredient list changes (add/remove)

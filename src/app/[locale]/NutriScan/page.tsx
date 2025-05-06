@@ -169,6 +169,7 @@ export default function NutriScanPage() {
     } else if (uploadStatus === 'processed' && resultData) {
       // QR processed, now map nutrients
       if (resultData.detected_items && resultData.detected_items.length > 0 && processingMealIndex !== null) {
+        // Update state for mapping in process
         setMealImages(prev => {
           const updated = [...prev];
           updated[processingMealIndex] = {
@@ -179,56 +180,68 @@ export default function NutriScanPage() {
         });
         toast.loading('Mapping nutrients...', { id: 'qr-processing' });
         
-        // Process the detected items with nutrient mapping
-        processDetectedFood(resultData.detected_items || [])
-          .then(mappedItems => {
+        // Process the detected items with nutrient mapping in a self-contained function
+        // to avoid state update conflicts
+        const processQRDetection = async () => {
+          try {
+            const mappedItems = await processDetectedFood(resultData.detected_items || []);
+            
+            // Get the imageUrl from the result data
+            const imageUrl = null;
+            
+            // Handle state updates together
             setMealImages(prev => {
               const updated = [...prev];
-              if (processingMealIndex !== null) {
-                // Get the imageUrl from the result data
-                const imageUrl = null;
-                
-                updated[processingMealIndex] = {
-                  ...updated[processingMealIndex],
-                  file: new File([], "qr_uploaded_image.jpg"), // Dummy file since we don't have the actual file
-                  imagePreviewUrl: imageUrl,
-                  detectedItems: mappedItems,
-                  processingStep: 'complete',
-                  isProcessing: false
-                };
-              }
+              updated[processingMealIndex] = {
+                ...updated[processingMealIndex],
+                file: new File([], "qr_uploaded_image.jpg"), // Dummy file
+                imagePreviewUrl: imageUrl,
+                detectedItems: mappedItems,
+                processingStep: 'complete',
+                isProcessing: false
+              };
               return updated;
             });
             
+            // Clear the processing meal index after updating meal data
             setProcessingMealIndex(null);
-            setShowResults(true);
-            toast.success('Food analysis complete!', { id: 'qr-processing' });
-          })
-          .catch(error => {
-            toast.error('Failed to map nutrients', { id: 'qr-processing' });
-            // Fallback to basic mapping without nutrients
-            if (processingMealIndex !== null) {
-              const basicItems = mapDetectionToDisplay(resultData.detected_items || []);
-              setMealImages(prev => {
-                const updated = [...prev];
-                // Get the imageUrl from the result data
-                const imageUrl = null;
-                
-                updated[processingMealIndex] = {
-                  ...updated[processingMealIndex],
-                  file: new File([], "qr_uploaded_image.jpg"), // Dummy file
-                  imagePreviewUrl: imageUrl,
-                  detectedItems: basicItems,
-                  processingStep: 'complete',
-                  isProcessing: false
-                };
-                return updated;
-              });
-              
-              setProcessingMealIndex(null);
+            
+            // Wait for the next event cycle to show success toast and results
+            setTimeout(() => {
+              toast.success('Food analysis complete!', { id: 'qr-processing' });
               setShowResults(true);
-            }
-          });
+            }, 50);
+          } catch (error) {
+            // Handle fallback if nutrient mapping fails
+            const basicItems = mapDetectionToDisplay(resultData.detected_items || []);
+            
+            // Handle state updates together
+            setMealImages(prev => {
+              const updated = [...prev];
+              updated[processingMealIndex] = {
+                ...updated[processingMealIndex],
+                file: new File([], "qr_uploaded_image.jpg"), // Dummy file
+                imagePreviewUrl: null,
+                detectedItems: basicItems,
+                processingStep: 'complete',
+                isProcessing: false
+              };
+              return updated;
+            });
+            
+            // Clear the processing meal index after updating meal data
+            setProcessingMealIndex(null);
+            
+            // Wait for the next event cycle to show error toast and results
+            setTimeout(() => {
+              toast.error('Failed to map nutrients', { id: 'qr-processing' });
+              setShowResults(true);
+            }, 50);
+          }
+        };
+        
+        // Execute the processing function
+        processQRDetection();
       } else {
         toast.error('No food items detected in the uploaded image', { id: 'qr-processing' });
         if (processingMealIndex !== null) {
@@ -305,6 +318,11 @@ export default function NutriScanPage() {
       return;
     }
 
+    // Track if any meal was successfully processed
+    let successfullyProcessed = false;
+    // Create a copy of processed meals to avoid state update conflicts
+    const updatedMeals = [...mealImages];
+
     // Process each meal image in sequence
     for (let i = 0; i < mealsToScan.length; i++) {
       const mealIndex = mealImages.findIndex(meal => meal === mealsToScan[i]);
@@ -317,16 +335,15 @@ export default function NutriScanPage() {
       const mealName = meal.mealType === 'breakfast' ? 'Breakfast' : 
                        meal.mealType === 'lunch' ? 'Lunch' : 'Dinner';
       
-      // Update processing state
-      setMealImages(prev => {
-        const updated = [...prev];
-        updated[mealIndex] = {
-          ...updated[mealIndex],
-          processingStep: 'detecting',
-          isProcessing: true
-        };
-        return updated;
-      });
+      // Update processing state in our copy first
+      updatedMeals[mealIndex] = {
+        ...updatedMeals[mealIndex],
+        processingStep: 'detecting',
+        isProcessing: true
+      };
+      
+      // Update the state only once per meal
+      setMealImages(updatedMeals.map(m => ({...m})));
       
       toast.loading(`Detecting food items in ${mealName}...`, { id: toastId });
 
@@ -335,15 +352,12 @@ export default function NutriScanPage() {
         const detectionData = await detectFoodItems(meal.file);
         
         if (detectionData.detected_items && detectionData.detected_items.length > 0) {
-          // Update processing state to mapping
-          setMealImages(prev => {
-            const updated = [...prev];
-            updated[mealIndex] = {
-              ...updated[mealIndex],
-              processingStep: 'mapping'
-            };
-            return updated;
-          });
+          // Update processing state to mapping in our copy
+          updatedMeals[mealIndex] = {
+            ...updatedMeals[mealIndex],
+            processingStep: 'mapping'
+          };
+          setMealImages(updatedMeals.map(m => ({...m})));
           
           toast.loading(`Mapping nutrients for ${mealName}...`, { id: toastId });
           
@@ -351,69 +365,79 @@ export default function NutriScanPage() {
           try {
             const mappedItems = await processDetectedFood(detectionData.detected_items);
             
-            // Update the meal with processed results
-            setMealImages(prev => {
-              const updated = [...prev];
-              updated[mealIndex] = {
-                ...updated[mealIndex],
-                detectedItems: mappedItems,
-                processingStep: 'complete',
-                isProcessing: false
-              };
-              return updated;
-            });
+            // Update the meal with processed results in our copy
+            updatedMeals[mealIndex] = {
+              ...updatedMeals[mealIndex],
+              detectedItems: mappedItems,
+              processingStep: 'complete',
+              isProcessing: false
+            };
+            
+            // Flag success before updating state or showing toast
+            successfullyProcessed = true;
+            
+            // Updated state with all changes
+            setMealImages(updatedMeals.map(m => ({...m})));
             
             toast.success(`${mealName} analysis complete!`, { id: toastId });
           } catch (error) {
-            console.error('Nutrient mapping failed for ${mealName}, falling back to basic display', error);
-            toast.error(`Nutrient mapping failed for ${mealName}, displaying basic results`, { id: toastId });
+            console.error(`Nutrient mapping failed for ${mealName}, falling back to basic display`, error);
             
             // Fallback to basic mapping without nutrients
             const basicItems = mapDetectionToDisplay(detectionData.detected_items);
             
-            setMealImages(prev => {
-              const updated = [...prev];
-              updated[mealIndex] = {
-                ...updated[mealIndex],
-                detectedItems: basicItems,
-                processingStep: 'complete',
-                isProcessing: false
-              };
-              return updated;
-            });
+            // Update in our copy
+            updatedMeals[mealIndex] = {
+              ...updatedMeals[mealIndex],
+              detectedItems: basicItems,
+              processingStep: 'complete',
+              isProcessing: false
+            };
+            
+            // Flag success before updating state
+            successfullyProcessed = true;
+            
+            // Updated state with all changes
+            setMealImages(updatedMeals.map(m => ({...m})));
+            
+            toast.error(`Nutrient mapping failed for ${mealName}, displaying basic results`, { id: toastId });
           }
         } else {
           toast.error(`No food items detected in the ${mealName} image`, { id: toastId });
           
-          setMealImages(prev => {
-            const updated = [...prev];
-            updated[mealIndex] = {
-              ...updated[mealIndex],
-              processingStep: 'idle',
-              isProcessing: false
-            };
-            return updated;
-          });
+          // Update in our copy
+          updatedMeals[mealIndex] = {
+            ...updatedMeals[mealIndex],
+            processingStep: 'idle',
+            isProcessing: false
+          };
+          
+          // Updated state with all changes
+          setMealImages(updatedMeals.map(m => ({...m})));
         }
       } catch (error) {
         console.error(`Error processing ${mealName} image:`, error);
         toast.error(`Failed to process the ${mealName} image!`, { id: toastId });
         
-        setMealImages(prev => {
-          const updated = [...prev];
-          updated[mealIndex] = {
-            ...updated[mealIndex],
-            processingStep: 'idle',
-            isProcessing: false
-          };
-          return updated;
-        });
+        // Update in our copy
+        updatedMeals[mealIndex] = {
+          ...updatedMeals[mealIndex],
+          processingStep: 'idle',
+          isProcessing: false
+        };
+        
+        // Updated state with all changes
+        setMealImages(updatedMeals.map(m => ({...m})));
       }
     }
     
     // If any meal was successfully processed, show results
-    if (mealImages.some(meal => meal.detectedItems && meal.detectedItems.length > 0)) {
-      setShowResults(true);
+    // Make sure this is a separate operation after all processing is done
+    if (successfullyProcessed) {
+      // Delay showing results slightly to ensure meal data updates have been applied
+      setTimeout(() => {
+        setShowResults(true);
+      }, 50); // Small delay to make sure UI updates happen first
     }
   };
 
