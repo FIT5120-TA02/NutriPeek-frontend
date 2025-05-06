@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { QRCodeData, MealType, MealImage } from './types';
-import MealScanCard from './Meal/MealScanCard';
+import { MealScanCard } from './Meal';
 import { getMealTitle } from './utils';
 interface ScanningSectionProps {
   mealImages: MealImage[];
@@ -286,8 +286,8 @@ export default function ScanningSection({
                 imagePreviewUrl={mealImages[currentSlide].imagePreviewUrl}
                 isMobile={isMobile}
                 fileInputRef={fileInputRefs[mealImages[currentSlide].mealType]}
-                cameraInputRef={cameraInputRefs[mealImages[currentSlide].mealType]}
-                onFileChange={(e) => handleFileChange(mealImages[currentSlide].mealType, e)}
+                // cameraInputRef={cameraInputRefs[mealImages[currentSlide].mealType]}
+                // onFileChange={(e) => handleFileChange(mealImages[currentSlide].mealType, e)}
                 onCameraCapture={() => handleCameraCapture(mealImages[currentSlide].mealType)}
               />
             </div>

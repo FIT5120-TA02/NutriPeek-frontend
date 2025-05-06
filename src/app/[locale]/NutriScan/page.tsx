@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useDetectFoodItems, useQRCodeFlow } from "../../../api";
 import { FoodItemDetection, FoodMappingRequest } from "../../../api/types";
@@ -626,30 +626,6 @@ export default function NutriScanPage() {
         };
         return updated;
       });
-    }
-  };
-
-  // Function to reset the scanning process
-  const handleReset = () => {
-    setShowResults(false);
-    
-    // Clear all meal data but keep the meal types
-    setMealImages(prev => 
-      prev.map(meal => ({
-        file: null,
-        mealType: meal.mealType,
-        imagePreviewUrl: null,
-        processingStep: 'idle',
-        isProcessing: false
-      }))
-    );
-    
-    // Clear the scanned foods when resetting
-    storageService.setLocalItem('scannedFoods', []);
-    
-    // If on desktop, generate a new QR code
-    if (!isMobile) {
-      regenerateQRCode();
     }
   };
 

@@ -12,8 +12,8 @@ interface MealScanCardProps {
   imagePreviewUrl: string | null;
   isMobile: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
-  cameraInputRef: React.RefObject<HTMLInputElement | null>;
-  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  // cameraInputRef: React.RefObject<HTMLInputElement | null>;
+  // onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onCameraCapture: () => void;
 }
 
@@ -25,8 +25,8 @@ export default function MealScanCard({
   imagePreviewUrl,
   isMobile,
   fileInputRef,
-  cameraInputRef,
-  onFileChange,
+  // cameraInputRef,
+  // onFileChange,
   onCameraCapture
 }: MealScanCardProps) {
   const [isImageExpanded, setIsImageExpanded] = useState(false);

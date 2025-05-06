@@ -11,7 +11,7 @@ import { ChildProfile } from '@/types/profile';
 import { Calendar } from './ActivityCalendar';
 import { ActivityEntry } from '@/api/types';
 import { nutripeekApi } from '@/api/nutripeekApi';
-import MealResultCard from './Meal/MealResultCard';
+import { MealResultCard } from './Meal';
 import MobileCarousel, { CarouselItem } from '@/components/ui/MobileCarousel';
 import useDeviceDetection from '@/hooks/useDeviceDetection';
 import { toast } from 'sonner';
@@ -61,11 +61,6 @@ export default function ResultsSection({
   const processedMealImages = mealImages.filter(meal => 
     meal.file !== null && meal.detectedItems && meal.detectedItems.length > 0
   );
-
-  // Calculate existing meal types for validation
-  const existingMealTypes = mealImages
-    .filter(meal => meal.file !== null)
-    .map(meal => meal.mealType);
 
   // Reset ingredients to force re-initialization
   const handleResetIngredients = () => {
