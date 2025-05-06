@@ -21,20 +21,13 @@ export default function IngredientsList({
 }: IngredientsListProps) {
   const [isAddingIngredient, setIsAddingIngredient] = useState(false);
 
-  // Debug when component renders or ingredients change
-  useEffect(() => {
-    console.log('[IngredientsList] Component rendered with ingredients:', ingredients);
-  }, [ingredients]);
-
   // Generate a unique ID
   const generateUniqueId = () => {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   };
 
   // Remove an ingredient from the list using uniqueId for reliable identification
-  const handleRemoveIngredient = (id: string | undefined, index: number) => {
-    console.log('[IngredientsList] Removing ingredient:', { id, index, ingredient: ingredients[index] });
-    
+  const handleRemoveIngredient = (id: string | undefined, index: number) => {    
     // Use uniqueId for identification when available, fallback to index
     const itemToRemove = ingredients[index];
     
@@ -50,7 +43,6 @@ export default function IngredientsList({
         // Don't update name as quantity will be displayed separately
       };
       
-      console.log('[IngredientsList] Reducing quantity, updated ingredients:', updatedIngredients);
       onIngredientsChange(updatedIngredients);
     } else {
       // Regular removal (no quantity or quantity = 1)
@@ -61,15 +53,12 @@ export default function IngredientsList({
         (!itemToRemove.uniqueId && i !== index)
       );
       
-      console.log('[IngredientsList] Removing completely, updated ingredients:', updatedIngredients);
       onIngredientsChange(updatedIngredients);
     }
   };
 
   // Remove all of a specific ingredient at once
-  const handleRemoveAllIngredients = (id: string | undefined, index: number) => {
-    console.log('[IngredientsList] Removing all of ingredient:', { id, index, ingredient: ingredients[index] });
-    
+  const handleRemoveAllIngredients = (id: string | undefined, index: number) => {    
     const itemToRemove = ingredients[index];
     
     // Remove the ingredient completely regardless of quantity
@@ -80,14 +69,11 @@ export default function IngredientsList({
       (!itemToRemove.uniqueId && i !== index)
     );
     
-    console.log('[IngredientsList] After removing all, updated ingredients:', updatedIngredients);
     onIngredientsChange(updatedIngredients);
   };
 
   // Add a new ingredient to the list with a uniqueId
-  const handleAddIngredient = (newIngredient: EditableFoodItem) => {
-    console.log('[IngredientsList] Adding new ingredient:', newIngredient);
-    
+  const handleAddIngredient = (newIngredient: EditableFoodItem) => {    
     // Check if the same ingredient already exists
     const existingIndex = ingredients.findIndex(item => 
       item.id === newIngredient.id
@@ -114,8 +100,6 @@ export default function IngredientsList({
           }, {} as Record<string, number>) : 
           existingItem.nutrients
       };
-      
-      console.log('[IngredientsList] Increasing quantity of existing, updated ingredients:', updatedIngredients);
       onIngredientsChange(updatedIngredients);
     } else {
       // New ingredient, add with uniqueId
@@ -126,7 +110,6 @@ export default function IngredientsList({
       };
       
       const updatedIngredients = [...ingredients, ingredientWithUniqueId];
-      console.log('[IngredientsList] Adding brand new, updated ingredients:', updatedIngredients);
       onIngredientsChange(updatedIngredients);
     }
     
@@ -142,7 +125,6 @@ export default function IngredientsList({
       .map(item => item.id as string);
     
     if (ingredientIds.length > 0) {
-      console.log('[IngredientsList] Calculating gap with ingredientIds:', ingredientIds);
       onCalculateGap(ingredientIds);
     }
   };
@@ -158,7 +140,6 @@ export default function IngredientsList({
       ) : (
         <button
           onClick={() => {
-            console.log('[IngredientsList] Add ingredient button clicked');
             setIsAddingIngredient(true);
           }}
           className="w-full mb-3 flex items-center justify-center gap-1 py-1.5 px-3 bg-green-50 text-green-600 border border-green-200 rounded-lg hover:bg-green-100 transition text-sm"
