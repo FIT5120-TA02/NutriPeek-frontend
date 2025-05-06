@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import UnitFormatter from '@/utils/UnitFormatter';
+import InfoPopup from '@/components/ui/InfoPopup';
 
 // Dynamically import the Chart component to prevent SSR issues
 const Chart = dynamic(() => import('react-apexcharts').then((mod) => mod.default), { ssr: false });
@@ -53,6 +54,32 @@ const formatNutrientValue = (value: number): string => {
 };
 
 export default function ImportantNutrientsDashboard({ gaps }: ImportantNutrientsDashboardProps) {
+  // Nutrient calculation explanation content for the InfoPopup
+  const nutrientCalculationContent = (
+    <div className="max-w-[300px]">
+      <p className="font-medium text-gray-800 mb-2">How are nutrient gaps calculated?</p>
+      <p className="mb-2">
+        We calculate nutrient targets based on the Australian Health Survey data from the Australian Bureau of Statistics, which provides recommended daily intakes based on:
+      </p>
+      <ul className="list-disc pl-5 space-y-1 mb-2">
+        <li>Child's age</li>
+        <li>Gender</li>
+        <li>Activity level</li>
+      </ul>
+      <p className="mb-2">
+        The nutrient analysis considers:
+      </p>
+      <ul className="list-disc pl-5 space-y-1 mb-2">
+        <li>Missing nutrients: below 70% of recommended intake</li>
+        <li>Adequate: between 70% and 110% of recommended intake</li>
+        <li>Excess: above 110% of recommended intake</li>
+      </ul>
+      <p className="text-xs text-gray-500 mt-2">
+        Source: <a href="https://www.abs.gov.au/statistics/health/health-conditions-and-risks/australian-health-survey-nutrition-first-results-foods-and-nutrients/latest-release" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Australian Health Survey</a>
+      </p>
+    </div>
+  );
+
   const calculatePercentage = (nutrient: NutrientData) => {
     if (nutrient.recommended_intake === 0) return 0;
     return Math.min(100, Math.max(0, (nutrient.current_intake / nutrient.recommended_intake) * 100));
@@ -113,7 +140,15 @@ export default function ImportantNutrientsDashboard({ gaps }: ImportantNutrients
 
   return (
     <div className="w-full">
-      <h2 className="text-xl font-semibold mb-4">Key Nutrients Overview</h2>
+      <div className="flex items-center mb-4">
+        <h2 className="text-xl font-semibold">Key Nutrients Overview</h2>
+        <InfoPopup 
+          content={nutrientCalculationContent}
+          position="bottom"
+          iconSize={18}
+          iconClassName="ml-2 text-gray-400"
+        />
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Side: Radar Chart - Takes up 2/3 of the space */}

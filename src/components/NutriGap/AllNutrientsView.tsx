@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react';
 import UnitFormatter from '@/utils/UnitFormatter';
 import { ChildEnergyRequirementsResponse } from '@/api/types';
+import Dropdown, { DropdownOption } from '@/components/ui/Dropdown';
+import { FunnelSimple, SortAscending } from 'phosphor-react';
 
 interface NutrientData {
   name: string;
@@ -22,6 +24,19 @@ export default function AllNutrientsView({ gaps, energyRequirements }: AllNutrie
   const [sortBy, setSortBy] = useState<'name' | 'percentage'>('percentage');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'deficient' | 'excess' | 'optimal'>('all');
+
+  // Dropdown options
+  const filterOptions: DropdownOption[] = [
+    { label: 'All Nutrients', value: 'all' },
+    { label: 'Deficient', value: 'deficient' },
+    { label: 'Optimal', value: 'optimal' },
+    { label: 'Excess', value: 'excess' }
+  ];
+
+  const sortOptions: DropdownOption[] = [
+    { label: 'Sort by Level', value: 'percentage' },
+    { label: 'Sort by Name', value: 'name' }
+  ];
 
   // Identify the energy nutrient key
   const energyNutrientKey = useMemo(() => {
@@ -138,26 +153,26 @@ export default function AllNutrientsView({ gaps, energyRequirements }: AllNutrie
           </div>
           
           {/* Filter dropdown */}
-          <select
-            value={filterBy}
-            onChange={(e) => setFilterBy(e.target.value as any)}
-            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="all">All Nutrients</option>
-            <option value="deficient">Deficient</option>
-            <option value="optimal">Optimal</option>
-            <option value="excess">Excess</option>
-          </select>
+          <div className="w-full sm:w-40">
+            <Dropdown
+              value={filterBy}
+              onChange={(value) => setFilterBy(value as any)}
+              options={filterOptions}
+              placeholder="Filter"
+              leadingIcon={<FunnelSimple size={18} />}
+            />
+          </div>
           
           {/* Sort dropdown */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="percentage">Sort by Level</option>
-            <option value="name">Sort by Name</option>
-          </select>
+          <div className="w-full sm:w-40">
+            <Dropdown
+              value={sortBy}
+              onChange={(value) => setSortBy(value as any)}
+              options={sortOptions}
+              placeholder="Sort by"
+              leadingIcon={<SortAscending size={18} />}
+            />
+          </div>
         </div>
       </div>
       

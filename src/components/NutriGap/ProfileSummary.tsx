@@ -3,6 +3,8 @@
 import { ChildProfile } from '@/types/profile';
 import { useMemo } from 'react';
 import { ChildEnergyRequirementsResponse } from '@/api/types';
+import ChildAvatar from '@/components/ui/ChildAvatar';
+import InfoPopup from '@/components/ui/InfoPopup';
 
 interface NutrientData {
   name: string;
@@ -33,10 +35,26 @@ export default function ProfileSummary({
   energyRequirements,
   onViewRecommendations
 }: ProfileSummaryProps) {
-  const avatarGradient = profile?.gender?.toLowerCase() === 'female'
-    ? 'from-pink-400 to-pink-600'
-    : 'from-blue-500 to-blue-700';
 
+  // PAL calculation explanation content for the InfoPopup
+  const palExplanationContent = (
+    <div className="max-w-[280px]">
+      <p className="font-medium text-gray-800 mb-2">How is PAL calculated?</p>
+      <p className="mb-2">
+        PAL (Physical Activity Level) is calculated by tracking daily activities and their intensity levels:
+      </p>
+      <ol className="list-decimal pl-5 space-y-1 mb-2">
+        <li>Each activity is assigned a METy value (intensity level)</li>
+        <li>We multiply time spent on each activity by its METy value</li>
+        <li>These values are summed and divided by total minutes in a day</li>
+      </ol>
+      <p>This gives an accurate picture of overall physical activity, which helps determine energy requirements.</p>
+    </div>
+  );
+
+  const avatarGradient = profile?.gender?.toLowerCase() === 'female'
+  ? 'from-pink-400 to-pink-600'
+  : 'from-blue-500 to-blue-700';
   // Calculate adjusted calories based on activity level
   const baseEnergyTarget = useMemo(() => {
     // First try to find the Energy nutrient in allNutrients
@@ -116,10 +134,8 @@ export default function ProfileSummary({
 
       {/* Profile Info */}
       <div className="px-6 py-4 flex items-center border-b">
-        <div className={`w-16 h-16 bg-gradient-to-r ${avatarGradient} rounded-full flex items-center justify-center text-white text-lg font-bold mr-4 flex-shrink-0`}>
-          {profile?.name?.[0] || 'C'}
-        </div>
-        <div>
+        <ChildAvatar name={profile?.name || 'Child'} gender={profile?.gender || 'male'} size={52} />
+        <div className="ml-4">
           <h4 className="font-semibold text-lg text-gray-800">{profile?.name || 'Child'}</h4>
           <p className="text-gray-500 text-sm">
             {profile?.age ? `${profile.age} year${profile.age !== '1' ? 's' : ''}` : 'Age not specified'} 
@@ -149,12 +165,20 @@ export default function ProfileSummary({
         <div className="px-6 py-4 border-t">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Physical Activity Level:</p>
+              <div className="flex items-center">
+                <p className="text-sm text-gray-600">Physical Activity Level:</p>
+                <InfoPopup 
+                  content={palExplanationContent}
+                  position="top"
+                  iconSize={16}
+                  iconClassName="ml-1.5 text-gray-400 mt-0.5"
+                />
+              </div>
               <p className={`text-lg font-semibold ${palColor}`}>
                 {activityPAL.toFixed(2)} <span className="text-sm font-normal">({palText})</span>
               </p>
             </div>
-            <div className="bg-gray-100 p-2 rounded-full">
+            <div className="bg-gray-100 p-2 rounded-full flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

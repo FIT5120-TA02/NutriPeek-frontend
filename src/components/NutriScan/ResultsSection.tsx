@@ -578,10 +578,10 @@ export default function ResultsSection({
       </div>
       
       {isCalculating && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white/90 p-6 rounded-lg shadow-xl flex flex-col items-center backdrop-blur-md">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-700">Calculating nutritional gap...</p>
+            <p className="text-gray-700 font-medium">Calculating nutritional gap...</p>
           </div>
         </div>
       )}
