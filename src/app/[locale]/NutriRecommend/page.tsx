@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ChildProfile } from '@/types/profile';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import storageService from '@/libs/StorageService';
-import { ChildEnergyRequirementsResponse } from '@/api/types';
+import { ChildEnergyRequirementsResponse, type NutrientGapResponse } from '@/api/types';
 import {
   RecommendHeader,
   NutrientList,
@@ -57,10 +57,13 @@ export default function NutriRecommendPage() {
         }
         
         if (ingredientIds.length === 0) {
-          const storedResults = localStorage.getItem('nutripeekGapResults');
+          const storedResults = storageService.getLocalItem<NutrientGapResponse>({
+            key: STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS,
+            defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS]
+          });
           if (storedResults) {
             const { missingNutrients, totalEnergy, childProfile } = 
-              await NutriRecommendService.processStoredResults(JSON.parse(storedResults), selectedChildId);
+              await NutriRecommendService.processStoredResults(storedResults, selectedChildId);
             
             setMissingNutrients(missingNutrients);
             setTotalEnergy(totalEnergy);

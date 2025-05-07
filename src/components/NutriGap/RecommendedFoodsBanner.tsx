@@ -35,7 +35,7 @@ export default function RecommendedFoodsBanner({
 
   // Create the banner message
   const bannerMessage = useMemo(() => {
-    let message = `This analysis includes ${totalFoods} recommended food${totalFoods !== 1 ? 's' : ''}: ${foodNamesString}. `  
+    let message = `This analysis includes ${totalFoods} additional recommended food${totalFoods !== 1 ? 's' : ''} chosen by you: ${foodNamesString}. `  
     
     return message;
   }, [totalFoods, foodNamesString]);

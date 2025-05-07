@@ -46,9 +46,9 @@ export default function ResultsPage() {
         setLoading(true);
 
         if (ingredientIds.length === 0) {
-          const storedResults = localStorage.getItem('nutripeekGapResults');
+          const storedResults = storageService.getLocalItem<NutrientGapResponse>({ key: STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS] });
           if (storedResults) {
-            setResults(JSON.parse(storedResults));
+            setResults(storedResults);
           } else {
             setError('No ingredients selected');
             return;
@@ -91,7 +91,7 @@ export default function ResultsPage() {
 
           setResults(result);
           // Store results for later use
-          localStorage.setItem('nutripeekGapResults', JSON.stringify(result));
+          storageService.setLocalItem<NutrientGapResponse>(STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, result);
         }
 
         // Check for activity result in localStorage

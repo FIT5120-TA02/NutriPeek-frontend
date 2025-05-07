@@ -213,6 +213,46 @@ export default function NoteCard({
             )}
 
             <div className="mt-4">
+              {/* Activity & Energy Requirements Summary */}
+              {(activityPAL !== undefined || energyRequirements) && (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-4">
+                  <div className="p-3">
+                    <h4 className="text-xs font-medium text-gray-700 mb-2">Activity & Energy</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {activityPAL !== undefined && activityPAL > 0 && (
+                        <div className="bg-purple-50 rounded-lg p-2 flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-600" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 3.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM2.5 10a7.5 7.5 0 1115 0 7.5 7.5 0 01-15 0z" clipRule="evenodd" />
+                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs text-purple-700">Activity Level (PAL)</p>
+                            <p className="text-sm font-semibold">{activityPAL.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {energyRequirements?.estimated_energy_requirement && (
+                        <div className="bg-orange-50 rounded-lg p-2 flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-orange-600" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs text-orange-700">Daily Energy Needs</p>
+                            <p className="text-sm font-semibold">{Math.round(energyRequirements.estimated_energy_requirement)} kJ</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
               {/* Nutrition Stats */}
               <div className="grid grid-cols-3 divide-x bg-white rounded-xl shadow-sm overflow-hidden mb-4">
                 <div className="p-3 text-center">

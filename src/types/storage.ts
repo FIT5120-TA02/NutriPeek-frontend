@@ -30,6 +30,12 @@ export const STORAGE_KEYS = {
   // Note related keys
   NUTRI_NOTES: 'nutriNotes',
   ACTIVE_NOTE_ID: 'activeNoteId',
+
+  // Authentication related keys
+  AUTHENTICATED: 'authenticated',
+  
+  // UI state persistence 
+  BANNER_DISMISSED_PREFIX: 'banner_dismissed',
 } as const;
 
 // Type for storage key values (makes the keys type-safe)
@@ -60,6 +66,12 @@ export interface StorageSchema {
   // Note related data
   [STORAGE_KEYS.NUTRI_NOTES]: NutritionalNote[];
   [STORAGE_KEYS.ACTIVE_NOTE_ID]: string | null;
+
+  // Authentication related data
+  [STORAGE_KEYS.AUTHENTICATED]: boolean;
+  
+  // UI state persistence
+  [STORAGE_KEYS.BANNER_DISMISSED_PREFIX]: Record<string, boolean>;
 }
 
 /**
@@ -92,4 +104,6 @@ export const STORAGE_DEFAULTS: {
   [STORAGE_KEYS.SELECTED_ACTIVITIES]: [],
   [STORAGE_KEYS.ACTIVITY_RESULT]: null,
   [STORAGE_KEYS.ACTIVITY_PAL]: 0,
+  [STORAGE_KEYS.AUTHENTICATED]: false,
+  [STORAGE_KEYS.BANNER_DISMISSED_PREFIX]: {},
 }; 

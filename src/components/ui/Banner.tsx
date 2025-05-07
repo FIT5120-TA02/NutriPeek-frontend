@@ -5,8 +5,10 @@
  * A reusable notification banner that can be dismissed
  * Shows important information to users and persists until dismissed
  */
-import { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X } from 'phosphor-react';
+import storageService from '@/libs/StorageService';
+import { STORAGE_KEYS } from '@/types/storage';
 
 export interface BannerProps {
   /** Unique ID for storing dismissal state in localStorage */
@@ -41,11 +43,18 @@ export default function Banner({
   // Track if banner has been dismissed
   const [isDismissed, setIsDismissed] = useState(false);
   
-  // Load dismissal state from localStorage on mount
+  // Load dismissal state from storage on mount
   useEffect(() => {
-    if (typeof window !== 'undefined' && persistDismissal) {
-      const storedValue = localStorage.getItem(`banner-dismissed-${id}`);
-      if (storedValue === 'true') {
+    if (persistDismissal) {
+      // Get the banner dismissal state from storage
+      const allBannerDismissals = storageService.getLocalItem<Record<string, boolean>>({
+        key: STORAGE_KEYS.BANNER_DISMISSED_PREFIX,
+        defaultValue: {}
+      });
+      
+      // Check if this specific banner has been dismissed
+      if (allBannerDismissals && 
+          allBannerDismissals[id as keyof typeof allBannerDismissals] === true) {
         setIsDismissed(true);
       }
     }
@@ -55,13 +64,26 @@ export default function Banner({
   const handleDismiss = () => {
     setIsDismissed(true);
     
-    // Store dismissal in localStorage if persistence is enabled
-    if (typeof window !== 'undefined' && persistDismissal) {
-      localStorage.setItem(`banner-dismissed-${id}`, 'true');
+    // Store dismissal if persistence is enabled
+    if (persistDismissal) {
+      // Get current dismissal records
+      const allBannerDismissals = storageService.getLocalItem<Record<string, boolean>>({
+        key: STORAGE_KEYS.BANNER_DISMISSED_PREFIX,
+        defaultValue: {}
+      }) || {};
+      
+      // Update with this banner's dismissal
+      const updatedDismissals = {
+        ...allBannerDismissals,
+        [id]: true
+      };
+      
+      // Save back to storage
+      storageService.setLocalItem(STORAGE_KEYS.BANNER_DISMISSED_PREFIX, updatedDismissals);
     }
   };
   
-  // Return null if banner has been dismissed
+  // If dismissed, don't render anything
   if (isDismissed) {
     return null;
   }
@@ -82,8 +104,8 @@ export default function Banner({
   
   // Get the focus ring color based on variant
   const focusRingColor = variant === 'info' ? 'focus:ring-blue-400' : 
-                          variant === 'warning' ? 'focus:ring-amber-400' : 
-                          'focus:ring-green-400';
+                         variant === 'warning' ? 'focus:ring-amber-400' : 
+                         'focus:ring-green-400';
   
   return (
     <div 
