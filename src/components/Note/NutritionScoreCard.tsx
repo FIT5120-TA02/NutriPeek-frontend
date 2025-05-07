@@ -3,8 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { NutrientInfo } from '@/api/types';
-import { calculateNutritionalScore } from '@/types/notes';
-
+import noteService from '@/libs/NoteService';
 interface NutritionScoreCardProps {
   allNutrients: Record<string, NutrientInfo>;
   totalCalories?: number;
@@ -31,7 +30,7 @@ export default function NutritionScoreCard({
   compact = false,
 }: NutritionScoreCardProps) {
   // Calculate the score based on nutrient data
-  const score = calculateNutritionalScore(allNutrients, missingCount, excessCount);
+  const score = noteService.calculateNutritionalScore(allNutrients, missingCount, excessCount);
   
   // Determine the color based on score
   const scoreColor = score < 60 

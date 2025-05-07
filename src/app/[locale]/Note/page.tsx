@@ -7,6 +7,8 @@ import NoteCard from '@/components/Note/NoteCard';
 import { NutritionalNote } from '@/types/notes';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import noteService from '@/libs/NoteService';
+import { toast } from 'sonner';
+import { showConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export default function MyNotePage() {
   const router = useRouter();
@@ -25,7 +27,27 @@ export default function MyNotePage() {
     const success = noteService.deleteNote(noteId);
     if (success) {
       setNotes(noteService.getAllNotes());
+      toast.success("Note deleted successfully");
     }
+  };
+
+  const deleteAllNotes = async () => {
+    // Ask for confirmation before deleting all notes
+    await showConfirmDialog({
+      message: "Are you sure you want to delete all notes? This action cannot be undone.",
+      header: "Clear All Notes",
+      onConfirm: () => {
+        const success = noteService.deleteAllNotes();
+        if (success) {
+          setNotes([]);
+          toast.success("All notes have been deleted");
+        } else {
+          toast.error("Failed to delete notes");
+        }
+      },
+      confirmLabel: "Clear All",
+      confirmButtonClass: "bg-red-600 border-none hover:bg-red-700 text-white px-6 py-2.5 rounded-full text-sm font-medium shadow-sm transition-colors"
+    });
   };
 
   const handleNavigateToScan = () => {
@@ -113,14 +135,26 @@ export default function MyNotePage() {
   // Render notes list
   const renderNotesList = () => (
     <div className="w-full px-6 py-20 max-w-7xl mx-auto">
-      <motion.h1 
-        className="text-3xl font-bold text-center text-green-700 mb-10"
+      <motion.div 
+        className="flex flex-col sm:flex-row justify-center items-center mb-8 relative"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        My Nutrition Notes
-      </motion.h1>
+        <h1 className="text-3xl font-bold text-green-700 text-center mb-4 sm:mb-0">My Nutrition Notes</h1>
+        
+        <motion.button
+          onClick={deleteAllNotes}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="sm:absolute sm:right-0 text-red-500 text-sm font-medium hover:text-red-600 flex items-center gap-1 px-3 py-1 rounded-full border border-red-200 hover:bg-red-50"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          Clear All
+        </motion.button>
+      </motion.div>
 
       <motion.div 
         className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
@@ -143,16 +177,7 @@ export default function MyNotePage() {
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
               <NoteCard
-                id={String(note.id)}
-                timestamp={new Date(note.createdAt).getTime()}
-                selectedFoods={note.selectedFoods || []}
-                originalFoods={note.originalFoods || []}
-                additionalFoods={note.additionalFoods || []}
-                nutrient_gaps={note.nutrient_gaps}
-                nutrientComparisons={note.nutrientComparisons}
-                totalCalories={note.summary.totalCalories}
-                missingCount={note.summary.missingCount}
-                excessCount={note.summary.excessCount}
+                note={note}
                 onDelete={() => deleteNote(note.id)}
                 child={child}
               />

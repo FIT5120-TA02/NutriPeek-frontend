@@ -1,125 +1,25 @@
 import { v4 as uuidv4 } from 'uuid';
 import storageService from './StorageService';
-import { FoodItem, NutritionalNote, isValidNote, calculateNutritionalScore, NutrientComparison } from '@/types/notes';
-import { NutrientInfo } from '@/api/types';
-import { generateNutrientComparisons } from '@/components/Note/gapCalculator';
-
-// Storage keys
-const NOTES_STORAGE_KEY = 'nutri_notes';
+import { NutritionalNote, type NutritionalNoteData } from '@/types/notes';
+import { type NutrientInfo } from '@/api/types';
+import { STORAGE_DEFAULTS, STORAGE_KEYS } from '@/types/storage';
 
 /**
  * Service for managing nutritional notes
  * Handles saving, retrieving, updating and deleting notes
  */
 export class NoteService {
-  constructor() {
-    // Automatically migrate old format notes when service is instantiated
-    this.migrateOldNotes();
-  }
-
-  /**
-   * Migrate old format notes to the new format
-   * This ensures backward compatibility with previously saved notes
-   */
-  private migrateOldNotes(): void {
-    // Only run in client
-    if (typeof window === 'undefined') return;
-    
-    // Get notes from storage
-    const savedNotes = storageService.getLocalItem<any[]>({ 
-      key: NOTES_STORAGE_KEY, 
-      defaultValue: [] 
-    });
-    
-    if (!Array.isArray(savedNotes) || savedNotes.length === 0) return;
-    
-    // Check if we need to migrate notes
-    const needsMigration = savedNotes.some(note => {
-      return note && 
-        !note.updatedAt || // Missing updatedAt field
-        !note.summary?.overallScore || // Missing overallScore
-        (!note.originalFoods && !note.additionalFoods); // Missing food categorization
-    });
-    
-    if (!needsMigration) return;
-    
-    // Migrate notes to new format
-    const migratedNotes = savedNotes.map(note => {
-      // Skip already valid notes
-      if (isValidNote(note)) return note;
-      
-      // Basic validation
-      if (!note || typeof note.id === 'undefined' || 
-          !note.childName || !note.childGender || 
-          !note.createdAt || !note.nutrient_gaps) {
-        return null; // Skip invalid notes
-      }
-      
-      try {
-        // Use ID from the note or generate a new one
-        const id = note.id || uuidv4();
-        
-        // Calculate the score if missing
-        const overallScore = calculateNutritionalScore(note.nutrient_gaps);
-        
-        // Create updated note with proper structure
-        const migratedNote: NutritionalNote = {
-          id,
-          childName: note.childName,
-          childGender: note.childGender,
-          childAge: note.childAge || undefined,
-          createdAt: note.createdAt,
-          updatedAt: note.updatedAt || note.createdAt,
-          
-          // Ensure summary has all required fields
-          summary: {
-            totalCalories: note.summary?.totalCalories || 0,
-            missingCount: note.summary?.missingCount || 0,
-            excessCount: note.summary?.excessCount || 0,
-            overallScore: note.summary?.overallScore || overallScore
-          },
-          
-          // Migrate nutrient gaps
-          nutrient_gaps: note.nutrient_gaps,
-          
-          // Migrate food items
-          selectedFoods: note.selectedFoods || [],
-          
-          // If originalFoods doesn't exist, use selectedFoods
-          originalFoods: note.originalFoods || note.selectedFoods || [],
-          additionalFoods: note.additionalFoods || [],
-          
-          // Generate nutrient comparisons if missing
-          nutrientComparisons: note.nutrientComparisons || generateNutrientComparisons(
-            note.nutrient_gaps,
-            note.selectedFoods || []
-          )
-        };
-        
-        return migratedNote;
-      } catch (error) {
-        console.error('Error migrating note:', error);
-        return null;
-      }
-    }).filter(Boolean) as NutritionalNote[]; // Remove null entries
-    
-    // Save migrated notes
-    if (migratedNotes.length > 0) {
-      storageService.setLocalItem(NOTES_STORAGE_KEY, migratedNotes);
-    }
-  }
-
   /**
    * Get all saved nutritional notes
    * @returns Array of nutritional notes, sorted by date (most recent first)
    */
   getAllNotes(): NutritionalNote[] {
     const savedNotes = storageService.getLocalItem<NutritionalNote[]>({ 
-      key: NOTES_STORAGE_KEY, 
-      defaultValue: [] 
+      key: STORAGE_KEYS.NUTRI_NOTES, 
+      defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.NUTRI_NOTES]
     });
     
-    const filteredNotes: NutritionalNote[] = Array.isArray(savedNotes) ? savedNotes.filter(isValidNote) : [];
+    const filteredNotes: NutritionalNote[] = Array.isArray(savedNotes) ? savedNotes.filter(this.isValidNote) : [];
     
     // Sort by date (newest first)
     return filteredNotes.sort((a, b) => {
@@ -144,42 +44,9 @@ export class NoteService {
    * @param data Note data without ID and timestamp
    * @returns The created note with ID and timestamps
    */
-  createNote(data: {
-    childName: string;
-    childGender: string;
-    childAge?: string | number;
-    nutrient_gaps: Record<string, NutrientInfo>;
-    originalFoods?: FoodItem[];
-    additionalFoods?: FoodItem[];
-    selectedFoods?: FoodItem[];
-    missingCount: number;
-    excessCount: number;
-    totalCalories?: number;
-  }): NutritionalNote {
+  createNote(data: NutritionalNoteData): NutritionalNote {
     const now = new Date();
     const id = uuidv4();
-    
-    // Determine the foods to use - preferring selectedFoods if provided
-    const originalFoods = data.originalFoods || [];
-    const additionalFoods = data.additionalFoods || [];
-    
-    // If selectedFoods is provided, use it; otherwise combine original and additional
-    const foodsToUse = data.selectedFoods && data.selectedFoods.length > 0
-      ? data.selectedFoods
-      : [...originalFoods, ...additionalFoods];
-    
-    // Calculate nutrient comparisons
-    const nutrientComparisons = generateNutrientComparisons(
-      data.nutrient_gaps,
-      foodsToUse
-    );
-    
-    // Calculate the overall score
-    const overallScore = calculateNutritionalScore(
-      data.nutrient_gaps, 
-      data.missingCount, 
-      data.excessCount
-    );
     
     // Create the note object
     const newNote: NutritionalNote = {
@@ -191,26 +58,27 @@ export class NoteService {
       updatedAt: now.toISOString(),
       
       // Nutritional data
-      summary: {
-        totalCalories: data.totalCalories || 0,
-        missingCount: data.missingCount,
-        excessCount: data.excessCount,
-        overallScore,
-      },
       nutrient_gaps: data.nutrient_gaps,
       
       // Food items
-      originalFoods,
-      additionalFoods,
-      selectedFoods: foodsToUse,
-      
+      originalFoods: data.originalFoods || [],
+      additionalFoods: data.additionalFoods || [],
+            
       // Nutrient comparisons
-      nutrientComparisons,
+      nutrientComparisons: data.nutrientComparisons || [],
+
+      // Activity data
+      activityResult: data.activityResult,
+      activityPAL: data.activityPAL,
+      selectedActivities: data.selectedActivities,
+
+      // Energy requirements
+      energyRequirements: data.energyRequirements,
     };
     
     // Save the note
     const existingNotes = this.getAllNotes();
-    storageService.setLocalItem(NOTES_STORAGE_KEY, [newNote, ...existingNotes]);
+    storageService.setLocalItem<NutritionalNote[]>(STORAGE_KEYS.NUTRI_NOTES, [newNote, ...existingNotes]);
     
     return newNote;
   }
@@ -221,7 +89,7 @@ export class NoteService {
    * @param data The data to update
    * @returns The updated note if found, or undefined
    */
-  updateNote(id: string | number, data: Partial<NutritionalNote>): NutritionalNote | undefined {
+  updateNote(id: string | number, data: NutritionalNoteData): NutritionalNote | undefined {
     const notes = this.getAllNotes();
     const noteIndex = notes.findIndex(note => note.id === id);
     
@@ -236,58 +104,9 @@ export class NoteService {
       updatedAt: new Date().toISOString(),
     };
     
-    // If foods were updated, recalculate nutrient comparisons and update summary
-    if (data.originalFoods || data.additionalFoods || data.selectedFoods) {
-      // Determine which foods to use, preferring selectedFoods if provided
-      const originalFoods = data.originalFoods || updatedNote.originalFoods || [];
-      const additionalFoods = data.additionalFoods || updatedNote.additionalFoods || [];
-      
-      // If selectedFoods is provided, use it; otherwise combine original and additional
-      const foodsToUse = data.selectedFoods && data.selectedFoods.length > 0
-        ? data.selectedFoods
-        : [...originalFoods, ...additionalFoods];
-      
-      // Update the foods in the note
-      updatedNote.originalFoods = originalFoods;
-      updatedNote.additionalFoods = additionalFoods;
-      updatedNote.selectedFoods = foodsToUse;
-          
-      // Recalculate nutrient comparisons
-      updatedNote.nutrientComparisons = generateNutrientComparisons(
-        updatedNote.nutrient_gaps,
-        foodsToUse
-      );
-      
-      // Update the overall score
-      updatedNote.summary.overallScore = calculateNutritionalScore(
-        updatedNote.nutrient_gaps,
-        updatedNote.summary.missingCount,
-        updatedNote.summary.excessCount
-      );
-    }
-    
-    // If nutrient data was updated, recalculate the score
-    if (data.nutrient_gaps || data.summary) {
-      // Create a combined summary object
-      const summary = {
-        ...updatedNote.summary,
-        ...(data.summary || {})
-      };
-      
-      // Update summary in the note
-      updatedNote.summary = summary;
-      
-      // Recalculate the score
-      updatedNote.summary.overallScore = calculateNutritionalScore(
-        updatedNote.nutrient_gaps,
-        updatedNote.summary.missingCount,
-        updatedNote.summary.excessCount
-      );
-    }
-    
     // Save the updated notes
     notes[noteIndex] = updatedNote;
-    storageService.setLocalItem(NOTES_STORAGE_KEY, notes);
+    storageService.setLocalItem<NutritionalNote[]>(STORAGE_KEYS.NUTRI_NOTES, notes);
     
     return updatedNote;
   }
@@ -305,9 +124,89 @@ export class NoteService {
       return false;
     }
     
-    storageService.setLocalItem(NOTES_STORAGE_KEY, updatedNotes);
+    storageService.setLocalItem<NutritionalNote[]>(STORAGE_KEYS.NUTRI_NOTES, updatedNotes);
     return true;
   }
+
+  /**
+   * Delete all nutritional notes
+   * @returns True if notes were successfully cleared
+   */
+  deleteAllNotes(): boolean {
+    try {
+      storageService.setLocalItem<NutritionalNote[]>(STORAGE_KEYS.NUTRI_NOTES, []);
+      return true;
+    } catch (error) {
+      console.error('Error deleting all notes:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Type guard to check if an object is a valid NutritionalNote
+   */
+  isValidNote(note: any): note is NutritionalNote {
+    return (
+      note &&
+      // Basic required fields
+      typeof note.id === 'string' &&
+      typeof note.childName === 'string' &&
+      typeof note.childGender === 'string' &&
+      typeof note.createdAt === 'string' &&
+      typeof note.nutrient_gaps === 'object' &&
+      
+      // Optional fields validation
+      (note.childAge === undefined || typeof note.childAge === 'string' || typeof note.childAge === 'number') &&
+      (note.updatedAt === undefined || typeof note.updatedAt === 'string') &&
+      
+      // Array fields validation
+      (note.originalFoods === undefined || Array.isArray(note.originalFoods)) &&
+      (note.additionalFoods === undefined || Array.isArray(note.additionalFoods)) &&
+      (note.selectedFoods === undefined || Array.isArray(note.selectedFoods)) &&
+      (note.nutrientComparisons === undefined || Array.isArray(note.nutrientComparisons)) &&
+      (note.selectedActivities === undefined || Array.isArray(note.selectedActivities)) &&
+      
+      // Object fields validation
+      (note.activityResult === undefined || typeof note.activityResult === 'object') &&
+      (note.activityPAL === undefined || typeof note.activityPAL === 'number') &&
+      (note.energyRequirements === undefined || typeof note.energyRequirements === 'object')
+    );
+  }
+
+  /**
+   * Calculate the overall nutritional score based on nutrient data
+   * @param nutrients Record of nutrient information
+   * @param missingNutrients Optional count of missing nutrients for fallback calculation
+   * @param excessNutrients Optional count of excess nutrients for fallback calculation
+   * @returns A score from 0-100 representing nutritional completeness
+   */
+  calculateNutritionalScore(
+    nutrients: Record<string, NutrientInfo>,
+    missingNutrients: number = 0,
+    excessNutrients: number = 0
+  ): number {
+    // If we have nutrient data, calculate the average percentage
+    if (Object.keys(nutrients).length > 0) {
+      let totalPercentage = 0;
+      let nutrientCount = 0;
+      
+      Object.values(nutrients).forEach(nutrient => {
+        if (nutrient.recommended_intake > 0) {
+          // Calculate percentage (capped at 100%)
+          const percentage = Math.min(100, (nutrient.current_intake / nutrient.recommended_intake) * 100);
+          totalPercentage += percentage;
+          nutrientCount++;
+        }
+      });
+      
+      // Return the average percentage, rounded to nearest integer
+      return nutrientCount > 0 ? Math.round(totalPercentage / nutrientCount) : 50;
+    }
+    
+    // Fallback to the old method if no nutrient data is available
+    const totalNutrientsScore = 100 - (missingNutrients * 3) - (excessNutrients * 2);
+    return Math.max(0, Math.min(100, totalNutrientsScore));
+  } 
 }
 
 // Create a singleton instance

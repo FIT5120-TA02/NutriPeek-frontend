@@ -8,6 +8,8 @@ import { nutripeekApi } from '@/api/nutripeekApi';
 import storageService from '@/libs/StorageService';
 import { ChildProfile } from '@/types/profile';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
+import { toast } from 'sonner';
+import { STORAGE_KEYS, STORAGE_DEFAULTS } from '@/types/storage';
 
 // Components
 import ProfileSummary from '@/components/NutriGap/ProfileSummary';
@@ -15,6 +17,7 @@ import AnalysisTabs, { AnalysisType } from '@/components/NutriGap/AnalysisTabs';
 import ImportantNutrientsDashboard from '@/components/NutriGap/ImportantNutrientsDashboard';
 import AllNutrientsView from '@/components/NutriGap/AllNutrientsView';
 import ActivityAnalysisView from '@/components/NutriGap/ActivityAnalysisView';
+import SaveToNotesButton from '@/components/NutriGap/SaveToNotesButton';
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -28,8 +31,6 @@ export default function ResultsPage() {
   const [currentTab, setCurrentTab] = useState<AnalysisType>('nutrients');
   const [showAllNutrients, setShowAllNutrients] = useState(false);
   const [isActivityEnabled, setIsActivityEnabled] = useState(false);
-
-  const CHILDREN_KEY = 'user_children';
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -46,7 +47,7 @@ export default function ResultsPage() {
           }
         }
 
-        const childProfiles = storageService.getLocalItem({ key: CHILDREN_KEY, defaultValue: [] }) as ChildProfile[];
+        const childProfiles = storageService.getLocalItem<ChildProfile[]>({ key: STORAGE_KEYS.CHILDREN_PROFILES, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.CHILDREN_PROFILES] });
         if (!childProfiles || childProfiles.length === 0) {
           setError('No child profile found');
           return;
@@ -63,13 +64,21 @@ export default function ResultsPage() {
 
         // Fetch nutrient gap if not already loaded from localStorage
         if (ingredientIds.length > 0) {
+
+          // Filter out ingredient IDs that don't start with 'food-'
+          const filteredIds = ingredientIds.filter(id => {
+            if (!id.startsWith('food-')) {
+              return id;
+            }
+          });
+
           const apiGender = childProfile.gender.toLowerCase() === 'female' ? 'girl' : 'boy';
           const result = await nutripeekApi.calculateNutrientGap({
             child_profile: {
               age: parseInt(childProfile.age, 10),
               gender: apiGender,
             },
-            ingredient_ids: ingredientIds,
+            ingredient_ids: filteredIds,
           });
 
           setResults(result);
@@ -78,15 +87,19 @@ export default function ResultsPage() {
         }
 
         // Check for activity result in localStorage
-        const storedActivityResult = storageService.getLocalItem({ key: 'activityResult', defaultValue: null });
+        const storedActivityResult = storageService.getLocalItem({ 
+          key: STORAGE_KEYS.ACTIVITY_RESULT, 
+          defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.ACTIVITY_RESULT] 
+        });
+
         if (storedActivityResult) {
           setActivityResult(storedActivityResult);
           setIsActivityEnabled(true);
           
           // Check for energy requirements based on activity level
           const storedEnergyRequirements = storageService.getLocalItem({ 
-            key: 'energyRequirements', 
-            defaultValue: null 
+            key: STORAGE_KEYS.ENERGY_REQUIREMENTS, 
+            defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.ENERGY_REQUIREMENTS]
           });
           
           if (storedEnergyRequirements) {
@@ -257,11 +270,22 @@ export default function ResultsPage() {
           </div>
         </div>
 
-        {/* Scan Again Button */}
-        <div className="flex justify-center mt-12 w-full">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mt-12 w-full">
+
+          <SaveToNotesButton 
+            results={results}
+            childProfile={selectedChild}
+            onSuccess={() => {
+              toast.success("Analysis saved to notes successfully!")
+              router.push('/Note')
+            }}
+            onError={(error) => toast.error("Failed to save analysis to notes. Please try again.")}
+          />
+
           <button
             onClick={handleScanAgain}
-            className="px-8 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition text-lg font-semibold flex items-center gap-2"
+            className="px-8 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition text-lg font-semibold flex items-center justify-center gap-2"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />

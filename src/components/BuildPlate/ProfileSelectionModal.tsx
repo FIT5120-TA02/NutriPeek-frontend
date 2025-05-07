@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { X } from 'phosphor-react';
 import storageService from '@/libs/StorageService';
 import { ChildProfile } from '@/types/profile';
-
+import { STORAGE_KEYS, STORAGE_DEFAULTS } from '@/types/storage';
 interface ProfileSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,11 +24,9 @@ export default function ProfileSelectionModal({
   const [childProfiles, setChildProfiles] = useState<ChildProfile[]>([]);
   const [currentProfileIndex, setCurrentProfileIndex] = useState<number>(selectedProfileIndex);
   
-  const CHILDREN_KEY = "user_children";
-
   // Load child profiles
   useEffect(() => {
-    const saved = storageService.getLocalItem({ key: CHILDREN_KEY, defaultValue: [] });
+    const saved = storageService.getLocalItem<ChildProfile[]>({ key: STORAGE_KEYS.CHILDREN_PROFILES, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.CHILDREN_PROFILES] as ChildProfile[] });
     if (saved && saved.length > 0) {
       setChildProfiles(saved);
     }

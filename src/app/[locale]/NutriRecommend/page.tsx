@@ -15,11 +15,12 @@ import {
   SelectedFoods,
   LoadingSpinner,
   ErrorMessage,
-  FoodItem,
   ExtendedNutrientGap,
   NutriRecommendService
 } from '@/components/NutriRecommend';
+import { FoodItem } from '@/types/notes';
 import TooltipButton from '@/components/ui/TooltipButton';
+import { STORAGE_KEYS, STORAGE_DEFAULTS } from '@/types/storage';
 
 export default function NutriRecommendPage() {
   const { ingredientIds, selectedChildId, clearIngredientIds } = useNutrition();
@@ -41,9 +42,9 @@ export default function NutriRecommendPage() {
     const fetchRecommendations = async () => {
       try {
         // Check for energy requirements based on activity level
-        const storedEnergyRequirements = storageService.getLocalItem({
-          key: 'energyRequirements',
-          defaultValue: null
+        const storedEnergyRequirements = storageService.getLocalItem<ChildEnergyRequirementsResponse>({
+          key: STORAGE_KEYS.ENERGY_REQUIREMENTS,
+          defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.ENERGY_REQUIREMENTS]
         });
         
         if (storedEnergyRequirements) {
@@ -80,7 +81,7 @@ export default function NutriRecommendPage() {
         }
 
         // Store ingredient IDs for future reference
-        storageService.setLocalItem('selectedIngredientIds', ingredientIds);
+        storageService.setLocalItem<string[]>(STORAGE_KEYS.SELECTED_INGREDIENT_IDS, ingredientIds);
 
         // Get child profile
         const childProfile = NutriRecommendService.getChildProfile(selectedChildId);

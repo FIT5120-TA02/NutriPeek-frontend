@@ -7,17 +7,7 @@ import storageService from "@/libs/StorageService";
 import { motion } from "framer-motion";
 import FloatingEmojisLayout from "@/components/layouts/FloatingEmojisLayout";
 import { ProfileForm, ProfileList, ChildProfile } from "@/components/Profile";
-
-// Storage key for child profiles
-const CHILDREN_KEY = "user_children";
-
-// Type for compatibility with old profile data
-interface LegacyChildProfile {
-  name: string;
-  age: string;
-  gender: string;
-  avatarNumber?: number;
-}
+import { STORAGE_KEYS, STORAGE_DEFAULTS } from "@/types/storage";
 
 /**
  * ProfilePage Component
@@ -32,7 +22,11 @@ export default function ProfilePage() {
   // Load saved children profiles from local storage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = storageService.getLocalItem<LegacyChildProfile[]>({ key: CHILDREN_KEY, defaultValue: [] });
+      const saved = storageService.getLocalItem<ChildProfile[]>({ 
+        key: STORAGE_KEYS.CHILDREN_PROFILES, 
+        defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.CHILDREN_PROFILES] as ChildProfile[] 
+      });
+
       if (saved && saved.length > 0) {
         // Ensure all children have the avatarNumber property
         const updatedChildren = saved.map(child => ({
@@ -40,7 +34,7 @@ export default function ProfilePage() {
           avatarNumber: child.avatarNumber || 1
         }));
         setChildren(updatedChildren as ChildProfile[]);
-        storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
+        storageService.setLocalItem(STORAGE_KEYS.CHILDREN_PROFILES, updatedChildren);
       }
     }
   }, []);
@@ -53,7 +47,7 @@ export default function ProfilePage() {
       message: "Are you sure you want to clear all saved child profiles?",
       header: "Clear All Profiles",
       onConfirm: () => {
-        storageService.removeLocalItem(CHILDREN_KEY);
+        storageService.removeLocalItem(STORAGE_KEYS.CHILDREN_PROFILES);
         setChildren([]);
         toast.success("All child profiles have been cleared successfully!");
       },
@@ -78,19 +72,11 @@ export default function ProfilePage() {
       const updatedChildren = [...children];
       updatedChildren[editingIndex] = updatedChild;
       setChildren(updatedChildren);
-      storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
+      storageService.setLocalItem<ChildProfile[]>(STORAGE_KEYS.CHILDREN_PROFILES, updatedChildren);
       setEditingIndex(null);
       setEditChild(null);
       toast.success("Child profile updated successfully!");
     }
-  };
-
-  /**
-   * Handles canceling an edit
-   */
-  const handleCancel = () => {
-    setEditingIndex(null);
-    setEditChild(null);
   };
 
   /**
@@ -104,7 +90,7 @@ export default function ProfilePage() {
         const updatedChildren = [...children];
         updatedChildren.splice(index, 1);
         setChildren(updatedChildren);
-        storageService.setLocalItem(CHILDREN_KEY, updatedChildren);
+        storageService.setLocalItem<ChildProfile[]>(STORAGE_KEYS.CHILDREN_PROFILES, updatedChildren);
         toast.success("Child profile deleted successfully!");
       },
       confirmLabel: "Delete",
@@ -117,7 +103,7 @@ export default function ProfilePage() {
    */
   const handleAddChild = (newChild: ChildProfile) => {
     setChildren([...children, newChild]);
-    storageService.setLocalItem(CHILDREN_KEY, [...children, newChild]);
+    storageService.setLocalItem<ChildProfile[]>(STORAGE_KEYS.CHILDREN_PROFILES, [...children, newChild]);
     toast.success("Child profile added successfully!");
   };
 

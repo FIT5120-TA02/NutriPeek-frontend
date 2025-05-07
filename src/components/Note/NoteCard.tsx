@@ -2,26 +2,19 @@
 
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { Trash2, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, Plus, BarChart2, LightbulbIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import UnitFormatter from '@/utils/UnitFormatter';
 import ChildAvatar from '@/components/ui/ChildAvatar';
-import { FoodItem, NutrientComparison, calculateNutritionalScore } from '@/types/notes';
-import { NutrientInfo } from '@/api/types';
-import { calculateGapSummary } from './gapCalculator';
+import { FoodItem, type NutritionalNote } from '@/types/notes';
+import { type ActivityResult, type NutrientGapResponse, type ActivityEntry, type ChildEnergyRequirementsResponse } from '@/api/types';
 import NutritionScoreCard from './NutritionScoreCard';
+import storageService from '@/libs/StorageService';
+import { STORAGE_KEYS } from '@/types/storage';
 
 interface NoteCardProps {
-  id: string;
-  timestamp: number;
-  selectedFoods?: FoodItem[];
-  originalFoods?: FoodItem[];
-  additionalFoods?: FoodItem[];
-  nutrient_gaps: Record<string, NutrientInfo>;
-  nutrientComparisons?: NutrientComparison[];
-  totalCalories?: number;
-  missingCount?: number;
-  excessCount?: number;
+  note: NutritionalNote;
   onDelete: (id: string) => void;
   child?: {
     name: string;
@@ -31,55 +24,65 @@ interface NoteCardProps {
 }
 
 export default function NoteCard({
-  id,
-  timestamp,
-  selectedFoods = [],
-  originalFoods = [],
-  additionalFoods = [],
-  nutrient_gaps = {},
-  nutrientComparisons,
-  totalCalories = 0,
-  missingCount = 0,
-  excessCount = 0,
+  note,
   onDelete,
   child,
 }: NoteCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const router = useRouter();
+
+  const { id, createdAt, originalFoods, additionalFoods, nutrient_gaps, nutrientComparisons, activityResult, activityPAL, selectedActivities, energyRequirements } = note;
+  const date = new Date(createdAt);
 
   // Format the date in a user-friendly format
   const formattedDate = (() => {
-    const date = new Date(timestamp);
     return isNaN(date.getTime()) ? 'Invalid Date' : format(date, 'MMM d, yyyy • h:mm a');
   })();
 
-  // Use existing nutrient comparisons or calculate them
-  const { comparison, totalMet } = nutrientComparisons 
-    ? { comparison: nutrientComparisons, totalMet: 0 } 
-    : calculateGapSummary({
-        id,
-        timestamp,
-        selectedFoods: selectedFoods.length > 0 ? selectedFoods : [...originalFoods, ...additionalFoods],
-        originalFoods,
-        additionalFoods,
-        nutrient_gaps,
-      });
-  
-  // Calculate nutritional score based on combined original and additional foods
-  const nutritionalScore = calculateNutritionalScore(nutrient_gaps, missingCount, excessCount);
-
   // Determine if there are foods to show in different sections
-  const hasOriginalFoods = originalFoods.length > 0;
-  const hasAdditionalFoods = additionalFoods.length > 0;
+  const hasOriginalFoods = originalFoods && originalFoods.length > 0;
+  const hasAdditionalFoods = additionalFoods && additionalFoods.length > 0;
   const hasBothFoodTypes = hasOriginalFoods && hasAdditionalFoods;
   
-  // If we don't have separate original/additional foods, but do have selectedFoods,
+  // If we don't have separate original/additional foods, but do have additionalFoods,
   // display all of them as originalFoods
   const displayFoods = {
-    original: hasOriginalFoods ? originalFoods : (hasBothFoodTypes ? [] : selectedFoods),
+    original: hasOriginalFoods ? originalFoods : (hasBothFoodTypes ? [] : additionalFoods),
     additional: additionalFoods
   };
 
+  /**
+   * Store data from this note to local storage for analysis
+   */
+  const prepareData = (isForRecommendations: boolean = false) => {
+    // Store the note ID as the active note being viewed
+    storageService.setLocalItem<string>(STORAGE_KEYS.ACTIVE_NOTE_ID, id.toString());
+    
+    // Store gap results
+    storageService.setLocalItem<NutrientGapResponse>(STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, nutrient_gaps);
+
+    // Store ingredient from the original foods and additional foods
+    storageService.setLocalItem<FoodItem[]>(STORAGE_KEYS.SCANNED_FOODS, originalFoods || []);
+    storageService.setLocalItem<string[]>(STORAGE_KEYS.SELECTED_INGREDIENT_IDS, originalFoods?.map(food => food.id) || []);
+    storageService.setLocalItem<string[]>(STORAGE_KEYS.RECOMMENDED_FOOD_IDS, additionalFoods?.map(food => food.id) || []);
+
+    // Store activity data
+    storageService.setLocalItem<ActivityResult>(STORAGE_KEYS.ACTIVITY_RESULT, activityResult!); // TODO: null safety
+    storageService.setLocalItem<number>(STORAGE_KEYS.ACTIVITY_PAL, activityPAL || 0);
+    storageService.setLocalItem<ActivityEntry[]>(STORAGE_KEYS.SELECTED_ACTIVITIES, selectedActivities || []);
+
+    // Store energy requirements
+    storageService.setLocalItem<ChildEnergyRequirementsResponse>(STORAGE_KEYS.ENERGY_REQUIREMENTS, energyRequirements!); // TODO: null safety
+
+    // Navigate to the gap analysis page
+    router.push('/NutriGap');
+
+    if (isForRecommendations) {
+      router.push('/NutriRecommend');
+    }
+  };
+  
   return (
     <motion.div
       layout
@@ -91,7 +94,7 @@ export default function NoteCard({
         className="absolute top-3 right-3 text-red-500 hover:text-red-700 z-10 p-1 rounded-full hover:bg-red-50"
         onClick={(e) => {
           e.stopPropagation();
-          onDelete(id);
+          onDelete(id.toString());
         }}
       >
         <Trash2 size={18} />
@@ -118,16 +121,41 @@ export default function NoteCard({
         </div>
       </div>
       
-      {/* Nutritional Score Card - Always visible below header */}
+      {/* Nutritional Score Card & Action Buttons */}
       <div className="px-4 pb-4">
         <NutritionScoreCard 
-          allNutrients={nutrient_gaps}
-          missingCount={missingCount}
-          excessCount={excessCount}
-          totalCalories={totalCalories}
+          allNutrients={nutrient_gaps.nutrient_gaps}
+          missingCount={nutrient_gaps.missing_nutrients?.length || 0}
+          excessCount={nutrient_gaps.excess_nutrients?.length || 0}
+          totalCalories={nutrient_gaps.total_calories || 0}
           showDetails={false}
-          className="w-full"
+          className="w-full mb-3"
         />
+
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-2 mt-2">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              prepareData();
+            }}
+            className="flex-1 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors text-sm flex items-center justify-center gap-1"
+          >
+            <BarChart2 size={16} />
+            View Analysis
+          </button>
+          
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              prepareData(true);
+            }}
+            className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md transition-colors text-sm flex items-center justify-center gap-1"
+          >
+            <LightbulbIcon size={16} />
+            View Recommendations
+          </button>
+        </div>
       </div>
 
       {/* Expandable Content */}
@@ -142,7 +170,7 @@ export default function NoteCard({
             className="px-4 pb-4"
           >
             {/* Original Foods Section */}
-            {displayFoods.original.length > 0 && (
+            {displayFoods.original && displayFoods.original.length > 0 && (
               <div className="mb-4">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">
                   {hasBothFoodTypes ? 'Original Foods' : 'Selected Foods'}
@@ -168,7 +196,7 @@ export default function NoteCard({
             )}
 
             {/* Additional Foods Section */}
-            {displayFoods.additional.length > 0 && (
+            {displayFoods.additional && displayFoods.additional.length > 0 && (
               <div className="mb-4">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">Added Recommendations</h4>
                 <div className="flex flex-wrap gap-2">
@@ -189,15 +217,15 @@ export default function NoteCard({
               <div className="grid grid-cols-3 divide-x bg-white rounded-xl shadow-sm overflow-hidden mb-4">
                 <div className="p-3 text-center">
                   <p className="text-xs text-blue-600 mb-1">Total Calories</p>
-                  <p className="text-base font-bold">{totalCalories.toFixed(0)} kJ</p>
+                  <p className="text-base font-bold">{nutrient_gaps.total_calories?.toFixed(0) || 0} kJ</p>
                 </div>
                 <div className="p-3 text-center">
                   <p className="text-xs text-red-600 mb-1">Missing</p>
-                  <p className="text-base font-bold">{missingCount}</p>
+                  <p className="text-base font-bold">{nutrient_gaps.missing_nutrients?.length || 0}</p>
                 </div>
                 <div className="p-3 text-center">
                   <p className="text-xs text-amber-600 mb-1">Excess</p>
-                  <p className="text-base font-bold">{excessCount}</p>
+                  <p className="text-base font-bold">{nutrient_gaps.excess_nutrients?.length || 0}</p>
                 </div>
               </div>
 
@@ -222,7 +250,7 @@ export default function NoteCard({
                     className="mt-4 space-y-2"
                   >
                     <h4 className="text-sm font-semibold text-gray-700 mb-2">Nutrient Improvements</h4>
-                    {comparison.map((item) => (
+                    {nutrientComparisons &&nutrientComparisons.map((item) => (
                       <div key={item.name} className="bg-gray-50 p-3 rounded-md border">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-700 font-medium">{item.name}</span>

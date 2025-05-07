@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useDetectFoodItems, useQRCodeFlow } from "../../../api";
 import { FoodItemDetection, FoodMappingRequest } from "../../../api/types";
@@ -8,11 +8,13 @@ import { nutripeekApi } from "../../../api/nutripeekApi";
 import ScanningSection from "../../../components/NutriScan/ScanningSection";
 import ResultsSection from "../../../components/NutriScan/ResultsSection";
 import { FoodItemDisplay, MealType, MealImage } from "../../../components/NutriScan/types";
-import storageService from '../../../libs/StorageService';
 import useDeviceDetection from "../../../hooks/useDeviceDetection";
+import storageService from "../../../libs/StorageService";
+import { STORAGE_KEYS } from "../../../types/storage";
 
 export default function NutriScanPage() {
   const { isMobile } = useDeviceDetection();
+  const hasCleanedStorage = useRef(false);
   
   // Initialize meal images with default empty states
   const initialMealImages: MealImage[] = [
@@ -35,6 +37,27 @@ export default function NutriScanPage() {
     isLoading: isQrProcessing,
     reset: resetQrFlow,
   } = useQRCodeFlow();
+
+  // Clean local storage when the component first mounts
+  useEffect(() => {
+    if (!hasCleanedStorage.current) {
+      cleanLocalStorage();
+      hasCleanedStorage.current = true;
+    }
+  }, []);
+
+  // Function to clean local storage
+  const cleanLocalStorage = () => {
+    storageService.removeLocalItem(STORAGE_KEYS.SELECTED_INGREDIENT_IDS);
+    storageService.removeLocalItem(STORAGE_KEYS.SCANNED_FOODS);
+    storageService.removeLocalItem(STORAGE_KEYS.RECOMMENDED_FOOD_IDS);
+    storageService.removeLocalItem(STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS);
+    storageService.removeLocalItem(STORAGE_KEYS.ENERGY_REQUIREMENTS);
+    storageService.removeLocalItem(STORAGE_KEYS.ACTIVITY_RESULT);
+    storageService.removeLocalItem(STORAGE_KEYS.ACTIVITY_PAL);
+    storageService.removeLocalItem(STORAGE_KEYS.SELECTED_ACTIVITIES);
+    storageService.removeLocalItem(STORAGE_KEYS.ACTIVE_NOTE_ID);
+  };
 
   // Process detected food items
   const processDetectedFood = useCallback(async (detectedItems: FoodItemDetection[]) => {

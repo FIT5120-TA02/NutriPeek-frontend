@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { FoodItem, ExtendedNutrientGap } from './types';
+import { ExtendedNutrientGap } from './types';
+import { FoodItem } from '@/types/notes';
 
 interface SelectedFoodsProps {
   selectedFoods: FoodItem[];

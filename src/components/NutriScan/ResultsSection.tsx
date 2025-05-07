@@ -8,14 +8,16 @@ import { useNutrition } from '../../contexts/NutritionContext';
 import storageService from '@/libs/StorageService';
 import { motion } from 'framer-motion';
 import { ChildProfile } from '@/types/profile';
-import { Calendar } from './ActivityCalendar';
-import { ActivityEntry } from '@/api/types';
+import { Calendar, type Activity } from './ActivityCalendar';
+import { ActivityEntry, type ActivityResult, type ChildEnergyRequirementsResponse } from '@/api/types';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import { MealResultCard } from './Meal';
 import MobileCarousel, { CarouselItem } from '@/components/ui/MobileCarousel';
 import useDeviceDetection from '@/hooks/useDeviceDetection';
 import { toast } from 'sonner';
 import { getMealTitle } from './utils';
+import { STORAGE_KEYS, STORAGE_DEFAULTS } from '@/types/storage';
+import { FoodItem } from '@/types/notes';
 
 interface ResultsSectionProps {
   mealImages: MealImage[];
@@ -35,18 +37,15 @@ export default function ResultsSection({
   const [childProfiles, setChildProfiles] = useState<ChildProfile[]>([]);
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const [selectedActivities, setSelectedActivities] = useState<ActivityEntry[]>([]);
-  const [activityPAL, setActivityPAL] = useState<number | null>(null);
   const [ingredientsInitialized, setIngredientsInitialized] = useState(false);
   
   // Use device detection hook to check if screen is mobile
   const { isMobile, isTablet } = useDeviceDetection();
   const shouldUseCarousel = isMobile || isTablet;
   
-  const CHILDREN_KEY = "user_children";
-  
     // Load child profiles
     useEffect(() => {
-      const saved = storageService.getLocalItem({ key: CHILDREN_KEY, defaultValue: [] });
+      const saved = storageService.getLocalItem<ChildProfile[]>({ key: STORAGE_KEYS.CHILDREN_PROFILES, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.CHILDREN_PROFILES] });
       if (saved && saved.length > 0) {
         setChildProfiles(saved);
       }
@@ -277,7 +276,7 @@ export default function ResultsSection({
       }));
       
       // Store in localStorage
-      storageService.setLocalItem('scannedFoods', scannedFoods);
+      storageService.setLocalItem<FoodItem[]>(STORAGE_KEYS.SCANNED_FOODS, scannedFoods);
       
       // Check if activity data is present
       const hasActivityData = selectedActivities && selectedActivities.length > 0;
@@ -298,24 +297,24 @@ export default function ResultsSection({
           calculatedPAL = activityResult.pal;
           
           // Store the latest activity data
-          storageService.setLocalItem('activityResult', activityResult);
-          storageService.setLocalItem('activityPAL', calculatedPAL);
-          storageService.setLocalItem('selectedActivities', selectedActivities);        
+          storageService.setLocalItem<ActivityResult>(STORAGE_KEYS.ACTIVITY_RESULT, activityResult);
+          storageService.setLocalItem<number>(STORAGE_KEYS.ACTIVITY_PAL, calculatedPAL);
+          storageService.setLocalItem<ActivityEntry[]>(STORAGE_KEYS.SELECTED_ACTIVITIES, selectedActivities);        
           
           // Now get the target energy based on the PAL
           if (calculatedPAL) {
             energyRequirements = await nutripeekApi.getTargetEnergy(childAge, childGender, calculatedPAL);
-            storageService.setLocalItem('energyRequirements', energyRequirements);
+            storageService.setLocalItem<ChildEnergyRequirementsResponse>(STORAGE_KEYS.ENERGY_REQUIREMENTS, energyRequirements);
           }
         } catch (error) {
           console.error("Error calculating PAL or target energy:", error);
         }
       } else {
         // Clear any previous activity data if no activities are selected
-        storageService.removeLocalItem('activityResult');
-        storageService.removeLocalItem('activityPAL');
-        storageService.removeLocalItem('selectedActivities');
-        storageService.removeLocalItem('energyRequirements');
+        storageService.removeLocalItem(STORAGE_KEYS.ACTIVITY_RESULT);
+        storageService.removeLocalItem(STORAGE_KEYS.ACTIVITY_PAL);
+        storageService.removeLocalItem(STORAGE_KEYS.SELECTED_ACTIVITIES);
+        storageService.removeLocalItem(STORAGE_KEYS.ENERGY_REQUIREMENTS);
       }
       
       // Navigate to the results page (locale-aware routing)
@@ -581,7 +580,7 @@ export default function ResultsSection({
         <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white/90 p-6 rounded-lg shadow-xl flex flex-col items-center backdrop-blur-md">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-700 font-medium">Calculating nutritional gap...</p>
+            <p className="text-gray-700 font-medium">Calculating nutritional & activity gap...</p>
           </div>
         </div>
       )}
