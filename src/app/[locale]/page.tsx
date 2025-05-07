@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import storageService from '@/libs/StorageService';
+import { STORAGE_KEYS } from '@/types/storage';
 
 
 export default function PasswordPage() {
@@ -12,7 +14,7 @@ export default function PasswordPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === 'nutri123') {
-      localStorage.setItem('authenticated', 'true');
+      storageService.setLocalItem<boolean>(STORAGE_KEYS.AUTHENTICATED, true);
       toast.success('Password correct!');
       router.push('/Welcome'); 
     } else {

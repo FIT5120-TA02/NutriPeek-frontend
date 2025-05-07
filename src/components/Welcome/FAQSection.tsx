@@ -36,6 +36,10 @@ export default function FAQSection() {
       answer: "The match & learn feature makes food education engaging through interactive games and colorful visuals. Children can discover where foods come from, learn about their nutritional benefits, and complete fun food-matching challenges. This gamified approach nurtures curiosity about healthy eating and helps children develop positive relationships with nutritious foods."
     },
     {
+      question: "How do you calculate nutrient gaps and daily intake requirements?",
+      answer: "We calculate nutrient targets based on the Australian Health Survey data from the Australian Bureau of Statistics. This comprehensive dataset provides recommended daily intakes tailored to a child's age, gender, and activity level. Our system analyzes the ingredients in your child's meals and compares them against these standards. We classify nutrients as 'missing' if they're below 70% of the recommended intake, 'adequate' if between 70-110%, and 'excess' if above 110%. This helps us provide targeted recommendations to balance your child's nutrition."
+    },
+    {
       question: "How are the ingredients being recommended to me?",
       answer: "Our recommendation system identifies nutritional gaps in your meal plan and searches our database for ingredients rich in those missing nutrients. We analyze your current ingredients, determine which food groups need supplementing, and suggest options that provide the highest nutritional value while complementing your existing food items."
     },

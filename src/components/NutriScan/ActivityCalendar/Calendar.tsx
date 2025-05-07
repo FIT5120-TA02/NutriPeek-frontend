@@ -12,7 +12,6 @@ interface ActivityCalendarProps {
   selectedActivities: ActivityEntry[];
   setSelectedActivities: React.Dispatch<React.SetStateAction<ActivityEntry[]>>;
   childAge?: number;
-  onActivityResult?: (result: number) => void;
 }
 
 interface ScheduledActivity extends ActivityEntry {
@@ -37,7 +36,6 @@ export default function ActivityCalendar({
   selectedActivities,
   setSelectedActivities,
   childAge,
-  onActivityResult
 }: ActivityCalendarProps) {
   const [activities, setActivities] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -150,50 +148,6 @@ export default function ActivityCalendar({
       )
     );
   };
-
-  // Calculate approximate PAL value and trigger parent callback
-  const estimatePAL = useCallback(() => {
-    if (!onActivityResult || selectedActivities.length === 0) return;
-    
-    // Simple approximate calculation - this will be more accurate on the server
-    // 1.0 = sedentary, 1.6 = moderate, 2.5 = very active
-    
-    // Count hours in each intensity level
-    const intensityHours = selectedActivities.reduce(
-      (acc, activity) => {
-        const intensity = activityIntensityMap[activity.name] || 'medium';
-        acc[intensity] += activity.hours;
-        return acc;
-      },
-      { low: 0, medium: 0, high: 0 }
-    );
-    
-    // Estimate PAL based on intensity distribution
-    // Assuming 24-hour day with 8 hours of sleep (low) not included in activities
-    const totalTrackedHours = intensityHours.low + intensityHours.medium + intensityHours.high;
-    const untrackedHours = Math.max(0, 16 - totalTrackedHours); // Assuming 8 hours of sleep
-    
-    // Approximate METs for each intensity level
-    const palContributions = {
-      low: intensityHours.low * 1.5,        // Light activity ~ 1.5 METs
-      medium: intensityHours.medium * 4,    // Moderate activity ~ 4 METs
-      high: intensityHours.high * 7,        // Vigorous activity ~ 7 METs
-      untracked: untrackedHours * 1.6       // Assume average daily activity ~ 1.6 METs
-    };
-    
-    // Calculate weighted average PAL
-    const palTotal = palContributions.low + palContributions.medium + 
-                     palContributions.high + palContributions.untracked;
-    const estimatedPAL = palTotal / 16;  // Divide by waking hours
-    
-    // Trigger the callback with the estimated PAL
-    onActivityResult(Math.min(2.5, Math.max(1.0, estimatedPAL)));
-  }, [selectedActivities, onActivityResult, activityIntensityMap]);
-  
-  // Trigger PAL calculation when activities change
-  useEffect(() => {
-    estimatePAL();
-  }, [selectedActivities, onActivityResult, estimatePAL]);
 
   // Convert selectedActivities to scheduledActivities format when component loads
   useEffect(() => {

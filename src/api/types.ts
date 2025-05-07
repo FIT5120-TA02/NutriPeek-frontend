@@ -154,7 +154,7 @@ export interface NutrientGapRequest {
 
 export interface NutrientGapResponse {
   nutrient_gaps: Record<string, NutrientInfo>;
-  missing_nutrients?: string[] | NutrientGapDetails[];
+  missing_nutrients?: NutrientGapDetails[];
   excess_nutrients?: string[];
   total_calories?: number;
 }

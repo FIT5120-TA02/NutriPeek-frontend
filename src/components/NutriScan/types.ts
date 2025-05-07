@@ -32,3 +32,15 @@ export interface QRCodeData {
   qrcode_base64: string;
   expires_in_seconds?: number;
 }
+
+export type MealType = 'breakfast' | 'lunch' | 'dinner';
+
+export interface MealImage {
+  file: File | null;
+  mealType: MealType;
+  imagePreviewUrl: string | null;
+  detectedItems?: FoodItemDisplay[];
+  processingStep: 'idle' | 'detecting' | 'mapping' | 'complete';
+  isProcessing: boolean;
+  shouldReprocess?: boolean; // Flag to indicate if a meal should be processed again even if it has detectedItems
+}

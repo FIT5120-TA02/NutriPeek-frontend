@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EditableFoodItem } from '../types';
 import IngredientItem from './IngredientItem';
 import AddIngredientForm from './AddIngredientForm';
@@ -27,7 +27,7 @@ export default function IngredientsList({
   };
 
   // Remove an ingredient from the list using uniqueId for reliable identification
-  const handleRemoveIngredient = (id: string | undefined, index: number) => {
+  const handleRemoveIngredient = (id: string | undefined, index: number) => {    
     // Use uniqueId for identification when available, fallback to index
     const itemToRemove = ingredients[index];
     
@@ -58,7 +58,7 @@ export default function IngredientsList({
   };
 
   // Remove all of a specific ingredient at once
-  const handleRemoveAllIngredients = (id: string | undefined, index: number) => {
+  const handleRemoveAllIngredients = (id: string | undefined, index: number) => {    
     const itemToRemove = ingredients[index];
     
     // Remove the ingredient completely regardless of quantity
@@ -73,7 +73,7 @@ export default function IngredientsList({
   };
 
   // Add a new ingredient to the list with a uniqueId
-  const handleAddIngredient = (newIngredient: EditableFoodItem) => {
+  const handleAddIngredient = (newIngredient: EditableFoodItem) => {    
     // Check if the same ingredient already exists
     const existingIndex = ingredients.findIndex(item => 
       item.id === newIngredient.id
@@ -100,7 +100,6 @@ export default function IngredientsList({
           }, {} as Record<string, number>) : 
           existingItem.nutrients
       };
-      
       onIngredientsChange(updatedIngredients);
     } else {
       // New ingredient, add with uniqueId
@@ -110,7 +109,8 @@ export default function IngredientsList({
         quantity: newIngredient.quantity || 1
       };
       
-      onIngredientsChange([...ingredients, ingredientWithUniqueId]);
+      const updatedIngredients = [...ingredients, ingredientWithUniqueId];
+      onIngredientsChange(updatedIngredients);
     }
     
     setIsAddingIngredient(false);
@@ -139,7 +139,9 @@ export default function IngredientsList({
         />
       ) : (
         <button
-          onClick={() => setIsAddingIngredient(true)}
+          onClick={() => {
+            setIsAddingIngredient(true);
+          }}
           className="w-full mb-3 flex items-center justify-center gap-1 py-1.5 px-3 bg-green-50 text-green-600 border border-green-200 rounded-lg hover:bg-green-100 transition text-sm"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

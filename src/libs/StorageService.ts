@@ -4,9 +4,11 @@
  * with type safety and server-side rendering considerations
  */
 
+import type { StorageKeyType } from "@/types/storage";
+
 // Type definitions for storage items
 export interface StorageItem<T> {
-  key: string;
+  key: StorageKeyType;
   defaultValue?: T;
 }
 
@@ -24,7 +26,7 @@ export class StorageService {
    * @param key The key to store the value under
    * @param value The value to store
    */
-  setLocalItem<T>(key: string, value: T): void {
+  setLocalItem<T>(key: StorageKeyType, value: T): void {
     if (!this.isClient()) return;
     
     try {
@@ -57,7 +59,7 @@ export class StorageService {
    * Remove an item from localStorage
    * @param key The key to remove
    */
-  removeLocalItem(key: string): void {
+  removeLocalItem(key: StorageKeyType): void {
     if (!this.isClient()) return;
     
     try {
@@ -87,7 +89,7 @@ export class StorageService {
    * @param key The key to store the value under
    * @param value The value to store
    */
-  setSessionItem<T>(key: string, value: T): void {
+  setSessionItem<T>(key: StorageKeyType, value: T): void {
     if (!this.isClient()) return;
     
     try {
@@ -120,7 +122,7 @@ export class StorageService {
    * Remove an item from sessionStorage
    * @param key The key to remove
    */
-  removeSessionItem(key: string): void {
+  removeSessionItem(key: StorageKeyType): void {
     if (!this.isClient()) return;
     
     try {

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ActivityResult, ChildEnergyRequirementsResponse } from '@/api/types';
+import InfoPopup from '@/components/ui/InfoPopup';
 
 interface ActivityAnalysisViewProps {
   activityResult: ActivityResult | null;
@@ -21,6 +22,44 @@ interface ActivityAnalysisViewProps {
  * based on the child's activity level.
  */
 export default function ActivityAnalysisView({ activityResult, energyRequirements }: ActivityAnalysisViewProps) {
+  // Energy requirements explanation content for the InfoPopup
+  const energyRequirementsContent = (
+    <div className="max-w-[300px]">
+      <p className="font-medium text-gray-800 mb-2">How is energy requirement calculated?</p>
+      <p className="mb-2">
+        Your child's estimated energy requirement is calculated by mapping their age, gender, and physical activity level (PAL) to established nutritional guidelines.
+      </p>
+      <p className="mb-2">
+        We use data from the Australian Dietary Guidelines to determine the appropriate energy needs based on these factors. This provides a personalized daily calorie target that supports healthy growth and development while accounting for their unique activity patterns.
+      </p>
+      <p className="text-xs text-gray-500 mt-2">
+        Source: <a href="https://www.eatforhealth.gov.au/nutrient-reference-values/nutrients/dietary-energy" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Australian Dietary Guidelines</a>
+      </p>
+    </div>
+  );
+
+  // METy explanation content for the InfoPopup
+  const metyExplanationContent = (
+    <div className="max-w-[300px]">
+      <p className="font-medium text-gray-800 mb-2">What is METy?</p>
+      <p className="mb-2">
+        METy (Youth Metabolic Equivalent) is a measurement unit for children's energy expenditure during physical activities. Unlike adult METs, METy values are specially adjusted for children's higher metabolic rates.
+      </p>
+      <p className="mb-2">
+        <strong>How METy minutes work:</strong>
+      </p>
+      <ul className="list-disc pl-5 space-y-1 mb-2">
+        <li>One METy represents a child's basal metabolic rate (energy at rest)</li>
+        <li>Activities are rated as multiples of this baseline (e.g., 3 METy = 3× resting energy)</li>
+        <li>METy-minutes = METy level × duration in minutes</li>
+        <li>Higher METy-minutes indicate greater energy expenditure</li>
+      </ul>
+      <p className="mb-1">
+        NutriPeek uses age-appropriate METy values to accurately assess your child's energy needs and activity patterns.
+      </p>
+    </div>
+  );
+
   // If no activity result, show placeholder
   if (!activityResult) {
     return (
@@ -77,7 +116,15 @@ export default function ActivityAnalysisView({ activityResult, energyRequirement
       {/* Energy Requirements Card (shown when available) */}
       {energyRequirements && (
         <div className="bg-white border border-blue-200 rounded-xl shadow-sm p-6">
-          <h3 className="text-xl font-semibold mb-4">Energy Requirements</h3>
+          <div className="flex items-center mb-4">
+            <h3 className="text-xl font-semibold">Energy Requirements</h3>
+            <InfoPopup 
+              content={energyRequirementsContent}
+              position="bottom"
+              iconSize={18}
+              iconClassName="ml-2 text-gray-400"
+            />
+          </div>
           
           <div className="flex items-center mb-4">
             <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
@@ -102,7 +149,16 @@ export default function ActivityAnalysisView({ activityResult, energyRequirement
 
       {/* METy Minutes Card */}
       <div className="bg-white border rounded-xl shadow-sm p-6">
-        <h3 className="text-xl font-semibold mb-4">Activity Intensity</h3>
+        <div className="flex items-center mb-4">
+          <h3 className="text-xl font-semibold">Activity Intensity</h3>
+          <InfoPopup 
+            content={metyExplanationContent}
+            position="bottom"
+            iconSize={18}
+            iconClassName="ml-2 text-gray-400"
+          />
+        </div>
+        
         <p className="text-gray-600 mb-4">
           METy-minutes are a way to measure the energy used during physical activity.
         </p>
@@ -133,17 +189,17 @@ export default function ActivityAnalysisView({ activityResult, energyRequirement
                 className={`rounded-lg p-4 ${intensityColor} border`}
               >
                 <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-gray-800">{activity.activity}</h4>
+                  <div className="max-w-[60%]">
+                    <h4 className="font-medium text-gray-800 break-words">{activity.activity}</h4>
                     <p className="text-sm text-gray-600 mt-1">
                       {activity.hours} {activity.hours === 1 ? 'hour' : 'hours'}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <span className="inline-block px-2 py-1 bg-white rounded-full text-sm font-medium">
+                  <div className="text-right min-w-[120px]">
+                    <span className="inline-block px-2 py-1 bg-white rounded-full text-sm font-medium whitespace-nowrap">
                       METy Level: {activity.mety_level.toFixed(1)}
                     </span>
-                    <p className="text-sm mt-1">
+                    <p className="text-sm mt-1 whitespace-nowrap">
                       {Math.round(activity.mety_minutes)} METy-minutes
                     </p>
                   </div>

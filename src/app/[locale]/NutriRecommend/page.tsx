@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ChildProfile } from '@/types/profile';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import storageService from '@/libs/StorageService';
-import { ChildEnergyRequirementsResponse } from '@/api/types';
+import { ChildEnergyRequirementsResponse, type NutrientGapResponse } from '@/api/types';
 import {
   RecommendHeader,
   NutrientList,
@@ -15,10 +15,13 @@ import {
   SelectedFoods,
   LoadingSpinner,
   ErrorMessage,
-  FoodItem,
   ExtendedNutrientGap,
   NutriRecommendService
 } from '@/components/NutriRecommend';
+import { FoodItem } from '@/types/notes';
+import TooltipButton from '@/components/ui/TooltipButton';
+import { STORAGE_KEYS, STORAGE_DEFAULTS } from '@/types/storage';
+import RecommendedFoodsUtil from '@/utils/RecommendedFoodsUtil';
 
 export default function NutriRecommendPage() {
   const { ingredientIds, selectedChildId, clearIngredientIds } = useNutrition();
@@ -31,18 +34,22 @@ export default function NutriRecommendPage() {
   const [missingNutrients, setMissingNutrients] = useState<ExtendedNutrientGap[]>([]);
   const [selectedFoods, setSelectedFoods] = useState<FoodItem[]>([]);
   const [activeNutrient, setActiveNutrient] = useState<string | null>(null);
-  const [totalEnergy, setTotalEnergy] = useState<number | null>(null);
+  const [totalEnergy, setTotalEnergy] = useState<number | null>(null); // TODO: Display this in the somewhere in the UI
   const [energyRequirements, setEnergyRequirements] = useState<ChildEnergyRequirementsResponse | null>(null);
   const [hasAdjustedEnergy, setHasAdjustedEnergy] = useState(false);
+  const [prevRecommendedFoods, setPrevRecommendedFoods] = useState<FoodItem[]>([]);
+  
+  // State to track if there are new selections made compared to previously recommended foods
+  const [hasNewSelections, setHasNewSelections] = useState(false);
 
   // Fetch initial data
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
         // Check for energy requirements based on activity level
-        const storedEnergyRequirements = storageService.getLocalItem({
-          key: 'energyRequirements',
-          defaultValue: null
+        const storedEnergyRequirements = storageService.getLocalItem<ChildEnergyRequirementsResponse>({
+          key: STORAGE_KEYS.ENERGY_REQUIREMENTS,
+          defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.ENERGY_REQUIREMENTS]
         });
         
         if (storedEnergyRequirements) {
@@ -50,10 +57,13 @@ export default function NutriRecommendPage() {
         }
         
         if (ingredientIds.length === 0) {
-          const storedResults = localStorage.getItem('nutripeekGapResults');
+          const storedResults = storageService.getLocalItem<NutrientGapResponse>({
+            key: STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS,
+            defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS]
+          });
           if (storedResults) {
             const { missingNutrients, totalEnergy, childProfile } = 
-              await NutriRecommendService.processStoredResults(JSON.parse(storedResults), selectedChildId);
+              await NutriRecommendService.processStoredResults(storedResults, selectedChildId);
             
             setMissingNutrients(missingNutrients);
             setTotalEnergy(totalEnergy);
@@ -70,6 +80,35 @@ export default function NutriRecommendPage() {
               setActiveNutrient(missingNutrients[0].name);
             }
             
+            // Check for previously recommended foods
+            const recommendedFoodsData = RecommendedFoodsUtil.getRecommendedFoodsData();
+            if (recommendedFoodsData.hasRecommendedFoods && recommendedFoodsData.foodItems.length > 0) {
+              setPrevRecommendedFoods(recommendedFoodsData.foodItems);
+              
+              // Pre-select these foods
+              const preSelectedFoods = recommendedFoodsData.foodItems.map(food => ({
+                ...food,
+                selected: true
+              }));
+              
+              setSelectedFoods(preSelectedFoods);
+              
+              // Mark the foods as selected in the nutrient lists
+              setMissingNutrients(prevNutrients => {
+                return prevNutrients.map(nutrient => {
+                  const updatedFoods = nutrient.recommendedFoods.map(food => {
+                    const matchingFood = preSelectedFoods.find(selected => selected.id === food.id);
+                    if (matchingFood) {
+                      return { ...food, selected: true, quantity: matchingFood.quantity || 1 };
+                    }
+                    return food;
+                  });
+                  
+                  return { ...nutrient, recommendedFoods: updatedFoods };
+                });
+              });
+            }
+            
             setLoading(false);
             return;
           }
@@ -79,7 +118,7 @@ export default function NutriRecommendPage() {
         }
 
         // Store ingredient IDs for future reference
-        storageService.setLocalItem('selectedIngredientIds', ingredientIds);
+        storageService.setLocalItem<string[]>(STORAGE_KEYS.SELECTED_INGREDIENT_IDS, ingredientIds);
 
         // Get child profile
         const childProfile = NutriRecommendService.getChildProfile(selectedChildId);
@@ -119,6 +158,35 @@ export default function NutriRecommendPage() {
         if (missingNutrients.length > 0) {
           setActiveNutrient(missingNutrients[0].name);
         }
+        
+        // Check for previously recommended foods
+        const recommendedFoodsData = RecommendedFoodsUtil.getRecommendedFoodsData();
+        if (recommendedFoodsData.hasRecommendedFoods && recommendedFoodsData.foodItems.length > 0) {
+          setPrevRecommendedFoods(recommendedFoodsData.foodItems);
+          
+          // Pre-select these foods
+          const preSelectedFoods = recommendedFoodsData.foodItems.map(food => ({
+            ...food,
+            selected: true
+          }));
+          
+          setSelectedFoods(preSelectedFoods);
+          
+          // Mark the foods as selected in the nutrient lists
+          setMissingNutrients(prevNutrients => {
+            return prevNutrients.map(nutrient => {
+              const updatedFoods = nutrient.recommendedFoods.map(food => {
+                const matchingFood = preSelectedFoods.find(selected => selected.id === food.id);
+                if (matchingFood) {
+                  return { ...food, selected: true, quantity: matchingFood.quantity || 1 };
+                }
+                return food;
+              });
+              
+              return { ...nutrient, recommendedFoods: updatedFoods };
+            });
+          });
+        }
       } catch (err) {
         console.error('Error fetching recommendations:', err);
         setError('Failed to load recommendations. Please try again.');
@@ -130,119 +198,168 @@ export default function NutriRecommendPage() {
     fetchRecommendations();
   }, [ingredientIds, selectedChildId]);
 
+  // Calculate if there are new selections compared to previously recommended foods
+  useEffect(() => {
+    // Skip if we don't have both arrays populated
+    if (prevRecommendedFoods.length === 0 && selectedFoods.length === 0) {
+      setHasNewSelections(false);
+      return;
+    }
+    
+    // If there were no previous selections, any selection is new
+    if (prevRecommendedFoods.length === 0) {
+      setHasNewSelections(selectedFoods.length > 0);
+      return;
+    }
+    
+    // Check if any new foods have been added
+    const hasNewFoods = selectedFoods.some(currentFood => 
+      !prevRecommendedFoods.some(prevFood => prevFood.id === currentFood.id)
+    );
+    
+    // Check if any existing food's quantity has been increased
+    const hasIncreasedQuantities = selectedFoods.some(currentFood => {
+      const prevFood = prevRecommendedFoods.find(prevFood => prevFood.id === currentFood.id);
+      if (prevFood) {
+        const prevQuantity = prevFood.quantity || 1;
+        const currentQuantity = currentFood.quantity || 1;
+        return currentQuantity > prevQuantity;
+      }
+      return false;
+    });
+    
+    // Check if any foods have been removed or decreased in quantity
+    const hasRemovedOrDecreased = prevRecommendedFoods.some(prevFood => {
+      const currentFood = selectedFoods.find(currFood => currFood.id === prevFood.id);
+      
+      // Food was completely removed
+      if (!currentFood) return true;
+      
+      // Food quantity was decreased
+      const prevQuantity = prevFood.quantity || 1;
+      const currentQuantity = currentFood.quantity || 1;
+      return currentQuantity < prevQuantity;
+    });
+    
+    setHasNewSelections(hasNewFoods || hasIncreasedQuantities || hasRemovedOrDecreased);
+  }, [selectedFoods, prevRecommendedFoods]);
+
   // Toggle food selection
   const handleToggleFood = (nutrientName: string, foodItem: FoodItem) => {
-    // Update the selected foods list
-    setSelectedFoods(prev => {
-      const isAlreadySelected = prev.some(item => item.id === foodItem.id);
-      
-      if (isAlreadySelected) {
-        return prev.filter(item => item.id !== foodItem.id);
-      } else {
-        return [...prev, { ...foodItem, selected: true, quantity: 1 }];
-      }
-    });
-
-    // Update the food item in ALL nutrient's recommended foods that contain it
-    setMissingNutrients(prev => {
-      return prev.map(nutrient => {
-        // Check if this nutrient has the food in its recommendations
-        const hasFoodInRecommendations = nutrient.recommendedFoods.some(food => food.id === foodItem.id);
+    // First update the missing nutrients list to show selected state
+    setMissingNutrients(prevNutrients => {
+      return prevNutrients.map(nutrient => {
+        if (nutrient.name !== nutrientName) return nutrient;
         
-        if (hasFoodInRecommendations) {
-          const updatedFoods = nutrient.recommendedFoods.map(food => {
-            if (food.id === foodItem.id) {
-              return { ...food, selected: !food.selected };
-            }
-            return food;
-          });
-          return { ...nutrient, recommendedFoods: updatedFoods };
-        }
-        return nutrient;
+        // Update this nutrient's foods
+        const updatedFoods = nutrient.recommendedFoods.map(food => {
+          if (food.id !== foodItem.id) return food;
+          
+          // Toggle selection
+          return { ...food, selected: !food.selected };
+        });
+        
+        return { ...nutrient, recommendedFoods: updatedFoods };
       });
+    });
+    
+    // Then update the selected foods list
+    setSelectedFoods(prevSelected => {
+      const existingIndex = prevSelected.findIndex(food => food.id === foodItem.id);
+      
+      // If it's already in the list, remove it
+      if (existingIndex !== -1) {
+        return prevSelected.filter(food => food.id !== foodItem.id);
+      }
+      
+      // Otherwise add it
+      return [...prevSelected, { ...foodItem, selected: true }];
     });
   };
 
   // Update food quantity
   const handleUpdateQuantity = (nutrientName: string, foodItem: FoodItem, quantity: number) => {
-    // Update the selected foods list
-    setSelectedFoods(prev => {
-      return prev.map(item => {
-        if (item.id === foodItem.id) {
-          return { ...item, quantity };
-        }
-        return item;
+    // Update the quantity in missing nutrients list
+    setMissingNutrients(prevNutrients => {
+      return prevNutrients.map(nutrient => {
+        if (nutrient.name !== nutrientName) return nutrient;
+        
+        // Update this nutrient's foods
+        const updatedFoods = nutrient.recommendedFoods.map(food => {
+          if (food.id !== foodItem.id) return food;
+          
+          // Update quantity
+          return { ...food, quantity };
+        });
+        
+        return { ...nutrient, recommendedFoods: updatedFoods };
       });
     });
-
-    // Update the food item in ALL nutrient's recommended foods that contain it
-    setMissingNutrients(prev => {
-      return prev.map(nutrient => {
-        // Check if this nutrient has the food in its recommendations
-        const hasFoodInRecommendations = nutrient.recommendedFoods.some(food => food.id === foodItem.id);
-        
-        if (hasFoodInRecommendations) {
-          const updatedFoods = nutrient.recommendedFoods.map(food => {
-            if (food.id === foodItem.id) {
-              return { ...food, quantity };
-            }
-            return food;
-          });
-          return { ...nutrient, recommendedFoods: updatedFoods };
-        }
-        return nutrient;
+    
+    // Update quantity in selected foods
+    setSelectedFoods(prevSelected => {
+      return prevSelected.map(food => {
+        if (food.id !== foodItem.id) return food;
+        return { ...food, quantity };
       });
     });
   };
 
   // Calculate updated nutrient percentages based on selected foods
   useEffect(() => {
-    // Reset all nutrients to their original percentage if no foods are selected
-    if (!missingNutrients.length) return;
+    // Skip calculation if no selected foods
+    if (selectedFoods.length === 0 || missingNutrients.length === 0) return;
     
-    if (selectedFoods.length === 0) {
-      // Reset all nutrient percentages to their original values
-      setMissingNutrients(prev => {
-        return prev.map(nutrient => ({
-          ...nutrient,
-          updatedPercentage: nutrient.percentage
-        }));
-      });
-      return;
-    }
-
-    // Calculate new percentages based on all nutrients contributed by selected foods
-    setMissingNutrients(prev => {
-      return prev.map(nutrient => {
-        let additionalAmount = 0;
-        
-        // For each selected food, check if it contributes to this nutrient
-        selectedFoods.forEach(food => {
-          // Find this nutrient in the food's nutrients
-          if (food.nutrients && food.nutrients[nutrient.name] !== undefined) {
-            // Multiply by quantity to get the total contribution
-            additionalAmount += food.nutrients[nutrient.name] * food.quantity;
-          }
+    // Create a map of nutrient added values
+    const addedNutrients: Record<string, number> = {};
+    
+    // Calculate total added nutrients from all selected foods
+    selectedFoods.forEach(food => {
+      if (food.nutrients) {
+        Object.entries(food.nutrients).forEach(([nutrient, value]) => {
+          // Multiply by quantity
+          const actualValue = food.quantity ? value * food.quantity : value;
+          addedNutrients[nutrient] = (addedNutrients[nutrient] || 0) + actualValue;
         });
+      }
+    });
+    
+    // Update percentages in missing nutrients
+    setMissingNutrients(prevNutrients => {
+      return prevNutrients.map(nutrient => {
+        // Calculate current percentage
+        const currentPercentage = (nutrient.current_intake / nutrient.recommended_intake) * 100;
         
-        // Calculate the updated intake and percentage
-        const updatedIntake = nutrient.current_intake + additionalAmount;
-        const updatedPercentage = Math.min(100, (updatedIntake / nutrient.recommended_intake) * 100);
+        // Check if this nutrient has added values
+        if (addedNutrients[nutrient.name]) {
+          // Calculate updated percentage with added nutrients
+          const updatedIntake = nutrient.current_intake + addedNutrients[nutrient.name];
+          const updatedPercentage = (updatedIntake / nutrient.recommended_intake) * 100;
+          
+          return {
+            ...nutrient,
+            updatedPercentage
+          };
+        }
         
+        // No update needed
         return {
           ...nutrient,
-          updatedPercentage
+          updatedPercentage: currentPercentage
         };
       });
     });
   }, [selectedFoods, missingNutrients.length]);
 
-  // Save selection and go to scan again
+  // Save selection and go to notes
   const handleSaveSelection = () => {
-    // Only save a note if the user has selected foods
     if (selectedFoods.length > 0) {
       // Save the selected foods to create a new nutrition note
       NutriRecommendService.saveSelectedFoods(selectedFoods);
+      
+      // Also save the food IDs for reference in other pages
+      RecommendedFoodsUtil.saveRecommendedFoodIds(selectedFoods);
+      
       // Navigate to notes page
       router.push('/Note');
     }
@@ -269,9 +386,12 @@ export default function NutriRecommendPage() {
       backgroundClasses="min-h-screen w-full flex flex-col bg-gradient-to-b from-green-50 to-green-100"
       emojisCount={15}
     >
-      <div className="w-full px-4 py-16 max-w-7xl mx-auto">
+      <div className="w-full px-6 lg:px-8 pt-24 pb-16 max-w-7xl mx-auto">
         {/* Header with Back Button, Title, and Avatar in one row */}
-        <RecommendHeader selectedChild={selectedChild} />
+        <RecommendHeader 
+          selectedChild={selectedChild} 
+          hasNewSelections={hasNewSelections}
+        />
 
         {/* Display message about adjusted energy if applicable */}
         {hasAdjustedEnergy && energyRequirements && (
@@ -293,9 +413,29 @@ export default function NutriRecommendPage() {
             </div>
           </div>
         )}
+        
+        {/* Show a banner if we pre-populated foods from a previous selection */}
+        {prevRecommendedFoods.length > 0 && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium">Previous Recommendations Loaded</h3>
+                <p className="mt-1 text-sm">
+                  We've preloaded {prevRecommendedFoods.length} recommended food{prevRecommendedFoods.length !== 1 ? 's' : ''} from your previous analysis.
+                  You can modify these selections or add new foods.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4 w-full">
           {/* Nutrient Tabs - Left Column */}
           <NutrientList 
             nutrients={missingNutrients} 
@@ -320,44 +460,33 @@ export default function NutriRecommendPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-center gap-4 mt-8 w-full">
-          {selectedFoods.length > 0 ? (
-            <>
-              {/* Save Selection button - only enabled if foods are selected */}
-              <button
-                onClick={handleSaveSelection}
-                className="px-8 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition text-lg font-semibold flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" />
-                </svg>
-                Save Selection & View Notes
-              </button>
-              
-              {/* Scan More button */}
-              <button
-                onClick={handleScanMore}
-                className="px-8 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition text-lg font-semibold flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                </svg>
-                Scan Another Food
-              </button>
-            </>
-          ) : (
-            // Just the Scan More button if no selections
-            <button
-              onClick={handleScanMore}
-              className="px-8 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition text-lg font-semibold flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Scan Another Food
-            </button>
-          )}
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8 w-full">
+          {/* Save Selection button - enabled only when there are selections and changes */}
+          <TooltipButton
+            onClick={handleSaveSelection}
+            disabled={selectedFoods.length === 0 || !hasNewSelections}
+            disabledTooltip={selectedFoods.length === 0 
+              ? "Select at least one food to save your selection" 
+              : "No changes detected. Make changes to your selections before saving."}
+            position="top"
+            className="px-6 sm:px-8 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition text-base sm:text-lg font-semibold flex items-center justify-center gap-2 w-full sm:w-auto"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" />
+            </svg>
+            Save Selection & View Notes
+          </TooltipButton>
+          
+          {/* Scan More button - always enabled */}
+          <TooltipButton
+            onClick={handleScanMore}
+            className="px-6 sm:px-8 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition text-base sm:text-lg font-semibold flex items-center justify-center gap-2 w-full sm:w-auto"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+            </svg>
+            Scan Another Food
+          </TooltipButton>
         </div>
       </div>
     </FloatingEmojisLayout>
