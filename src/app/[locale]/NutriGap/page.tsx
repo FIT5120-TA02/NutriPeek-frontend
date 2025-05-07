@@ -10,6 +10,7 @@ import { ChildProfile } from '@/types/profile';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import { toast } from 'sonner';
 import { STORAGE_KEYS, STORAGE_DEFAULTS } from '@/types/storage';
+import RecommendedFoodsUtil, { RecommendedFoodsImpact } from '@/utils/RecommendedFoodsUtil';
 
 // Components
 import ProfileSummary from '@/components/NutriGap/ProfileSummary';
@@ -31,6 +32,13 @@ export default function ResultsPage() {
   const [currentTab, setCurrentTab] = useState<AnalysisType>('nutrients');
   const [showAllNutrients, setShowAllNutrients] = useState(false);
   const [isActivityEnabled, setIsActivityEnabled] = useState(false);
+  
+  // New state for recommended foods data
+  const [recommendedFoodsData, setRecommendedFoodsData] = useState<RecommendedFoodsImpact>({
+    hasRecommendedFoods: false,
+    foodItems: [],
+    nutrientComparisons: []
+  });
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -106,6 +114,11 @@ export default function ResultsPage() {
             setEnergyRequirements(storedEnergyRequirements);
           }
         }
+        
+        // Check for recommended foods data
+        const recommendedFoodsData = RecommendedFoodsUtil.getRecommendedFoodsData();
+        setRecommendedFoodsData(recommendedFoodsData);
+        
       } catch (error) {
         console.error('Error calculating nutritional gap:', error);
         setError('Failed to calculate nutritional gap. Please try again.');
@@ -224,7 +237,10 @@ export default function ResultsPage() {
               {currentTab === 'nutrients' && (
                 <div className="space-y-8 w-full">
                   {/* Important Nutrients Dashboard */}
-                  <ImportantNutrientsDashboard gaps={results.nutrient_gaps} />
+                  <ImportantNutrientsDashboard 
+                    gaps={results.nutrient_gaps} 
+                    nutrientComparisons={recommendedFoodsData.nutrientComparisons}
+                  />
                   
                   {/* Toggle Button for All Nutrients */}
                   <div className="flex justify-center w-full">
@@ -255,6 +271,7 @@ export default function ResultsPage() {
                     <AllNutrientsView 
                       gaps={results.nutrient_gaps} 
                       energyRequirements={energyRequirements}
+                      nutrientComparisons={recommendedFoodsData.nutrientComparisons}
                     />
                   )}
                 </div>

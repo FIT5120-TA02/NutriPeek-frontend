@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExtendedNutrientGap, FoodItem } from './types';
+import { ExtendedNutrientGap } from './types';
+import { FoodItem } from '@/types/notes';
 
 interface RecommendedFoodsProps {
   activeNutrient: string | null;
@@ -85,7 +86,7 @@ export default function RecommendedFoods({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2"
+            className="grid grid-cols-2 gap-3 max-h-[700px] overflow-y-auto pr-2"
           >
             {activeNutrientData.recommendedFoods.map((food) => {
               const topNutrients = getFoodNutrientImprovements(food);

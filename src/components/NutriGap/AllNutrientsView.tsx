@@ -5,6 +5,10 @@ import UnitFormatter from '@/utils/UnitFormatter';
 import { ChildEnergyRequirementsResponse } from '@/api/types';
 import Dropdown, { DropdownOption } from '@/components/ui/Dropdown';
 import { FunnelSimple, SortAscending } from 'phosphor-react';
+import { NutrientComparison } from '@/types/notes';
+import NutrientImpactIndicator from './NutrientImpactIndicator';
+import RecommendedFoodsUtil from '@/utils/RecommendedFoodsUtil';
+import { formatNumber } from '@/utils/formatters';
 
 interface NutrientData {
   name: string;
@@ -18,9 +22,14 @@ interface NutrientData {
 interface AllNutrientsViewProps {
   gaps: Record<string, NutrientData>;
   energyRequirements?: ChildEnergyRequirementsResponse | null;
+  nutrientComparisons?: NutrientComparison[];
 }
 
-export default function AllNutrientsView({ gaps, energyRequirements }: AllNutrientsViewProps) {
+export default function AllNutrientsView({ 
+  gaps, 
+  energyRequirements,
+  nutrientComparisons = [] 
+}: AllNutrientsViewProps) {
   const [sortBy, setSortBy] = useState<'name' | 'percentage'>('percentage');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState<'all' | 'deficient' | 'excess' | 'optimal'>('all');
@@ -195,6 +204,11 @@ export default function AllNutrientsView({ gaps, energyRequirements }: AllNutrie
                 nutrient.name.toLowerCase().includes('energy') && 
                 (nutrient as any).isAdjustedForActivity;
               
+              // Calculate nutrient impact from recommended foods if comparisons exist
+              const nutrientImpact = nutrientComparisons.length > 0 
+                ? RecommendedFoodsUtil.calculateNutrientImpact(nutrient.name, nutrientComparisons) 
+                : { percentageChange: 0, valueChange: 0, valueUnit: '' };
+              
               return (
                 <div 
                   key={index} 
@@ -209,6 +223,12 @@ export default function AllNutrientsView({ gaps, energyRequirements }: AllNutrie
                             Adjusted for Activity
                           </span>
                         )}
+                        
+                        {/* Show impact indicator if there's an improvement from recommended foods */}
+                        <NutrientImpactIndicator 
+                          nutrientName={nutrient.name}
+                          impact={nutrientImpact}
+                        />
                       </div>
                       <span className={`text-sm ${percentage < 90 ? 'text-red-500' : percentage > 110 ? 'text-amber-500' : 'text-green-500'}`}>
                         {statusText}
@@ -254,6 +274,17 @@ export default function AllNutrientsView({ gaps, energyRequirements }: AllNutrie
                         style={{ width: `${Math.min(100, percentage)}%` }}
                         className={`${barColor} rounded-full`}
                       ></div>
+                      
+                      {/* Show the impact from recommended foods as a striped overlay */}
+                      {nutrientImpact.percentageChange > 0 && (
+                        <div
+                          style={{ 
+                            width: `${nutrientImpact.percentageChange}%`, 
+                            marginLeft: `-${nutrientImpact.percentageChange}%` 
+                          }}
+                          className={`${barColor} opacity-50 bg-gradient-to-r from-transparent via-green-300 to-green-300 rounded-full`}
+                        ></div>
+                      )}
                     </div>
                   </div>
                   
@@ -263,6 +294,16 @@ export default function AllNutrientsView({ gaps, energyRequirements }: AllNutrie
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Target energy requirement increased due to high activity level.
+                    </div>
+                  )}
+                  
+                  {/* Show details of improvement if it exists */}
+                  {nutrientImpact.percentageChange > 0 && (
+                    <div className="mt-2 text-xs text-green-700 bg-green-50 p-2 rounded">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Added {formatNumber(nutrientImpact.valueChange)}{nutrientImpact.valueUnit} (+{nutrientImpact.percentageChange.toFixed(1)}%) from recommended foods.
                     </div>
                   )}
                 </div>

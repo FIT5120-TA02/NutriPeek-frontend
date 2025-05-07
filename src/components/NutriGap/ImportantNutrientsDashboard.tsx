@@ -1,9 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import UnitFormatter from '@/utils/UnitFormatter';
 import InfoPopup from '@/components/ui/InfoPopup';
+import { NutrientComparison } from '@/types/notes';
+import RecommendedFoodsUtil, { RecommendedFoodsImpact } from '@/utils/RecommendedFoodsUtil';
+import { formatNumber } from '@/utils/formatters';
+import RecommendedFoodsBanner from './RecommendedFoodsBanner';
+import NutrientImpactIndicator from './NutrientImpactIndicator';
 
 // Dynamically import the Chart component to prevent SSR issues
 const Chart = dynamic(() => import('react-apexcharts').then((mod) => mod.default), { ssr: false });
@@ -31,6 +35,7 @@ interface NutrientData {
 
 interface ImportantNutrientsDashboardProps {
   gaps: Record<string, NutrientData>;
+  nutrientComparisons?: NutrientComparison[];
 }
 
 // Utility function to format numbers in a more readable way
@@ -53,7 +58,10 @@ const formatNutrientValue = (value: number): string => {
   return Math.round(value).toString();
 };
 
-export default function ImportantNutrientsDashboard({ gaps }: ImportantNutrientsDashboardProps) {
+export default function ImportantNutrientsDashboard({ 
+  gaps,
+  nutrientComparisons = []
+}: ImportantNutrientsDashboardProps) {
   // Nutrient calculation explanation content for the InfoPopup
   const nutrientCalculationContent = (
     <div className="max-w-[300px]">
@@ -138,6 +146,52 @@ export default function ImportantNutrientsDashboard({ gaps }: ImportantNutrients
       .slice(0, 6) as (NutrientData & { id: string, displayName: string })[];
   }, [gaps]);
 
+  // Calculate the radar chart series - with and without recommendations
+  const radarChartSeries = useMemo(() => {
+    // Base series with current values
+    const baseData = priorityNutrients.map(nutrient => 
+      Math.min(100, calculatePercentage(nutrient))
+    );
+    
+    // Only add the "with recommendations" series if we have comparisons
+    if (nutrientComparisons.length === 0) {
+      return [{ name: 'Nutrient Level', data: baseData }];
+    }
+    
+    // Calculate values with recommendations
+    const withRecommendationsData = priorityNutrients.map(nutrient => {
+      const impact = RecommendedFoodsUtil.calculateNutrientImpact(nutrient.displayName, nutrientComparisons);
+      const basePercentage = Math.min(100, calculatePercentage(nutrient));
+      const enhancedPercentage = Math.min(100, basePercentage + impact.percentageChange);
+      return enhancedPercentage;
+    });
+    
+    // Check if any values are different to determine if we need to show both series
+    const hasDifference = baseData.some((val, idx) => val !== withRecommendationsData[idx]);
+    
+    if (hasDifference) {
+      return [
+        { name: 'With Recommendations', data: withRecommendationsData },
+        { name: 'Current Level', data: baseData }
+      ];
+    } else {
+      return [{ name: 'Nutrient Level', data: baseData }];
+    }
+  }, [priorityNutrients, nutrientComparisons]);
+
+  // State to track recommended foods
+  const [recommendedFoodsData, setRecommendedFoodsData] = useState<RecommendedFoodsImpact>({
+    hasRecommendedFoods: false,
+    foodItems: [],
+    nutrientComparisons: []
+  });
+
+  // Check for recommended foods on load
+  useEffect(() => {
+    const data = RecommendedFoodsUtil.getRecommendedFoodsData();
+    setRecommendedFoodsData(data);
+  }, []);
+
   return (
     <div className="w-full">
       <div className="flex items-center mb-4">
@@ -149,6 +203,15 @@ export default function ImportantNutrientsDashboard({ gaps }: ImportantNutrients
           iconClassName="ml-2 text-gray-400"
         />
       </div>
+
+      {/* Recommended Foods Banner - show if we have recommended foods */}
+      {recommendedFoodsData.hasRecommendedFoods && (
+        <div className="mb-4">
+          <RecommendedFoodsBanner 
+            foodItems={recommendedFoodsData.foodItems}
+          />
+        </div>
+      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Side: Radar Chart - Takes up 2/3 of the space */}
@@ -189,10 +252,10 @@ export default function ImportantNutrientsDashboard({ gaps }: ImportantNutrients
                       }
                     }
                   },
-                  colors: ['#10B981'],
+                  colors: radarChartSeries.length > 1 ? ['#10B981', '#94A3B8'] : ['#10B981'],
                   markers: {
                     size: 5,
-                    colors: ['#10B981'],
+                    colors: radarChartSeries.length > 1 ? ['#10B981', '#94A3B8'] : ['#10B981'],
                     strokeWidth: 2,
                     strokeColors: '#ffffff',
                     hover: {
@@ -220,14 +283,15 @@ export default function ImportantNutrientsDashboard({ gaps }: ImportantNutrients
                   },
                   stroke: {
                     width: 2
+                  },
+                  legend: {
+                    show: radarChartSeries.length > 1,
+                    position: 'bottom',
+                    fontSize: '12px',
+                    fontWeight: 500
                   }
                 }}
-                series={[{
-                  name: 'Nutrient Level',
-                  data: priorityNutrients.map(nutrient => 
-                    Math.min(100, calculatePercentage(nutrient))
-                  )
-                }]}
+                series={radarChartSeries}
                 type="radar"
                 height="100%"
                 width="100%"
@@ -252,13 +316,43 @@ export default function ImportantNutrientsDashboard({ gaps }: ImportantNutrients
                 const statusColor = getStatusColor(percentage);
                 const statusBgColor = getStatusBgColor(percentage);
                 
+                // Calculate nutrient impact from recommended foods if comparisons exist
+                const nutrientImpact = nutrientComparisons.length > 0 
+                  ? RecommendedFoodsUtil.calculateNutrientImpact(nutrient.displayName, nutrientComparisons) 
+                  : { percentageChange: 0, valueChange: 0, valueUnit: '' };
+                
                 return (
                   <div key={index} className="border border-gray-100 rounded-lg p-3.5 flex flex-col bg-white shadow-sm">
-                    <div className="flex justify-between items-center mb-2.5">
-                      <span className="font-medium text-gray-700">{nutrient.displayName}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${statusBgColor} ${statusColor} font-medium`}>
-                        {percentage.toFixed(0)}%
-                      </span>
+                    <div className="mb-2.5">
+                      {/* Conditional layout based on whether there's an impact indicator */}
+                      {nutrientImpact.percentageChange > 0 ? (
+                        <>
+                          {/* When impact exists: Nutrient name alone at the top */}
+                          <div className="mb-1">
+                            <span className="font-medium text-gray-700">{nutrient.displayName}</span>
+                          </div>
+                          
+                          {/* Percentage and impact indicator on the next line */}
+                          <div className="flex items-center flex-wrap gap-2">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${statusBgColor} ${statusColor} font-medium`}>
+                              {percentage.toFixed(0)}%
+                            </span>
+                            <NutrientImpactIndicator 
+                              nutrientName={nutrient.displayName}
+                              impact={nutrientImpact}
+                              size="sm"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        /* When no impact: Keep percentage on same line as nutrient name */
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-gray-700">{nutrient.displayName}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${statusBgColor} ${statusColor} font-medium`}>
+                            {percentage.toFixed(0)}%
+                          </span>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-2 gap-2 mt-1">
@@ -275,6 +369,16 @@ export default function ImportantNutrientsDashboard({ gaps }: ImportantNutrients
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Show the recommendation impact if any */}
+                    {nutrientImpact.percentageChange > 0 && (
+                      <div className="mt-2 px-2 py-1 bg-green-50 rounded text-xs text-green-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 inline-block mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        +{formatNumber(nutrientImpact.valueChange)}{nutrientImpact.valueUnit}
+                      </div>
+                    )}
                   </div>
                 );
               })}

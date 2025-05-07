@@ -65,7 +65,7 @@ export default function NutrientList({
       {/* Responsive container that switches between horizontal and vertical layout */}
       <div 
         ref={scrollContainerRef}
-        className="lg:space-y-2 lg:max-h-[400px] lg:overflow-y-auto lg:pr-2 
+        className="lg:space-y-2 lg:max-h-[700px] lg:overflow-y-auto lg:pr-2 
                   flex lg:flex-col overflow-x-auto pb-2 -mx-1 px-1 hide-scrollbar"
       >
         {nutrients.map((nutrient) => (
@@ -136,8 +136,7 @@ export default function NutrientList({
 
 // Add a style to hide scrollbar but keep functionality
 const styleElement = document.createElement('style');
-styleElement.textContent = `
-  .hide-scrollbar::-webkit-scrollbar {
+styleElement.textContent = `  .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .hide-scrollbar {
