@@ -146,13 +146,13 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
     
     return Array.from({ length: count }).map((_, i) => {
       const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-      const size = Math.random() * 30 + 20;
+      const size = Math.random() * 20 + 15; // Reduced emoji size
       const speed = urgencyLevel === 2 ? 2 : urgencyLevel === 1 ? 3 : 4; // Faster at higher urgency
       
       return (
         <motion.div
           key={`bg-emoji-${i}`}
-          className="absolute text-3xl pointer-events-none select-none z-0"
+          className="absolute text-2xl pointer-events-none select-none z-0" // Reduced text size
           style={{
             fontSize: size,
             left: `${Math.random() * 100}%`,
@@ -165,7 +165,7 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
             opacity: [0, urgencyLevel === 2 ? 0.8 : urgencyLevel === 1 ? 0.6 : 0.4, 0],
             scale: [0, 1, 0.8],
             rotate: Math.random() > 0.5 ? 360 : -360,
-            y: [0, Math.random() > 0.5 ? 80 : -80]
+            y: [0, Math.random() > 0.5 ? 60 : -60] // Reduced movement
           }}
           transition={{
             duration: speed,
@@ -191,7 +191,7 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
     const count = urgencyLevel === 2 ? 4 : 2;
     
     return (
-      <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center pointer-events-none z-0">
+      <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 flex items-center justify-center pointer-events-none z-0">
         {Array.from({ length: count }).map((_, i) => (
           <motion.div
             key={`tick-${i}`}
@@ -199,8 +199,8 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
               urgencyLevel === 2 ? 'bg-red-500' : 'bg-amber-500'
             }`}
             style={{
-              width: (i + 1) * 3, 
-              height: (i + 1) * 3
+              width: (i + 1) * 2.5, // Slightly smaller
+              height: (i + 1) * 2.5
             }}
             animate={{
               scale: [1, 1.5, 1],
@@ -241,7 +241,7 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
       {/* Animated countdown bar */}
       {!showResult && (
         <motion.div 
-          className={`absolute top-0 left-0 h-2 ${
+          className={`absolute top-0 left-0 h-1.5 ${/* Thinner bar */
             urgencyLevel === 2 ? 'bg-red-500' : urgencyLevel === 1 ? 'bg-amber-500' : 'bg-blue-500'
           }`}
           initial={{ width: '100%' }}
@@ -255,25 +255,26 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
         initial="initial"
         animate="animate"
         exit="exit"
-        className={`bg-white/95 backdrop-blur-sm rounded-xl p-6 md:p-8 max-w-2xl w-11/12 shadow-2xl relative overflow-hidden z-10
+        className={`bg-white/95 backdrop-blur-sm rounded-xl p-4 md:p-6 max-w-xl w-11/12 shadow-2xl relative overflow-hidden z-10
+          max-h-[80vh] overflow-y-auto
           ${showResult && isCorrect 
-            ? 'border-4 border-green-500' // Green border for correct answer
+            ? 'border-3 border-green-500' // Thinner border
             : showResult && !isCorrect
-              ? 'border-4 border-red-500' // Red border for incorrect answer
+              ? 'border-3 border-red-500' // Thinner border
               : urgencyLevel === 2 
-                ? 'border-4 border-red-500' 
+                ? 'border-3 border-red-500' 
                 : urgencyLevel === 1 
-                  ? 'border-4 border-amber-500' 
-                  : 'border-4 border-blue-400'}`}
+                  ? 'border-3 border-amber-500' 
+                  : 'border-3 border-blue-400'}`}
       >
         {generateTickingVisualization()}
         
-        <div className="absolute top-3 right-3 flex items-center">
+        <div className="absolute top-2 right-2 flex items-center"> {/* Reduced spacing */}
           <motion.div
             variants={clockAnimation}
             animate="animate"
-            className={`flex items-center justify-center rounded-full font-bold px-3 py-1 
-              ${showResult && isCorrect 
+            className={`flex items-center justify-center rounded-full font-bold px-2 py-0.5 text-sm ${/* Smaller timer */
+              showResult && isCorrect 
                 ? 'bg-green-100 text-green-700 border-2 border-green-500' // Green timer for correct
                 : showResult && !isCorrect
                   ? 'bg-red-100 text-red-700 border-2 border-red-500' // Red timer for incorrect
@@ -298,8 +299,8 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
               }
             }
           }
-          className={`text-xl md:text-2xl font-bold text-center mb-4 
-            ${showResult && isCorrect 
+          className={`text-lg md:text-xl font-bold text-center mb-3 ${/* Smaller heading */
+            showResult && isCorrect 
               ? 'text-green-600' // Green text for correct
               : showResult && !isCorrect
                 ? 'text-red-600' // Red text for incorrect
@@ -315,12 +316,12 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
             : (urgencyLevel === 2 ? t('hurry_up') : t('final_challenge'))}
         </motion.h2>
         
-        <p className="text-gray-700 mb-6 text-center">
+        <p className="text-gray-700 mb-4 text-center text-sm"> {/* Smaller text */}
           {t('quiz_instruction')}
         </p>
         
-        <div className={`p-4 rounded-lg mb-6 
-          ${showResult && isCorrect 
+        <div className={`p-3 rounded-lg mb-4 text-sm ${/* Smaller fact box */
+          showResult && isCorrect 
             ? 'bg-green-50 border-l-4 border-green-500' // Green panel for correct
             : showResult && !isCorrect
               ? 'bg-red-50 border-l-4 border-red-500' // Red panel for incorrect
@@ -331,8 +332,8 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
                   : 'bg-blue-50 border-l-4 border-blue-400'
           }`}
         >
-          <p className={`font-bold mb-2 
-            ${showResult && isCorrect 
+          <p className={`font-bold mb-1 ${/* Smaller spacing */
+            showResult && isCorrect 
               ? 'text-green-700' // Green text for correct
               : showResult && !isCorrect
                 ? 'text-red-700' // Red text for incorrect
@@ -342,10 +343,10 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
                     ? 'text-amber-700' 
                     : 'text-blue-700'
             }`}>{t('food_fact_prefix')}</p>
-          <p className="italic">"{quizFood.fact}"</p>
+          <p className="italic text-sm">"{quizFood.fact}"</p> {/* Smaller text */}
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3"> {/* Reduced gap */}
           {options.map((food) => (
             <motion.div
               key={food.id}
@@ -354,10 +355,10 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
               animate={
                 showResult ? {} : {
                   y: urgencyLevel === 2 
-                    ? [0, -3, 0, 3, 0] 
+                    ? [0, -2, 0, 2, 0] 
                     : urgencyLevel === 1 
-                      ? [0, -2, 0, 2, 0] 
-                      : [0, -1, 0, 1, 0],
+                      ? [0, -1, 0, 1, 0] 
+                      : [0, -0.5, 0, 0.5, 0],
                   transition: { 
                     repeat: Infinity, 
                     duration: urgencyLevel === 2 ? 0.5 : urgencyLevel === 1 ? 0.8 : 1.2
@@ -365,7 +366,7 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
                 }
               }
               onClick={() => handleOptionClick(food.id.toString())}
-              className={`cursor-pointer p-3 rounded-lg border-2 transition-all ${
+              className={`cursor-pointer p-2 rounded-lg border-2 transition-all ${/* Reduced padding */
                 showResult
                   ? food.id.toString() === quizFood.id.toString()
                     ? 'border-green-500 bg-green-50'
@@ -379,18 +380,18 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
                       : 'border-blue-300 hover:border-blue-400'
               }`}
             >
-              <div className="aspect-square relative overflow-hidden rounded-md mb-2 p-2">
+              <div className="aspect-square relative overflow-hidden rounded-md mb-1 p-1"> {/* Smaller spacing */}
                 <div className="relative w-full h-full">
                   <Image
                     src={food.imageUrl}
                     alt={food.name}
                     fill
                     className="object-contain"
-                    sizes="(max-width: 768px) 130px, 180px"
+                    sizes="(max-width: 768px) 100px, 140px" /* Smaller image sizes */
                   />
                 </div>
               </div>
-              <p className="text-center font-medium capitalize">{food.name}</p>
+              <p className="text-center font-medium capitalize text-sm">{food.name}</p> {/* Smaller text */}
             </motion.div>
           ))}
         </div>
@@ -401,7 +402,7 @@ export default function QuizPopup({ quizFood, incorrectOptions, onAnswer }: Quiz
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className={`mt-4 p-3 rounded-lg text-center font-medium ${
+              className={`mt-3 p-2 rounded-lg text-center font-medium text-sm ${/* Smaller result message */
                 isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
               }`}
             >

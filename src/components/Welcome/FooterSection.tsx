@@ -84,6 +84,7 @@ export default function FooterSection() {
           <ul className="space-y-1.5">
             {[
               { name: 'Home', path: '/#hero' },
+              { name: 'Product Video', path: '/#product-video' },
               { name: 'Features', path: '/#features' },
               { name: 'Benefits', path: '/#benefits' },
               { name: 'Use Cases', path: '/#use-cases' },
