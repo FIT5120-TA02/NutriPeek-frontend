@@ -7,5 +7,6 @@ export { default as ApplyCasesSection } from './ApplyCasesSection';
 export { default as ToolsIntegrationSection } from './ToolsIntegrationSection';
 export { default as FAQSection } from './FAQSection';
 export { default as FooterSection } from './FooterSection';
+export { default as ProductVideoSection } from './ProductVideoSection';
 export { default as SectionContainer } from './SectionContainer';
 export { default as SectionIndicator } from './SectionIndicator';

@@ -6,6 +6,7 @@ import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import {
   HeroSection,
   FeatureSection,
+  ProductVideoSection,
   PlateBuilderSection,
   MatchAndLearnSection,
   BenefitsSection,
@@ -51,6 +52,7 @@ export default function WelcomePage() {
   // Section IDs for navigation
   const sectionIds = [
     'hero',
+    'product-video',
     'features',
     'plate-builder',
     'match-and-learn',
@@ -162,6 +164,9 @@ export default function WelcomePage() {
         {/* Using the new components with IDs for scrolling */}
         <div id="hero" className="snap-start snap-always w-full">
           <HeroSection />
+        </div>
+        <div id="product-video" className="snap-start snap-always w-full">
+          <ProductVideoSection />
         </div>
         <div id="features" className="snap-start snap-always w-full">
           <FeatureSection />
