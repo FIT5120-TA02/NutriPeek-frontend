@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
@@ -50,9 +50,6 @@ export default function NutriScanPage() {
 
   const [mealImages, setMealImages] = useState<MealImage[]>(initialMealImages);
   const [showResults, setShowResults] = useState(false);
-  const [processingMealIndex, setProcessingMealIndex] = useState<number | null>(
-    null
-  );
 
   const { execute: detectFoodItems, isLoading: isDetecting } =
     useDetectFoodItems();
@@ -409,10 +406,14 @@ export default function NutriScanPage() {
             updated[mealIndex].detectedItems.length > 0 &&
             !updated[mealIndex].shouldReprocess;
 
+          // Preserve the image preview URL when possible
+          const imagePreviewUrl =
+            meal.imagePreviewUrl || updated[mealIndex].imagePreviewUrl;
+
           updated[mealIndex] = {
             ...updated[mealIndex],
             file: meal.file,
-            imagePreviewUrl: meal.imagePreviewUrl,
+            imagePreviewUrl: imagePreviewUrl, // Use the preserved URL
             // Only preserve detected items if they exist and we should keep them
             ...(keepExistingItems
               ? {
@@ -486,12 +487,17 @@ export default function NutriScanPage() {
             ? "Lunch"
             : "Dinner";
 
+      // Preserve the image preview URL if it exists
+      const existingPreviewUrl = updatedMeals[mealIndex].imagePreviewUrl;
+
       // Update processing state in our copy first
       updatedMeals[mealIndex] = {
         ...updatedMeals[mealIndex],
         processingStep: "detecting",
         isProcessing: true,
         shouldReprocess: false, // Reset the reprocessing flag
+        // Ensure we keep the image preview URL
+        imagePreviewUrl: existingPreviewUrl,
       };
 
       // Update the state only once per meal
@@ -511,6 +517,8 @@ export default function NutriScanPage() {
           updatedMeals[mealIndex] = {
             ...updatedMeals[mealIndex],
             processingStep: "mapping",
+            // Keep the image preview URL
+            imagePreviewUrl: existingPreviewUrl,
           };
           setMealImages(updatedMeals.map((m) => ({ ...m })));
 
@@ -531,6 +539,8 @@ export default function NutriScanPage() {
               processingStep: "complete",
               isProcessing: false,
               shouldReprocess: false, // Ensure the flag is reset
+              // Keep the image preview URL
+              imagePreviewUrl: existingPreviewUrl,
             };
 
             // Flag success before updating state or showing toast
@@ -555,6 +565,8 @@ export default function NutriScanPage() {
               processingStep: "complete",
               isProcessing: false,
               shouldReprocess: false, // Ensure the flag is reset
+              // Keep the image preview URL
+              imagePreviewUrl: existingPreviewUrl,
             };
 
             // Flag success before updating state
@@ -579,6 +591,8 @@ export default function NutriScanPage() {
             processingStep: "idle",
             isProcessing: false,
             shouldReprocess: false, // Ensure the flag is reset
+            // Keep the image preview URL
+            imagePreviewUrl: existingPreviewUrl,
           };
 
           // Updated state with all changes
@@ -596,6 +610,8 @@ export default function NutriScanPage() {
           processingStep: "idle",
           isProcessing: false,
           shouldReprocess: false, // Ensure the flag is reset
+          // Keep the image preview URL
+          imagePreviewUrl: existingPreviewUrl,
         };
 
         // Updated state with all changes
@@ -645,6 +661,10 @@ export default function NutriScanPage() {
       );
 
       if (hasProcessedMeals) {
+        // Close the QR session before showing results if we're on desktop
+        if (!isMobile && sessionId) {
+          handleCloseQRSession();
+        }
         setShowResults(true);
       } else {
         toast.error(
@@ -661,6 +681,11 @@ export default function NutriScanPage() {
     processMealsSequentially(mealsToScan, updatedMeals)
       .then((success) => {
         if (success) {
+          // Close the QR session before showing results if we're on desktop
+          if (!isMobile && sessionId) {
+            handleCloseQRSession();
+          }
+
           // Delay showing results slightly to ensure meal data updates have been applied
           setTimeout(() => {
             setShowResults(true);
@@ -679,20 +704,29 @@ export default function NutriScanPage() {
 
     const regenerate = async () => {
       try {
-        // First reset the current QR flow
+        // First close the current session if one exists
+        if (sessionId) {
+          await closeSession();
+        }
+
+        // Then reset the QR flow state
         resetQrFlow();
+
         // Reset notification tracking for new session
         notifiedFilesRef.current = {};
+
         // Then generate a new one
         await initializeQRCode(300);
+
         toast.success("QR code regenerated");
       } catch (error) {
         toast.error("Failed to regenerate QR Code");
+        console.error("QR regeneration error:", error);
       }
     };
 
     regenerate();
-  }, [initializeQRCode, resetQrFlow, isQrProcessing]);
+  }, [initializeQRCode, resetQrFlow, isQrProcessing, sessionId, closeSession]);
 
   // Function to handle meal type changes
   const handleMealTypeChange = (index: number, newType: MealType) => {
@@ -777,6 +811,12 @@ export default function NutriScanPage() {
 
   // Toggle between scanning and results view
   const toggleView = () => {
+    // If going from scanning to results, close the session
+    if (!showResults && !isMobile && sessionId) {
+      handleCloseQRSession();
+    }
+
+    // Toggle the view state
     setShowResults((prev) => !prev);
 
     // If going back to scanning view, regenerate QR code on desktop

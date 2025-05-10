@@ -140,9 +140,7 @@ export default function ScanningSection({
             </h2>
 
             <div className="flex flex-col items-center">
-              <div
-                className={`mb-4 p-4 rounded-lg ${uploadStatus === "uploaded" ? "bg-blue-50" : uploadStatus === "processed" ? "bg-green-50" : "bg-gray-50"} w-full`}
-              >
+              <div className={`mb-4 p-4 rounded-lg bg-gray-50 w-full`}>
                 {isQrProcessing && !qrData && (
                   <div className="flex flex-col items-center justify-center py-8">
                     <p className="text-gray-500 text-center mb-2">

@@ -168,18 +168,6 @@ export function useWebSocketSession() {
   // Store blob URLs to prevent recreating them
   const blobUrlsRef = useRef<Record<string, string>>({});
 
-  // Clean up blob URLs
-  const cleanupBlobUrls = useCallback(() => {
-    // Revoke all blob URLs to prevent memory leaks
-    Object.values(blobUrlsRef.current).forEach((url) => {
-      if (url) {
-        URL.revokeObjectURL(url);
-      }
-    });
-    // Reset the ref
-    blobUrlsRef.current = {};
-  }, []);
-
   // Stop polling for session status - moved up to fix reference error
   const stopPolling = useCallback(() => {
     if (pollingIntervalRef.current) {
@@ -360,6 +348,15 @@ export function useWebSocketSession() {
       return;
     }
 
+    // Reset error message
+    setErrorMessage(null);
+
+    // Close any existing WebSocket connection first
+    if (wsConnectionRef.current) {
+      wsConnectionRef.current.close();
+      wsConnectionRef.current = null;
+    }
+
     setIsBlurred(false); // Unblur the QR code
     setIsLoading(true);
 
@@ -369,6 +366,9 @@ export function useWebSocketSession() {
       lunch: null,
       dinner: null,
     });
+
+    // Reset upload status to pending
+    setUploadStatus("pending");
 
     // Establish WebSocket connection to activate the session
     const wsConnection = nutripeekApi.connectToSessionWebSocket(
@@ -400,8 +400,6 @@ export function useWebSocketSession() {
           ) {
             setIsBlurred(true);
             stopPolling();
-            // Clean up blob URLs
-            cleanupBlobUrls();
           }
         }
 
@@ -516,14 +514,25 @@ export function useWebSocketSession() {
     try {
       setIsLoading(true);
       await nutripeekApi.closeSession(sessionId);
+
+      // Update session status
       setSessionStatus("closed");
       setIsBlurred(true);
       stopPolling();
+
+      // Reset upload status to pending for new uploads
+      setUploadStatus("pending");
 
       // Clear the session expiry timer
       if (sessionTimerRef.current) {
         clearTimeout(sessionTimerRef.current);
         sessionTimerRef.current = null;
+      }
+
+      // Close WebSocket connection if it exists
+      if (wsConnectionRef.current) {
+        wsConnectionRef.current.close();
+        wsConnectionRef.current = null;
       }
 
       setIsLoading(false);
@@ -537,6 +546,7 @@ export function useWebSocketSession() {
 
   // Reset the session state
   const resetSession = useCallback(() => {
+    // Stop polling first
     stopPolling();
 
     // Clear the session expiry timer
@@ -551,9 +561,7 @@ export function useWebSocketSession() {
       wsConnectionRef.current = null;
     }
 
-    // Clean up blob URLs
-    cleanupBlobUrls();
-
+    // Reset all session-related state variables
     setSessionId(null);
     setSessionData(null);
     setSessionStatus(null);
@@ -571,7 +579,7 @@ export function useWebSocketSession() {
       lunch: null,
       dinner: null,
     });
-  }, [stopPolling, cleanupBlobUrls]);
+  }, [stopPolling]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -590,10 +598,13 @@ export function useWebSocketSession() {
         wsConnectionRef.current = null;
       }
 
-      // Clean up blob URLs on unmount
-      cleanupBlobUrls();
+      // NOW we can safely clean up blob URLs when the component unmounts
+      Object.values(blobUrlsRef.current).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      blobUrlsRef.current = {};
     };
-  }, [cleanupBlobUrls]);
+  }, []);
 
   // Convert uploaded files to meal images for direct display
   const getUploadedMealImages = useCallback((): MealImage[] => {
@@ -710,7 +721,6 @@ export function useWebSocketSession() {
     stopPolling,
     extendSession,
     closeSession,
-    resetSession,
     reset: resetSession,
   };
 }
