@@ -316,7 +316,7 @@ export default function JoinPage() {
   }, [connectionStatus, router]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-green-50 p-6">
+    <div className="w-full max-w-6xl min-h-screen px-4 pt-20 md:pt-24 pb-16 flex flex-col bg-gradient-to-b from-blue-50 to-green-50 p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">NutriPeek Upload</h1>
         <p className="text-gray-600 mt-2">
