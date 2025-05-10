@@ -8,11 +8,9 @@
 export interface FoodItemDisplay {
   id?: string;
   name: string;
-  confidence: number;
-  quantity?: number; // Number of this item (for grouping)
-  nutrients?: {
-    [key: string]: number;
-  };
+  confidence?: number;
+  quantity?: number;
+  nutrients: Record<string, number>;
 }
 
 /**
@@ -28,19 +26,20 @@ export interface EditableFoodItem extends FoodItemDisplay {
  * QR code data returned from the API
  */
 export interface QRCodeData {
-  upload_url: string;
+  session_id: string;
   qrcode_base64: string;
-  expires_in_seconds?: number;
+  expires_in_seconds: number;
+  join_url: string;
 }
 
-export type MealType = 'breakfast' | 'lunch' | 'dinner';
+export type MealType = "breakfast" | "lunch" | "dinner";
 
 export interface MealImage {
   file: File | null;
   mealType: MealType;
   imagePreviewUrl: string | null;
-  detectedItems?: FoodItemDisplay[];
-  processingStep: 'idle' | 'detecting' | 'mapping' | 'complete';
+  processingStep: "idle" | "detecting" | "mapping" | "complete";
   isProcessing: boolean;
-  shouldReprocess?: boolean; // Flag to indicate if a meal should be processed again even if it has detectedItems
+  detectedItems?: FoodItemDisplay[];
+  shouldReprocess?: boolean;
 }
