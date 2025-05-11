@@ -350,6 +350,10 @@ export default function ScanningSection({
                   You only need to upload one meal photo to start analysis. Add
                   more meals for a more complete picture of your nutrition.
                 </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Supports all common image formats including JPEG, PNG, and
+                  HEIC/HEIF (iPhone photos).
+                </p>
               </div>
             </div>
           </div>

@@ -48,18 +48,173 @@ export class NutriPeekApi {
   }
 
   /**
-   * Detect food items in an image
-   * @param imageFile - Image file to analyze
-   * @returns Detected food items with bounding boxes
+   * Check if an image file needs conversion before processing
+   * @param file - The file to check
+   * @returns True if the file needs conversion
+   */
+  isImageConversionNeeded(file: File): boolean {
+    // Direct HEIC/HEIF detection
+    if (
+      file.type.toLowerCase().includes("heic") ||
+      file.type.toLowerCase().includes("heif")
+    ) {
+      console.log(
+        `Image conversion needed for ${file.name}: HEIC/HEIF format detected`
+      );
+      return true;
+    }
+
+    // File has no type or unrecognized type
+    if (!file.type || file.type === "application/octet-stream") {
+      // Check file extension for HEIC/HEIF
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      if (extension === "heic" || extension === "heif") {
+        console.log(
+          `Image conversion needed for ${file.name}: HEIC/HEIF extension detected`
+        );
+        return true;
+      }
+    }
+
+    // Safari/iOS sometimes provides incorrect mime type for HEIC
+    if (
+      file.type === "image/jpeg" &&
+      file.name.toLowerCase().endsWith(".heic")
+    ) {
+      console.log(
+        `Image conversion needed for ${file.name}: HEIC file with incorrect mime type`
+      );
+      return true;
+    }
+
+    // Large PNG or WebP files could benefit from conversion to JPEG
+    if (
+      (file.type === "image/png" || file.type === "image/webp") &&
+      file.size > 2 * 1024 * 1024 // > 2MB
+    ) {
+      console.log(
+        `Image conversion suggested for ${file.name}: Large ${file.type} file`
+      );
+      return true;
+    }
+
+    // No conversion needed
+    return false;
+  }
+
+  /**
+   * Convert an image file to a standard format using the backend service
+   * @param imageFile - The file to convert
+   * @param targetFormat - Format to convert to (default: JPEG)
+   * @param quality - Image quality for JPEG (default: 90)
+   * @returns Converted file information
+   */
+  async convertImage(
+    imageFile: File,
+    targetFormat: string = "JPEG",
+    quality: number = 90
+  ): Promise<{
+    file: File;
+    url: string;
+    originalType: string;
+    contentType: string;
+  }> {
+    try {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+      formData.append("target_format", targetFormat);
+      formData.append("quality", quality.toString());
+
+      // Use the uploadAndDownloadBlob method to get the converted file
+      const blob = await apiClient.uploadAndDownloadBlob(
+        "/api/v1/file-conversion/convert-download",
+        formData
+      );
+
+      // Prepare filename and determine content type
+      let fileName = imageFile.name;
+
+      // Check if the filename extension should be updated
+      if (
+        targetFormat.toLowerCase() !==
+        imageFile.name.split(".").pop()?.toLowerCase()
+      ) {
+        // Update filename extension to match target format
+        const baseName = fileName.substring(0, fileName.lastIndexOf("."));
+        fileName = `${baseName}.${targetFormat.toLowerCase()}`;
+      }
+
+      // Create a new File object with the converted blob
+      const convertedFile = new File([blob], fileName, {
+        type: blob.type || `image/${targetFormat.toLowerCase()}`,
+      });
+
+      // Create a URL for the blob
+      const url = URL.createObjectURL(convertedFile);
+
+      return {
+        file: convertedFile,
+        url,
+        originalType: imageFile.type,
+        contentType: blob.type || `image/${targetFormat.toLowerCase()}`,
+      };
+    } catch (error) {
+      console.error("Error converting image:", error);
+      // Create URL for original file if conversion fails
+      const url = URL.createObjectURL(imageFile);
+      return {
+        file: imageFile,
+        url,
+        originalType: imageFile.type,
+        contentType: imageFile.type,
+      };
+    }
+  }
+
+  /**
+   * Detect food items in an image, handling conversion if needed
+   * @param imageFile - The image file to process
+   * @returns Detection results
    */
   async detectFoodItems(imageFile: File): Promise<FoodDetectionResponse> {
-    const formData = new FormData();
-    formData.append("image", imageFile);
+    // Check if we need to convert the image first
+    if (this.isImageConversionNeeded(imageFile)) {
+      try {
+        // Convert the image to JPEG
+        const { file: convertedFile } = await this.convertImage(
+          imageFile,
+          "JPEG"
+        );
 
-    return apiClient.uploadFile<FoodDetectionResponse>(
-      "/api/v1/food-detection/detect",
-      formData
-    );
+        // Use the converted file for detection
+        const formData = new FormData();
+        formData.append("image", convertedFile);
+
+        return apiClient.uploadFile<FoodDetectionResponse>(
+          "/api/v1/food-detection/detect",
+          formData
+        );
+      } catch (error) {
+        console.error("Error converting or detecting image:", error);
+        // Fall back to trying with the original file
+        const formData = new FormData();
+        formData.append("image", imageFile);
+
+        return apiClient.uploadFile<FoodDetectionResponse>(
+          "/api/v1/food-detection/detect",
+          formData
+        );
+      }
+    } else {
+      // No conversion needed, proceed as normal
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      return apiClient.uploadFile<FoodDetectionResponse>(
+        "/api/v1/food-detection/detect",
+        formData
+      );
+    }
   }
 
   /**
@@ -99,36 +254,9 @@ export class NutriPeekApi {
    * @returns Session status information
    */
   async getSessionStatus(sessionId: string): Promise<SessionStatusResponse> {
-    try {
-      // Try direct fetch for debugging in development
-      if (process.env.NODE_ENV === "development") {
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const url = `${apiUrl}/api/v1/session/status/${sessionId}`;
-
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Get session status failed: ${errorText}`);
-          throw new Error(
-            `Failed to get session status: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const data = await response.json();
-        return data as SessionStatusResponse;
-      }
-
-      // Use API client for production
-      const response = await apiClient.get<SessionStatusResponse>(
-        `/api/v1/session/status/${sessionId}`
-      );
-      return response;
-    } catch (error) {
-      console.error("Error getting session status:", error);
-      throw error;
-    }
+    return apiClient.get<SessionStatusResponse>(
+      `/api/v1/session/status/${sessionId}`
+    );
   }
 
   /**
@@ -137,17 +265,10 @@ export class NutriPeekApi {
    * @returns Join response with session status
    */
   async joinSession(sessionId: string): Promise<JoinSessionResponse> {
-    const formData = new FormData();
-    try {
-      const response = await apiClient.post<JoinSessionResponse>(
-        `/api/v1/session/join?session_id=${sessionId}`,
-        formData
-      );
-      return response;
-    } catch (error) {
-      console.error("Error joining session:", error);
-      throw error;
-    }
+    return apiClient.post<JoinSessionResponse>(
+      `/api/v1/session/join?session_id=${sessionId}`,
+      {}
+    );
   }
 
   /**
@@ -166,98 +287,34 @@ export class NutriPeekApi {
     onClose?: () => void,
     onError?: (error: Event) => void
   ): WebSocket | null {
-    if (typeof window === "undefined") {
-      return null;
-    }
+    // Use the new apiClient WebSocket connection method
+    return apiClient.createWebSocketConnection(
+      `/api/v1/session/ws/${sessionId}`,
+      {
+        onOpen,
+        onMessage,
+        onClose,
+        onError,
+        // Development URL resolver for WebSocket connections
+        developmentUrlResolver: async (endpoint: string) => {
+          try {
+            if (process.env.NODE_ENV === "development") {
+              const appUrl =
+                process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+              const wsInfoEndpoint = `${appUrl}/api/v1/ws/${sessionId}`;
 
-    try {
-      // Get the appropriate WebSocket URL
-      let wsUrl = "";
-
-      // In development, we'll use our Next.js API route to get the WebSocket URL
-      // In production, we would configure a direct connection to the WebSocket server
-      if (process.env.NODE_ENV === "development") {
-        // For development, use our API route to get the WebSocket URL
-        // This allows us to handle different backend configurations
-        const appUrl =
-          process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-        wsUrl = `${appUrl}/api/v1/ws/${sessionId}`;
-      } else {
-        // For production, construct the WebSocket URL directly
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || window.location.origin;
-        const wsProtocol =
-          window.location.protocol === "https:" ? "wss:" : "ws:";
-
-        // Convert http(s):// to ws(s)://
-        const baseUrl = apiUrl.replace(/^http(s?):\/\//, "");
-        wsUrl = `${wsProtocol}//${baseUrl}/api/v1/ws/${sessionId}`;
-      }
-
-      // In development, we need to fetch the actual WebSocket URL from our API route
-      if (process.env.NODE_ENV === "development") {
-        // First make a GET request to our API route to get the actual WebSocket URL
-        fetch(wsUrl)
-          .then((response) => response.json())
-          .then((data) => {
-            // Now connect to the actual WebSocket URL
-            if (data.wsUrl) {
-              // Try to create a WebSocket connection
-              try {
-                this.createWebSocketConnection(
-                  data.wsUrl,
-                  onOpen,
-                  onMessage,
-                  onClose,
-                  onError
-                );
-              } catch (wsError) {
-                console.warn(
-                  "WebSocket connection failed, falling back to join API for activation",
-                  wsError
-                );
-                // Fall back to activating via the join API
-                this.activateViaJoinAPI(sessionId, onOpen, onError);
-              }
-            } else {
-              console.error("No WebSocket URL provided by API");
-              // Try to activate via the join API as a fallback
-              this.activateViaJoinAPI(sessionId, onOpen, onError);
+              const response = await fetch(wsInfoEndpoint);
+              const data = await response.json();
+              return data.wsUrl || "";
             }
-          })
-          .catch((error) => {
-            console.error("Error fetching WebSocket URL:", error);
-            // Try to activate via the join API as a fallback
-            this.activateViaJoinAPI(sessionId, onOpen, onError);
-          });
-
-        // Return null for now, the actual connection will be created in the Promise
-        return null;
-      } else {
-        // For production, try to create the WebSocket connection directly
-        try {
-          return this.createWebSocketConnection(
-            wsUrl,
-            onOpen,
-            onMessage,
-            onClose,
-            onError
-          );
-        } catch (wsError) {
-          console.warn(
-            "WebSocket connection failed, falling back to join API for activation",
-            wsError
-          );
-          // Fall back to activating via the join API
-          this.activateViaJoinAPI(sessionId, onOpen, onError);
-          return null;
-        }
+            return endpoint;
+          } catch (error) {
+            console.error("Error resolving WebSocket URL:", error);
+            throw error;
+          }
+        },
       }
-    } catch (error) {
-      console.error("Error establishing WebSocket connection:", error);
-      if (onError) onError(error as Event);
-      return null;
-    }
+    );
   }
 
   /**
@@ -310,47 +367,6 @@ export class NutriPeekApi {
   }
 
   /**
-   * Create a WebSocket connection with the provided URL
-   * @private
-   */
-  private createWebSocketConnection(
-    wsUrl: string,
-    onOpen?: () => void,
-    onMessage?: (data: any) => void,
-    onClose?: () => void,
-    onError?: (error: Event) => void
-  ): WebSocket {
-    // Create WebSocket connection
-    const ws = new WebSocket(wsUrl);
-
-    // Setup event handlers
-    ws.onopen = () => {
-      if (onOpen) onOpen();
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (onMessage) onMessage(data);
-      } catch (e) {
-        console.error("Error parsing WebSocket message:", e);
-        if (onMessage) onMessage(event.data);
-      }
-    };
-
-    ws.onclose = () => {
-      if (onClose) onClose();
-    };
-
-    ws.onerror = (error) => {
-      console.error(`WebSocket error:`, error);
-      if (onError) onError(error);
-    };
-
-    return ws;
-  }
-
-  /**
    * Helper function to check if a WebSocket message is a session status update
    * @param data - Message data from WebSocket
    * @returns Whether the message is a session status update and the status
@@ -385,52 +401,33 @@ export class NutriPeekApi {
     file: File,
     mealType?: MealType
   ): Promise<FileUploadResponse> {
-    // Create new FormData object
-    const formData = new FormData();
+    // Check if we need to convert the image first
+    let fileToUpload = file;
 
-    try {
-      // Append the file with specific name to make it more explicit
-      formData.append("file", file, file.name);
-
-      if (mealType) {
-        formData.append("meal_type", mealType);
+    if (this.isImageConversionNeeded(file)) {
+      try {
+        // Convert HEIC/HEIF files to JPEG
+        const { file: convertedFile } = await this.convertImage(file, "JPEG");
+        fileToUpload = convertedFile;
+      } catch (error) {
+        console.error("Error converting image for upload:", error);
+        // Continue with original file if conversion fails
       }
-
-      // Try direct fetch for more control (fallback)
-      if (process.env.NODE_ENV === "development") {
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const url = `${apiUrl}/api/v1/session/upload/${sessionId}`;
-
-        const response = await fetch(url, {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(
-            `Upload failed with status ${response.status}: ${errorText}`
-          );
-          throw new Error(
-            `Upload failed: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const data = await response.json();
-        return data as FileUploadResponse;
-      }
-
-      // Use the API client for production
-      const response = await apiClient.uploadFile<FileUploadResponse>(
-        `/api/v1/session/upload/${sessionId}`,
-        formData
-      );
-      return response;
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      throw error;
     }
+
+    // Create FormData for the upload
+    const formData = new FormData();
+    formData.append("file", fileToUpload, fileToUpload.name);
+
+    if (mealType) {
+      formData.append("meal_type", mealType);
+    }
+
+    // Use apiClient to upload the file
+    return apiClient.uploadFile<FileUploadResponse>(
+      `/api/v1/session/upload/${sessionId}`,
+      formData
+    );
   }
 
   /**
@@ -451,30 +448,9 @@ export class NutriPeekApi {
    * @returns File content as a Blob
    */
   async downloadSessionFile(sessionId: string, fileId: string): Promise<Blob> {
-    // Use the Direct API URL - Note: API must be properly configured for CORS
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    // Fixed URL path to match backend router configuration
-    // The router has prefix="/session", so we need to use just "/api/v1/session/file/..." not "/api/v1/session/session/file/..."
-    const url = `${apiUrl}/api/v1/session/file/${sessionId}/${fileId}`;
-
-    try {
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `File download failed: ${response.status} ${response.statusText} - ${errorText}`
-        );
-        throw new Error(`Failed to download file: ${response.statusText}`);
-      }
-
-      const blob = await response.blob();
-      return blob;
-    } catch (error) {
-      console.error("Error downloading file:", error);
-      throw error;
-    }
+    return apiClient.downloadFile(
+      `/api/v1/session/file/${sessionId}/${fileId}`
+    );
   }
 
   /**

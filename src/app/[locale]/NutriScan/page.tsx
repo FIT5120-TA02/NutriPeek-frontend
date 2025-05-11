@@ -15,6 +15,7 @@ import {
 import useDeviceDetection from "../../../hooks/useDeviceDetection";
 import storageService from "../../../libs/StorageService";
 import { STORAGE_KEYS } from "../../../types/storage";
+import { processImageFile } from "../../../utils/imageConverter";
 
 export default function NutriScanPage() {
   const { isMobile } = useDeviceDetection();
@@ -326,41 +327,58 @@ export default function NutriScanPage() {
     }
   }, [uploadStatus, errorMessage, uploadedMealImages]);
 
-  const handleFileChange = (
+  const handleFileChange = async (
     mealType: MealType,
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0] ?? null;
     if (!file) return;
 
-    // Find the index of the meal with this type
-    const mealIndex = mealImages.findIndex(
-      (meal) => meal.mealType === mealType
-    );
-    if (mealIndex === -1) return;
+    // Show a loading toast
+    const toastId = `loading-${mealType}`;
+    toast.loading(`Processing ${mealType} image...`, { id: toastId });
 
-    // Check if this is a new file or an update to an existing one
-    const isReplacingExistingImage = mealImages[mealIndex].file !== null;
+    try {
+      // Process the image file (convert HEIC/HEIF if needed)
+      const { file: processedFile, url: imagePreviewUrl } =
+        await processImageFile(file);
 
-    // Update the meal image
-    setMealImages((prev) => {
-      const updated = [...prev];
-      updated[mealIndex] = {
-        ...updated[mealIndex],
-        file,
-        imagePreviewUrl: URL.createObjectURL(file),
-        // Clear any detected items if replacing existing image
-        ...(isReplacingExistingImage && {
-          detectedItems: undefined,
-          shouldReprocess: true,
-        }),
-      };
-      return updated;
-    });
+      // Find the index of the meal with this type
+      const mealIndex = mealImages.findIndex(
+        (meal) => meal.mealType === mealType
+      );
+      if (mealIndex === -1) {
+        toast.dismiss(toastId);
+        return;
+      }
 
-    toast.success(
-      `${mealType === "breakfast" ? "Breakfast" : mealType === "lunch" ? "Lunch" : "Dinner"} image selected!`
-    );
+      // Check if this is a new file or an update to an existing one
+      const isReplacingExistingImage = mealImages[mealIndex].file !== null;
+
+      // Update the meal image
+      setMealImages((prev) => {
+        const updated = [...prev];
+        updated[mealIndex] = {
+          ...updated[mealIndex],
+          file: processedFile,
+          imagePreviewUrl,
+          // Clear any detected items if replacing existing image
+          ...(isReplacingExistingImage && {
+            detectedItems: undefined,
+            shouldReprocess: true,
+          }),
+        };
+        return updated;
+      });
+
+      toast.success(
+        `${mealType === "breakfast" ? "Breakfast" : mealType === "lunch" ? "Lunch" : "Dinner"} image selected!`,
+        { id: toastId }
+      );
+    } catch (error) {
+      console.error("Error processing image:", error);
+      toast.error(`Error processing ${mealType} image`, { id: toastId });
+    }
   };
 
   const handleCameraCapture = (mealType: MealType) => {
