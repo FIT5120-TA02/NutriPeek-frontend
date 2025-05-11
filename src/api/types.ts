@@ -66,22 +66,54 @@ export interface FoodMappingResponse {
   unmapped_items?: string[];
 }
 
-// QR Code
-export interface GenerateUploadQRResponse {
-  upload_url: string;
+// WebSocket Session
+export type SessionStatus = 'created' | 'active' | 'expired' | 'closed';
+export type FileTransferStatus = 'pending' | 'transferring' | 'completed' | 'failed';
+export type MealType = 'breakfast' | 'lunch' | 'dinner';
+
+export interface CreateSessionResponse {
+  session_id: string;
   qrcode_base64: string;
-  expires_in_seconds?: number;
+  expires_in_seconds: number;
+  join_url: string;
 }
 
-export interface UploadImageResponse {
-  message: string;
-  shortcode?: string | null;
-}
-
-export interface FileStatusResponse {
-  shortcode: string;
-  status: string;
+export interface SessionStatusResponse {
+  session_id: string;
+  status: SessionStatus;
+  connected_clients: number;
+  created_at: string;
+  expires_at: string;
   error?: string | null;
+}
+
+export interface JoinSessionResponse {
+  session_id: string;
+  status: SessionStatus;
+  message: string;
+}
+
+export interface FileInfo {
+  file_id: string;
+  filename: string;
+  size: number;
+  content_type: string;
+  status: FileTransferStatus;
+  uploaded_at: string;
+  meal_type?: MealType | null;
+}
+
+export interface FileUploadResponse {
+  file_id: string;
+  session_id: string;
+  status: FileTransferStatus;
+  message: string;
+  meal_type?: MealType | null;
+}
+
+export interface FilesListResponse {
+  session_id: string;
+  files: FileInfo[];
 }
 
 // Food Search
@@ -249,4 +281,9 @@ export interface ValidationError {
 
 export interface HTTPValidationError {
   detail: ValidationError[];
+}
+
+export interface processedFiles {
+  file: FileInfo; 
+  detectionResult: FoodDetectionResponse;
 }

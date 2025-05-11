@@ -1,12 +1,14 @@
-import { apiClient } from './apiClient';
+import { apiClient } from "./apiClient";
 import {
   HealthCheckResponse,
   FoodDetectionResponse,
   FoodMappingRequest,
   FoodMappingResponse,
-  GenerateUploadQRResponse,
-  UploadImageResponse,
-  FileStatusResponse,
+  CreateSessionResponse,
+  SessionStatusResponse,
+  JoinSessionResponse,
+  FileUploadResponse,
+  FilesListResponse,
   FoodAutocompleteResponse,
   FoodNutrientResponse,
   NutrientGapRequest,
@@ -20,7 +22,9 @@ import {
   ActivityResult,
   ChildEnergyRequirementsResponse,
   ActivityEntry,
-} from './types';
+  MealType,
+  SessionStatus,
+} from "./types";
 
 /**
  * NutriPeek API service
@@ -32,7 +36,7 @@ export class NutriPeekApi {
    * @returns Health check information
    */
   async checkHealth(): Promise<HealthCheckResponse> {
-    return apiClient.get<HealthCheckResponse>('/api/v1/health/');
+    return apiClient.get<HealthCheckResponse>("/api/v1/health/");
   }
 
   /**
@@ -40,19 +44,177 @@ export class NutriPeekApi {
    * @returns Simple ping response
    */
   async ping(): Promise<Record<string, any>> {
-    return apiClient.get<Record<string, any>>('/api/v1/health/ping');
+    return apiClient.get<Record<string, any>>("/api/v1/health/ping");
   }
 
   /**
-   * Detect food items in an image
-   * @param imageFile - Image file to analyze
-   * @returns Detected food items with bounding boxes
+   * Check if an image file needs conversion before processing
+   * @param file - The file to check
+   * @returns True if the file needs conversion
+   */
+  isImageConversionNeeded(file: File): boolean {
+    // Direct HEIC/HEIF detection
+    if (
+      file.type.toLowerCase().includes("heic") ||
+      file.type.toLowerCase().includes("heif")
+    ) {
+      console.log(
+        `Image conversion needed for ${file.name}: HEIC/HEIF format detected`
+      );
+      return true;
+    }
+
+    // File has no type or unrecognized type
+    if (!file.type || file.type === "application/octet-stream") {
+      // Check file extension for HEIC/HEIF
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      if (extension === "heic" || extension === "heif") {
+        console.log(
+          `Image conversion needed for ${file.name}: HEIC/HEIF extension detected`
+        );
+        return true;
+      }
+    }
+
+    // Safari/iOS sometimes provides incorrect mime type for HEIC
+    if (
+      file.type === "image/jpeg" &&
+      file.name.toLowerCase().endsWith(".heic")
+    ) {
+      console.log(
+        `Image conversion needed for ${file.name}: HEIC file with incorrect mime type`
+      );
+      return true;
+    }
+
+    // Large PNG or WebP files could benefit from conversion to JPEG
+    if (
+      (file.type === "image/png" || file.type === "image/webp") &&
+      file.size > 2 * 1024 * 1024 // > 2MB
+    ) {
+      console.log(
+        `Image conversion suggested for ${file.name}: Large ${file.type} file`
+      );
+      return true;
+    }
+
+    // No conversion needed
+    return false;
+  }
+
+  /**
+   * Convert an image file to a standard format using the backend service
+   * @param imageFile - The file to convert
+   * @param targetFormat - Format to convert to (default: JPEG)
+   * @param quality - Image quality for JPEG (default: 90)
+   * @returns Converted file information
+   */
+  async convertImage(
+    imageFile: File,
+    targetFormat: string = "JPEG",
+    quality: number = 90
+  ): Promise<{
+    file: File;
+    url: string;
+    originalType: string;
+    contentType: string;
+  }> {
+    try {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+      formData.append("target_format", targetFormat);
+      formData.append("quality", quality.toString());
+
+      // Use the uploadAndDownloadBlob method to get the converted file
+      const blob = await apiClient.uploadAndDownloadBlob(
+        "/api/v1/file-conversion/convert-download",
+        formData
+      );
+
+      // Prepare filename and determine content type
+      let fileName = imageFile.name;
+
+      // Check if the filename extension should be updated
+      if (
+        targetFormat.toLowerCase() !==
+        imageFile.name.split(".").pop()?.toLowerCase()
+      ) {
+        // Update filename extension to match target format
+        const baseName = fileName.substring(0, fileName.lastIndexOf("."));
+        fileName = `${baseName}.${targetFormat.toLowerCase()}`;
+      }
+
+      // Create a new File object with the converted blob
+      const convertedFile = new File([blob], fileName, {
+        type: blob.type || `image/${targetFormat.toLowerCase()}`,
+      });
+
+      // Create a URL for the blob
+      const url = URL.createObjectURL(convertedFile);
+
+      return {
+        file: convertedFile,
+        url,
+        originalType: imageFile.type,
+        contentType: blob.type || `image/${targetFormat.toLowerCase()}`,
+      };
+    } catch (error) {
+      console.error("Error converting image:", error);
+      // Create URL for original file if conversion fails
+      const url = URL.createObjectURL(imageFile);
+      return {
+        file: imageFile,
+        url,
+        originalType: imageFile.type,
+        contentType: imageFile.type,
+      };
+    }
+  }
+
+  /**
+   * Detect food items in an image, handling conversion if needed
+   * @param imageFile - The image file to process
+   * @returns Detection results
    */
   async detectFoodItems(imageFile: File): Promise<FoodDetectionResponse> {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    
-    return apiClient.uploadFile<FoodDetectionResponse>('/api/v1/food-detection/detect', formData);
+    // Check if we need to convert the image first
+    if (this.isImageConversionNeeded(imageFile)) {
+      try {
+        // Convert the image to JPEG
+        const { file: convertedFile } = await this.convertImage(
+          imageFile,
+          "JPEG"
+        );
+
+        // Use the converted file for detection
+        const formData = new FormData();
+        formData.append("image", convertedFile);
+
+        return apiClient.uploadFile<FoodDetectionResponse>(
+          "/api/v1/food-detection/detect",
+          formData
+        );
+      } catch (error) {
+        console.error("Error converting or detecting image:", error);
+        // Fall back to trying with the original file
+        const formData = new FormData();
+        formData.append("image", imageFile);
+
+        return apiClient.uploadFile<FoodDetectionResponse>(
+          "/api/v1/food-detection/detect",
+          formData
+        );
+      }
+    } else {
+      // No conversion needed, proceed as normal
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      return apiClient.uploadFile<FoodDetectionResponse>(
+        "/api/v1/food-detection/detect",
+        formData
+      );
+    }
   }
 
   /**
@@ -60,51 +222,263 @@ export class NutriPeekApi {
    * @param request - Food mapping request
    * @returns Mapped food items with nutrient information
    */
-  async mapFoodToNutrients(request: FoodMappingRequest): Promise<FoodMappingResponse> {
-    return apiClient.post<FoodMappingResponse>('/api/v1/food-detection/map-nutrients', request);
+  async mapFoodToNutrients(
+    request: FoodMappingRequest
+  ): Promise<FoodMappingResponse> {
+    return apiClient.post<FoodMappingResponse>(
+      "/api/v1/food-detection/map-nutrients",
+      request
+    );
   }
 
   /**
-   * Generate a QR code for image upload
-   * @param expirySeconds - Time in seconds before the upload link expires (60-3600 seconds)
-   * @returns QR code and upload URL information
+   * Create a new WebSocket session
+   * @param expirySeconds - Time in seconds before the session expires (60-3600 seconds)
+   * @returns Session ID, QR code and join URL information
    */
-  async generateUploadQR(expirySeconds: number = 300): Promise<GenerateUploadQRResponse> {
+  async createSession(
+    expirySeconds: number = 300
+  ): Promise<CreateSessionResponse> {
     const formData = new FormData();
-    formData.append('expiry_seconds', expirySeconds.toString());
-    
-    return apiClient.uploadFile<GenerateUploadQRResponse>('/api/v1/qrcode/generate', formData);
+    formData.append("expiry_seconds", expirySeconds.toString());
+
+    return apiClient.uploadFile<CreateSessionResponse>(
+      "/api/v1/session/create",
+      formData
+    );
   }
 
   /**
-   * Upload an image using a shortcode
-   * @param shortcode - Unique identifier for the upload
-   * @param imageFile - Image file to upload
+   * Get the status of a session
+   * @param sessionId - Unique identifier for the session
+   * @returns Session status information
+   */
+  async getSessionStatus(sessionId: string): Promise<SessionStatusResponse> {
+    return apiClient.get<SessionStatusResponse>(
+      `/api/v1/session/status/${sessionId}`
+    );
+  }
+
+  /**
+   * Join a session
+   * @param sessionId - Unique identifier for the session
+   * @returns Join response with session status
+   */
+  async joinSession(sessionId: string): Promise<JoinSessionResponse> {
+    return apiClient.post<JoinSessionResponse>(
+      `/api/v1/session/join?session_id=${sessionId}`,
+      {}
+    );
+  }
+
+  /**
+   * Connect to the session via WebSocket to activate it
+   * @param sessionId - Unique identifier for the session
+   * @param onOpen - Callback when connection is established
+   * @param onMessage - Callback when message is received
+   * @param onClose - Callback when connection is closed
+   * @param onError - Callback when error occurs
+   * @returns WebSocket instance
+   */
+  connectToSessionWebSocket(
+    sessionId: string,
+    onOpen?: () => void,
+    onMessage?: (data: any) => void,
+    onClose?: () => void,
+    onError?: (error: Event) => void
+  ): WebSocket | null {
+    // Use the new apiClient WebSocket connection method
+    return apiClient.createWebSocketConnection(
+      `/api/v1/session/ws/${sessionId}`,
+      {
+        onOpen,
+        onMessage,
+        onClose,
+        onError,
+        // Development URL resolver for WebSocket connections
+        developmentUrlResolver: async (endpoint: string) => {
+          try {
+            if (process.env.NODE_ENV === "development") {
+              const appUrl =
+                process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+              const wsInfoEndpoint = `${appUrl}/api/v1/ws/${sessionId}`;
+
+              const response = await fetch(wsInfoEndpoint);
+              const data = await response.json();
+              return data.wsUrl || "";
+            }
+            return endpoint;
+          } catch (error) {
+            console.error("Error resolving WebSocket URL:", error);
+            throw error;
+          }
+        },
+      }
+    );
+  }
+
+  /**
+   * Activate a session by repeatedly calling the join API
+   * This is a fallback when WebSocket connections aren't available
+   * @private
+   */
+  private activateViaJoinAPI(
+    sessionId: string,
+    onSuccess?: () => void,
+    onError?: (error: Event) => void
+  ): void {
+    // Make a series of join requests to nudge the session into active state
+    const attemptJoin = () => {
+      this.joinSession(sessionId)
+        .then((response) => {
+          if (response.status === "active") {
+            if (onSuccess) onSuccess();
+            return;
+          }
+
+          // Check if we need to try again
+          if (response.status === "created") {
+            // Check status directly
+            return this.getSessionStatus(sessionId);
+          }
+
+          // Other status means we can't activate
+          throw new Error(
+            `Cannot activate session with status: ${response.status}`
+          );
+        })
+        .then((statusResponse) => {
+          if (statusResponse && statusResponse.status === "active") {
+            if (onSuccess) onSuccess();
+          } else if (statusResponse && statusResponse.status === "created") {
+            // Try one more time with a delay
+            setTimeout(attemptJoin, 1000);
+          }
+        })
+        .catch((error) => {
+          console.error("Error activating session via join API:", error);
+          if (onError)
+            onError(new ErrorEvent("error", { message: error.message }));
+        });
+    };
+
+    // Start the first attempt
+    attemptJoin();
+  }
+
+  /**
+   * Helper function to check if a WebSocket message is a session status update
+   * @param data - Message data from WebSocket
+   * @returns Whether the message is a session status update and the status
+   */
+  isSessionStatusUpdateMessage(data: any): {
+    isStatusUpdate: boolean;
+    status?: SessionStatus;
+  } {
+    if (
+      data &&
+      typeof data === "object" &&
+      data.type === "session_update" &&
+      typeof data.status === "string"
+    ) {
+      return {
+        isStatusUpdate: true,
+        status: data.status as SessionStatus,
+      };
+    }
+    return { isStatusUpdate: false };
+  }
+
+  /**
+   * Upload a file to a session
+   * @param sessionId - Unique identifier for the session
+   * @param file - File to upload
+   * @param mealType - Type of meal (breakfast, lunch, dinner)
    * @returns Upload response with status
    */
-  async uploadImage(shortcode: string, imageFile: File): Promise<UploadImageResponse> {
+  async uploadFileToSession(
+    sessionId: string,
+    file: File,
+    mealType?: MealType
+  ): Promise<FileUploadResponse> {
+    // Check if we need to convert the image first
+    let fileToUpload = file;
+
+    if (this.isImageConversionNeeded(file)) {
+      try {
+        // Convert HEIC/HEIF files to JPEG
+        const { file: convertedFile } = await this.convertImage(file, "JPEG");
+        fileToUpload = convertedFile;
+      } catch (error) {
+        console.error("Error converting image for upload:", error);
+        // Continue with original file if conversion fails
+      }
+    }
+
+    // Create FormData for the upload
     const formData = new FormData();
-    formData.append('file', imageFile);
-    
-    return apiClient.uploadFile<UploadImageResponse>(`/api/v1/qrcode/upload/${shortcode}`, formData);
+    formData.append("file", fileToUpload, fileToUpload.name);
+
+    if (mealType) {
+      formData.append("meal_type", mealType);
+    }
+
+    // Use apiClient to upload the file
+    return apiClient.uploadFile<FileUploadResponse>(
+      `/api/v1/session/upload/${sessionId}`,
+      formData
+    );
   }
 
   /**
-   * Get the status of an uploaded file
-   * @param shortcode - Unique identifier for the upload
-   * @returns File status information
+   * List files in a session
+   * @param sessionId - Unique identifier for the session
+   * @returns List of files in the session
    */
-  async getFileStatus(shortcode: string): Promise<FileStatusResponse> {
-    return apiClient.get<FileStatusResponse>(`/api/v1/qrcode/status/${shortcode}`);
+  async listSessionFiles(sessionId: string): Promise<FilesListResponse> {
+    return apiClient.get<FilesListResponse>(
+      `/api/v1/session/files/${sessionId}`
+    );
   }
 
   /**
-   * Get the processing result for an uploaded image
-   * @param shortcode - Unique identifier for the upload
-   * @returns Food detection results
+   * Download a file from a session
+   * @param sessionId - Unique identifier for the session
+   * @param fileId - Unique identifier for the file
+   * @returns File content as a Blob
    */
-  async getProcessingResult(shortcode: string): Promise<FoodDetectionResponse> {
-    return apiClient.get<FoodDetectionResponse>(`/api/v1/qrcode/result/${shortcode}`);
+  async downloadSessionFile(sessionId: string, fileId: string): Promise<Blob> {
+    return apiClient.downloadFile(
+      `/api/v1/session/file/${sessionId}/${fileId}`
+    );
+  }
+
+  /**
+   * Extend the expiry time of a session
+   * @param sessionId - Unique identifier for the session
+   * @param additionalSeconds - Additional time in seconds (60-3600)
+   * @returns Success message
+   */
+  async extendSession(
+    sessionId: string,
+    additionalSeconds: number
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append("additional_seconds", additionalSeconds.toString());
+
+    return apiClient.uploadFile<any>(
+      `/api/v1/session/extend/${sessionId}`,
+      formData
+    );
+  }
+
+  /**
+   * Close a session
+   * @param sessionId - Unique identifier for the session
+   * @returns Success message
+   */
+  async closeSession(sessionId: string): Promise<any> {
+    return apiClient.post<any>(`/api/v1/session/close/${sessionId}`, null);
   }
 
   /**
@@ -113,11 +487,17 @@ export class NutriPeekApi {
    * @param limit - Maximum number of results to return (1-50)
    * @returns List of matching food items
    */
-  async searchFoods(query: string, limit: number = 10): Promise<FoodAutocompleteResponse[]> {
-    return apiClient.get<FoodAutocompleteResponse[]>('/api/v1/food/autocomplete', {
-      query,
-      limit
-    });
+  async searchFoods(
+    query: string,
+    limit: number = 10
+  ): Promise<FoodAutocompleteResponse[]> {
+    return apiClient.get<FoodAutocompleteResponse[]>(
+      "/api/v1/food/autocomplete",
+      {
+        query,
+        limit,
+      }
+    );
   }
 
   /**
@@ -125,9 +505,11 @@ export class NutriPeekApi {
    * @param excludeEmpty - Whether to exclude categories with null/empty values (default: true)
    * @returns List of food categories with average nutrient values
    */
-  async getFoodCategories(excludeEmpty: boolean = true): Promise<FoodCategoriesResponse> {
-    return apiClient.get<FoodCategoriesResponse>('/api/v1/food/categories', {
-      exclude_empty: excludeEmpty
+  async getFoodCategories(
+    excludeEmpty: boolean = true
+  ): Promise<FoodCategoriesResponse> {
+    return apiClient.get<FoodCategoriesResponse>("/api/v1/food/categories", {
+      exclude_empty: excludeEmpty,
     });
   }
 
@@ -145,8 +527,13 @@ export class NutriPeekApi {
    * @param request - Nutrient gap calculation request
    * @returns Nutritional gap analysis
    */
-  async calculateNutrientGap(request: NutrientGapRequest): Promise<NutrientGapResponse> {
-    return apiClient.post<NutrientGapResponse>('/api/v1/nutrient/calculate-gap', request);
+  async calculateNutrientGap(
+    request: NutrientGapRequest
+  ): Promise<NutrientGapResponse> {
+    return apiClient.post<NutrientGapResponse>(
+      "/api/v1/nutrient/calculate-gap",
+      request
+    );
   }
 
   /**
@@ -154,8 +541,14 @@ export class NutriPeekApi {
    * @param childProfile - Profile with age and gender
    * @returns Required daily nutrient intake information
    */
-  async getNutrientIntake(childProfile: { age: number; gender: 'boy' | 'girl' }): Promise<NutrientIntakeResponse> {
-    return apiClient.post<NutrientIntakeResponse>('/api/v1/nutrient/nutrient-intake', childProfile);
+  async getNutrientIntake(childProfile: {
+    age: number;
+    gender: "boy" | "girl";
+  }): Promise<NutrientIntakeResponse> {
+    return apiClient.post<NutrientIntakeResponse>(
+      "/api/v1/nutrient/nutrient-intake",
+      childProfile
+    );
   }
 
   /**
@@ -164,24 +557,36 @@ export class NutriPeekApi {
    * @param limit - Maximum number of results to return (1-50)
    * @returns List of recommended foods
    */
-    async getRecommendedFoods(nutrient_name: string, limit: number = 10): Promise<FoodRecommendation[]> {
-      return apiClient.get<FoodRecommendation[]>('/api/v1/nutrient/recommend-food', {nutrient_name, limit});
-    }
-  
+  async getRecommendedFoods(
+    nutrient_name: string,
+    limit: number = 10
+  ): Promise<FoodRecommendation[]> {
+    return apiClient.get<FoodRecommendation[]>(
+      "/api/v1/nutrient/recommend-food",
+      { nutrient_name, limit }
+    );
+  }
+
   /**
    * Get random fun facts for food categories
    * @param count - Number of random fun facts to return (1-50)
    * @param categories - Optional list of food categories to get fun facts for
    * @returns List of food category fun facts
    */
-  async getFoodCategoryFunFacts(count: number = 5, categories?: string[]): Promise<FoodCategoryFunFactsResponse> {
+  async getFoodCategoryFunFacts(
+    count: number = 5,
+    categories?: string[]
+  ): Promise<FoodCategoryFunFactsResponse> {
     const params: Record<string, any> = { count };
-    
+
     if (categories && categories.length > 0) {
       params.categories = categories;
     }
-    
-    return apiClient.get<FoodCategoryFunFactsResponse>('/api/v1/food-category/fun-facts', params);
+
+    return apiClient.get<FoodCategoryFunFactsResponse>(
+      "/api/v1/food-category/fun-facts",
+      params
+    );
   }
 
   /**
@@ -189,8 +594,12 @@ export class NutriPeekApi {
    * @param category - The food category name
    * @returns Fun fact for the specified food category
    */
-  async getFoodCategoryFunFact(category: string): Promise<FoodCategoryFunFactResponse> {
-    return apiClient.get<FoodCategoryFunFactResponse>(`/api/v1/food-category/fun-facts/${category}`);
+  async getFoodCategoryFunFact(
+    category: string
+  ): Promise<FoodCategoryFunFactResponse> {
+    return apiClient.get<FoodCategoryFunFactResponse>(
+      `/api/v1/food-category/fun-facts/${category}`
+    );
   }
 
   /**
@@ -198,7 +607,7 @@ export class NutriPeekApi {
    * @returns List of all activities
    */
   async getAllActivities(): Promise<ActivityResponse> {
-    return apiClient.get<ActivityResponse>('/api/v1/activity/activities');
+    return apiClient.get<ActivityResponse>("/api/v1/activity/activities");
   }
 
   /**
@@ -207,8 +616,14 @@ export class NutriPeekApi {
    * @param activities - The activities the child is doing with their durations
    * @returns The PAL for the child
    */
-  async calculatePAL(age: number, activities: ActivityEntry[]): Promise<ActivityResult> {
-    return apiClient.post<ActivityResult>('/api/v1/activity/calculate-pal', { age, activities });
+  async calculatePAL(
+    age: number,
+    activities: ActivityEntry[]
+  ): Promise<ActivityResult> {
+    return apiClient.post<ActivityResult>("/api/v1/activity/calculate-pal", {
+      age,
+      activities,
+    });
   }
 
   /**
@@ -218,8 +633,15 @@ export class NutriPeekApi {
    * @param pal - The PAL of the child
    * @returns The target energy for the child
    */
-  async getTargetEnergy(age: number, gender: string, physical_activity_level: number): Promise<ChildEnergyRequirementsResponse> {
-    return apiClient.post<ChildEnergyRequirementsResponse>('/api/v1/child-energy-requirements/find-nearest-pal', { age, gender, physical_activity_level });
+  async getTargetEnergy(
+    age: number,
+    gender: string,
+    physical_activity_level: number
+  ): Promise<ChildEnergyRequirementsResponse> {
+    return apiClient.post<ChildEnergyRequirementsResponse>(
+      "/api/v1/child-energy-requirements/find-nearest-pal",
+      { age, gender, physical_activity_level }
+    );
   }
 }
 
