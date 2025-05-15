@@ -17,61 +17,61 @@
 }
 
 /* Set proper z-index for Leaflet map elements to keep them below popups */
-:global(.leaflet-pane) {
+.map :global(.leaflet-pane) {
   z-index: 400 !important;
 }
 
-:global(.leaflet-map-pane) {
+.map :global(.leaflet-map-pane) {
   z-index: 400 !important;
 }
 
-:global(.leaflet-tile-pane) {
+.map :global(.leaflet-tile-pane) {
   z-index: 200 !important;
 }
 
-:global(.leaflet-overlay-pane) {
+.map :global(.leaflet-overlay-pane) {
   z-index: 400 !important;
 }
 
-:global(.leaflet-shadow-pane) {
+.map :global(.leaflet-shadow-pane) {
   z-index: 500 !important;
 }
 
-:global(.leaflet-marker-pane) {
+.map :global(.leaflet-marker-pane) {
   z-index: 600 !important;
 }
 
-:global(.leaflet-tooltip-pane) {
+.map :global(.leaflet-tooltip-pane) {
   z-index: 650 !important;
 }
 
-:global(.leaflet-popup-pane) {
+.map :global(.leaflet-popup-pane) {
   z-index: 700 !important;
 }
 
-:global(.leaflet-control) {
+.map :global(.leaflet-control) {
   z-index: 800 !important;
 }
 
-:global(.leaflet-top .leaflet-bottom) {
+.map :global(.leaflet-top .leaflet-bottom) {
   z-index: 1000 !important; /* Controls need to be above elements but below popups */
 }
 
 /* Improvements for map popup */
-:global(.leaflet-popup-content-wrapper) {
+.map :global(.leaflet-popup-content-wrapper) {
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   padding: 0;
   overflow: hidden;
 }
 
-:global(.leaflet-popup-content) {
+.map :global(.leaflet-popup-content) {
   margin: 0;
   min-width: 220px;
   max-width: 280px;
 }
 
-:global(.leaflet-container a.leaflet-popup-close-button) {
+.map :global(.leaflet-container a.leaflet-popup-close-button) {
   top: 8px;
   right: 8px;
   color: #4b5563;
@@ -79,7 +79,7 @@
 }
 
 /* Make the popup tip more subtle */
-:global(.leaflet-popup-tip) {
+.map :global(.leaflet-popup-tip) {
   background-color: white;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
@@ -143,7 +143,7 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  :global(.leaflet-popup-content) {
+  .map :global(.leaflet-popup-content) {
     min-width: 200px;
     max-width: 250px;
   }
