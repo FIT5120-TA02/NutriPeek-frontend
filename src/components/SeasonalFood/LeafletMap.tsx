@@ -113,7 +113,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
         whenReady={handleMapReady}
-        className={styles.mapContainer}
+        className={`${styles.mapContainer} ${styles.map}`}
       >
         {/* Map tiles */}
         <TileLayer
