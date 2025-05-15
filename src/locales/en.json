@@ -190,5 +190,86 @@
     "quiz_correct_answer_bonus": "You answered the quiz correctly!",
     "quiz_wrong_answer_penalty": "You missed the quiz question!",
     "points": "points"
+  },
+  "SeasonalFood": {
+    "title": "Seasonal Food Discovery",
+    "description": "Explore fruits and vegetables that are currently in season. Seasonal produce is fresher, more flavorful, often more affordable, and nutritionally superior.",
+    "locationPrompt": {
+      "title": "Find Seasonal Produce Near You",
+      "description": "We can show you fruits and vegetables that are in season right now in your area. Allow location access for the best experience.",
+      "useLocation": "Use My Location",
+      "skipLocation": "Skip & Select Region Manually",
+      "denied": {
+        "title": "Location Permission Denied",
+        "description": "You've denied permission to access your location. We use your location to show seasonal foods in your region."
+      },
+      "unavailable": {
+        "title": "Location Not Available",
+        "description": "Your device or browser doesn't support geolocation. You can still browse seasonal foods by selecting a region."
+      },
+      "error": {
+        "title": "Location Error",
+        "description": "An error occurred while trying to get your location. You can still browse seasonal foods by selecting a region."
+      }
+    },
+    "filters": {
+      "searchPlaceholder": "Search for a fruit or vegetable...",
+      "searchButton": "Search",
+      "showFilters": "Show Filters",
+      "hideFilters": "Hide Filters",
+      "refresh": "Refresh",
+      "activeFilters": "Active filters:",
+      "region": "Region",
+      "season": "Season",
+      "month": "Month",
+      "category": "Category",
+      "search": "Search",
+      "allRegions": "All Regions",
+      "allSeasons": "All Seasons",
+      "allMonths": "All Months",
+      "allCategories": "All Categories"
+    },
+    "list": {
+      "loading": "Loading seasonal produce...",
+      "error": {
+        "title": "Error Loading Data",
+        "description": "Please try again later or contact support if the problem persists."
+      },
+      "empty": {
+        "title": "No Seasonal Produce Found",
+        "description": "Try adjusting your filters to see more options."
+      },
+      "count": "Found {count} seasonal produce items",
+      "finding": "Finding seasonal produce..."
+    },
+    "detail": {
+      "seasonInfo": "Season Information:",
+      "region": "Region:",
+      "season": "Season:",
+      "peakMonth": "Peak Month:",
+      "various": "Various",
+      "nutritionFacts": "Nutrition Facts (per 100g):",
+      "healthBenefits": "Health Benefits:",
+      "proTip": "Pro tip: Try adding {food} to your child's lunchbox when it's in season for maximum flavor and nutrients!"
+    },
+    "selectRegionPrompt": "Select a region on the map",
+    "selectRegionDescription": "Click on any region to see what fruits and vegetables are currently in season there.",
+    "loadingFoods": "Loading seasonal foods...",
+    "noFoodsFound": "No seasonal foods found",
+    "tryAnotherRegion": "Try selecting another region or adjusting the filters.",
+    "inSeasonNow": "In Season Now",
+    "noFoodsInSeason": "No foods in season",
+    "foodsInSeason": "{count} foods in season",
+    "detectingLocation": "Detecting your location...",
+    "locationEnabled": "Using your location to show relevant seasonal foods",
+    "locationPrompt": "Share your location to find seasonal foods near you",
+    "enableLocation": "Enable Location",
+    "close": "Close",
+    "description": "Description",
+    "nutritionalValue": "Nutritional Value",
+    "availableMonths": "Available Months",
+    "category": "Category",
+    "region": "Region",
+    "foodCountLegend": "Food Count"
   }
 }

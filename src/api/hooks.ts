@@ -20,6 +20,7 @@ import {
   SessionStatus,
   MealType,
   type processedFiles,
+  SeasonalFoodResponse
 } from "./types";
 
 // Import MealImage type from the NutriScan components
@@ -47,6 +48,31 @@ interface ApiHookResult<T> extends ApiHookState<T> {
   execute: (...args: any[]) => Promise<T>;
   reset: () => void;
 }
+
+// SeasonalFood interfaces
+export interface SeasonalFoodFilters {
+  region: string | null;
+  month: number | null;
+  season: string | null;
+  category: string | null;
+}
+
+interface GeolocationStatus {
+  permissionStatus: 'denied' | 'granted' | 'prompt';
+  loading: boolean;
+}
+
+// RegionMapping for Australian states/territories
+export const RegionMapping: Record<string, string> = {
+  'wa': 'Western Australia',
+  'nt': 'Northern Territory',
+  'qld': 'Queensland',
+  'sa': 'South Australia',
+  'nsw': 'New South Wales',
+  'vic': 'Victoria',
+  'tas': 'Tasmania',
+  'act': 'Australian Capital Territory',
+};
 
 /**
  * Generic hook for making API calls

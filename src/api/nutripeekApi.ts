@@ -24,6 +24,12 @@ import {
   ActivityEntry,
   MealType,
   SessionStatus,
+  Season,
+  SeasonalFoodResponse,
+  SeasonalFoodListResponse,
+  FarmersMarketListResponse,
+  FarmersMarketResponse,
+  SeasonalFoodDetailResponse,
 } from "./types";
 
 /**
@@ -642,6 +648,85 @@ export class NutriPeekApi {
       "/api/v1/child-energy-requirements/find-nearest-pal",
       { age, gender, physical_activity_level }
     );
+  }
+
+  /**
+   * Get seasonal food with optional filtering
+   * @param params - Filter parameters
+   * @returns List of seasonal foods
+   */
+  async getSeasonalFood(params: {
+    region?: string;
+    season?: Season;
+    month?: string;
+    category?: string;
+    food_name?: string;
+    skip?: number;
+    limit?: number;
+  } = {}): Promise<SeasonalFoodListResponse> {
+    return apiClient.get<SeasonalFoodListResponse>("/api/v1/seasonal-food/", params);
+  }
+
+  /**
+   * Get all available regions for seasonal food
+   * @returns List of regions
+   */
+  async getSeasonalFoodRegions(): Promise<string[]> {
+    return apiClient.get<string[]>("/api/v1/seasonal-food/regions");
+  }
+
+  /**
+   * Get autocomplete suggestions for seasonal food names
+   * @param query - Search term
+   * @param limit - Maximum number of results
+   * @returns List of food name suggestions
+   */
+  async autocompleteSeasonalFood(
+    query: string,
+    limit: number = 10
+  ): Promise<string[]> {    
+    return apiClient.get<string[]>("/api/v1/seasonal-food/autocomplete", { query, limit });
+  }
+
+  /**
+   * Get a seasonal food by ID
+   * @param id - The seasonal food ID
+   * @returns Details of the seasonal food
+   */
+  async getSeasonalFoodById(id: number): Promise<SeasonalFoodResponse> {
+    return apiClient.get<SeasonalFoodResponse>(`/api/v1/seasonal-food/${id}`);
+  }
+
+  /**
+   * Get farmers markets with optional filtering and pagination
+   * @param params - Optional parameters for filtering and pagination
+   * @returns List of farmers markets and total count
+   */
+  async getFarmersMarkets(params: {
+    skip?: number;
+    limit?: number;
+    region?: string;
+  } = {}): Promise<FarmersMarketListResponse> {
+    return apiClient.get<FarmersMarketListResponse>("/api/v1/farmers-markets", params);
+  }
+
+  /**
+   * Get detailed information about a specific farmers market
+   * @param marketId - UUID of the farmers market to retrieve
+   * @returns Detailed farmers market information
+   */
+  async getFarmersMarketById(marketId: string): Promise<FarmersMarketResponse> {
+    return apiClient.get<FarmersMarketResponse>(`/api/v1/farmers-markets/${marketId}`);
+  }
+
+  /**
+   * Get detailed information about a seasonal food item including nutrient data
+   * @param foodName - Name of the food item to look up
+   * @param region - Geographic region for seasonal availability data
+   * @returns Detailed food information including seasonal availability and nutrients
+   */
+  async getSeasonalFoodDetails(foodName: string, region: string): Promise<SeasonalFoodDetailResponse> {
+    return apiClient.get<SeasonalFoodDetailResponse>(`/api/v1/seasonal-food/details/${foodName}`, { region });
   }
 }
 
