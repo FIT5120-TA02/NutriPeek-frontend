@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 interface FloatingEmojisLayoutProps {
   children: ReactNode;
+  emojis?: string[];
   emojisCount?: number;
   backgroundClasses?: string;
 }
@@ -23,24 +24,29 @@ interface EmojiProps {
  * Can be reused across multiple pages for consistent visual effect
  * 
  * @param children - Content to render inside the layout
+ * @param emojis - Array of emoji characters to display (optional)
  * @param emojisCount - Number of emojis to display (default: 30)
  * @param backgroundClasses - Additional classes for the background container
  */
 export default function FloatingEmojisLayout({
   children,
+  emojis,
   emojisCount = 30,
   backgroundClasses = "min-h-screen flex flex-col bg-gradient-to-b from-green-50 to-green-100"
 }: FloatingEmojisLayoutProps) {
   const [mounted, setMounted] = useState(false);
   const [emojisData, setEmojisData] = useState<EmojiProps[]>([]);
   
-  // Food emojis for background
-  const emojis = [
+  // Default food emojis for background if none provided
+  const defaultEmojis = [
     "🍇", "🍎", "🍪", "🍕", "🍣", "🥑", "🍞",
     "🍔", "🍉", "🍍", "🥗", "🥛", "🍗", 
     "🍑", "🥒", "🍓", "🍊", "🥦", "🥝", "🍌",
     "🍆", "🥬", "🧀", "🥕", "🫐", "🍅", "🥭"
   ];
+  
+  // Use provided emojis or fall back to defaults
+  const displayEmojis = emojis || defaultEmojis;
 
   // Generate random emoji data once on mount
   useEffect(() => {
@@ -59,7 +65,7 @@ export default function FloatingEmojisLayout({
         const randomDuration = 12 + Math.random() * 13;
         
         return {
-          emoji: emojis[Math.floor(Math.random() * emojis.length)],
+          emoji: displayEmojis[Math.floor(Math.random() * displayEmojis.length)],
           x: randomX,
           x2: randomX2,
           y: randomY,
@@ -77,7 +83,7 @@ export default function FloatingEmojisLayout({
     return () => {
       document.body.className = "";
     };
-  }, [backgroundClasses, emojisCount, emojisData.length]);
+  }, [backgroundClasses, emojisCount, emojisData.length, displayEmojis]);
 
   return (
     <>

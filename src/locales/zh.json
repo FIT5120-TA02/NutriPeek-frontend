@@ -190,5 +190,86 @@
     "quiz_correct_answer_bonus": "您回答了测验正确！",
     "quiz_wrong_answer_penalty": "您错过了测验问题！",
     "points": "分"
+  },
+  "SeasonalFood": {
+    "title": "时令食品发现",
+    "description": "探索当前季节的水果和蔬菜。时令农产品更新鲜、更美味，通常更经济，并且营养价值更高。",
+    "locationPrompt": {
+      "title": "寻找您附近的时令农产品",
+      "description": "我们可以向您展示您所在地区当前时令的水果和蔬菜。允许位置访问以获得最佳体验。",
+      "useLocation": "使用我的位置",
+      "skipLocation": "跳过并手动选择地区",
+      "denied": {
+        "title": "位置权限被拒绝",
+        "description": "您已拒绝访问您的位置。我们使用您的位置来显示您所在地区的时令食品。"
+      },
+      "unavailable": {
+        "title": "位置不可用",
+        "description": "您的设备或浏览器不支持地理位置。您仍然可以通过选择地区浏览时令食品。"
+      },
+      "error": {
+        "title": "位置错误",
+        "description": "尝试获取您的位置时发生错误。您仍然可以通过选择地区浏览时令食品。"
+      }
+    },
+    "filters": {
+      "searchPlaceholder": "搜索水果或蔬菜...",
+      "searchButton": "搜索",
+      "showFilters": "显示筛选条件",
+      "hideFilters": "隐藏筛选条件",
+      "refresh": "刷新",
+      "activeFilters": "当前筛选条件:",
+      "region": "地区",
+      "season": "季节",
+      "month": "月份",
+      "category": "类别",
+      "search": "搜索",
+      "allRegions": "所有地区",
+      "allSeasons": "所有季节",
+      "allMonths": "所有月份",
+      "allCategories": "所有类别"
+    },
+    "list": {
+      "loading": "正在加载时令农产品...",
+      "error": {
+        "title": "加载数据错误",
+        "description": "请稍后再试，或者如果问题持续存在，请联系支持。"
+      },
+      "empty": {
+        "title": "未找到时令农产品",
+        "description": "尝试调整筛选条件以查看更多选项。"
+      },
+      "count": "找到 {count} 项时令农产品",
+      "finding": "正在寻找时令农产品..."
+    },
+    "detail": {
+      "seasonInfo": "季节信息:",
+      "region": "地区:",
+      "season": "季节:",
+      "peakMonth": "最佳月份:",
+      "various": "多种",
+      "nutritionFacts": "营养成分 (每100克):",
+      "healthBenefits": "健康益处:",
+      "proTip": "小贴士: 当 {food} 处于当季时，尝试将其添加到孩子的午餐盒中，以获得最佳风味和营养！"
+    },
+    "selectRegionPrompt": "在地图上选择一个地区",
+    "selectRegionDescription": "点击任何地区，查看那里当前时令的水果和蔬菜。",
+    "loadingFoods": "正在加载时令食品...",
+    "noFoodsFound": "未找到时令食品",
+    "tryAnotherRegion": "尝试选择另一个地区或调整筛选条件。",
+    "inSeasonNow": "当前时令",
+    "noFoodsInSeason": "没有时令食品",
+    "foodsInSeason": "{count} 种时令食品",
+    "detectingLocation": "正在检测您的位置...",
+    "locationEnabled": "使用您的位置显示相关时令食品",
+    "locationPrompt": "共享您的位置以查找附近的时令食品",
+    "enableLocation": "启用位置",
+    "close": "关闭",
+    "description": "描述",
+    "nutritionalValue": "营养价值",
+    "availableMonths": "可用月份",
+    "category": "类别",
+    "region": "地区",
+    "foodCountLegend": "食品数量"
   }
 }

@@ -48,5 +48,4 @@ export function getChildAvatarUrl(gender: string, avatarNumber: number): string 
   const avatarNum = Math.max(1, Math.min(5, avatarNumber));
   
   return `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/${normalizedGender}_avatar_${avatarNum}.png`;
-} 
-
+}

@@ -40,6 +40,7 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center space-x-6">
           <Link href="/Profile" className="text-gray-600 hover:text-green-600 transition-colors">Profile</Link>
           <Link href="/Note" className="text-gray-600 hover:text-green-600 transition-colors">Notes</Link>
+          <Link href="/SeasonalFood" className="text-gray-600 hover:text-green-600 transition-colors">Seasonal Foods</Link>
           <Link href="/BuildPlate" className="text-gray-600 hover:text-green-600 transition-colors">Build Plate</Link>
           <Link href="/MatchAndLearn" className="text-gray-600 hover:text-green-600 transition-colors">Match & Learn</Link>
           <Link
@@ -64,6 +65,7 @@ export default function Navbar() {
           <div className="absolute top-16 left-0 w-full bg-white shadow-md flex flex-col items-center py-4 space-y-4 md:hidden z-50">
             <Link href="/Profile" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
             <Link href="/Note" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Notes</Link>
+            <Link href="/SeasonalFood" className="text-gray-600 hover:text-green-600 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Seasonal Foods</Link>
             <div className="flex items-center">
               <span className="text-gray-400 cursor-not-allowed">Build Plate</span>
               <span className="ml-2 text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">Desktop Only</span>

@@ -6,6 +6,54 @@
 // Common types
 export type Gender = 'boy' | 'girl';
 
+// Seasonal Food
+export type Season = 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+
+// Farmers Market types
+export type DayOfWeekEnum = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+
+export interface FarmersMarketResponse {
+  id: string; // UUID
+  name: string;
+  address: string;
+  opening_hours_text: string;
+  region: string;
+  city?: string | null;
+  postal_code?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  primary_day?: DayOfWeekEnum | null;
+  is_recurring?: boolean | null;
+  frequency?: string | null;
+  opening_time?: string | null; // Time format
+  closing_time?: string | null; // Time format
+  website?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  description?: string | null;
+}
+
+export interface FarmersMarketListResponse {
+  items: FarmersMarketResponse[];
+  total: number;
+}
+
+export interface SeasonalFoodResponse {
+  id: string;
+  name: string;
+  region: string;
+  category: string;
+  description: string;
+  nutritionalValue: string;
+  availableMonths: number[];
+  imageUrl: string;
+}
+
+export interface SeasonalFoodListResponse {
+  items: SeasonalFoodResponse[];
+  total: number;
+}
+
 // Health Check
 export interface HealthCheckResponse {
   status: string;
@@ -286,4 +334,17 @@ export interface HTTPValidationError {
 export interface processedFiles {
   file: FileInfo; 
   detectionResult: FoodDetectionResponse;
+}
+
+export interface SeasonalAvailability {
+  season: Season;
+  month: string;
+  category: string;
+}
+
+export interface SeasonalFoodDetailResponse {
+  food_name: string;
+  region: string;
+  seasonal_availability: SeasonalAvailability[];
+  nutrient_data?: FoodNutrientSummary | null;
 }

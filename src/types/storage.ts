@@ -4,7 +4,7 @@ import { NutrientGapResponse, type ActivityResult } from '@/api/types';
 import { ChildEnergyRequirementsResponse } from '@/api/types';
 import { ActivityEntry } from '@/api/types';
 import { NutritionalNote } from './notes';
-
+import { SeasonalFood } from './seasonal';
 
 /**
  * Centralized definition of all storage keys used in the application
@@ -36,6 +36,9 @@ export const STORAGE_KEYS = {
   
   // UI state persistence 
   BANNER_DISMISSED_PREFIX: 'banner_dismissed',
+
+  // Seasonal food related keys
+  PINNED_SEASONAL_FOODS: 'pinnedSeasonalFoods',
 } as const;
 
 // Type for storage key values (makes the keys type-safe)
@@ -72,6 +75,9 @@ export interface StorageSchema {
   
   // UI state persistence
   [STORAGE_KEYS.BANNER_DISMISSED_PREFIX]: Record<string, boolean>;
+
+  // Seasonal food data
+  [STORAGE_KEYS.PINNED_SEASONAL_FOODS]: SeasonalFood[];
 }
 
 /**
@@ -106,4 +112,5 @@ export const STORAGE_DEFAULTS: {
   [STORAGE_KEYS.ACTIVITY_PAL]: 0,
   [STORAGE_KEYS.AUTHENTICATED]: false,
   [STORAGE_KEYS.BANNER_DISMISSED_PREFIX]: {},
+  [STORAGE_KEYS.PINNED_SEASONAL_FOODS]: [],
 }; 
