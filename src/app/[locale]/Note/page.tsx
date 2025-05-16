@@ -9,6 +9,7 @@ import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import { useNoteEvents } from '@/hooks/useNoteEvents';
 import { toast } from 'sonner';
 import { showConfirmDialog } from "@/components/ui/ConfirmDialog";
+import SeasonalFoodCTA from '@/components/SeasonalFood/SeasonalFoodCTA';
 
 export default function MyNotePage() {
   const router = useRouter();
@@ -42,6 +43,10 @@ export default function MyNotePage() {
 
   const handleNavigateToScan = () => {
     router.push('/NutriScan');
+  };
+
+  const handleNavigateToSeasonalFood = () => {
+    router.push('/SeasonalFood');
   };
 
   // Render skeleton loading state
@@ -107,17 +112,31 @@ export default function MyNotePage() {
         >
           Let's discover what nutrients your child needs. Start by scanning some food items!
         </motion.p>
-        <motion.button
-          onClick={handleNavigateToScan}
-          className="px-6 py-3 bg-green-500 text-white rounded-full font-medium shadow-md hover:bg-green-600 transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          Scan Food Now 🍎
-        </motion.button>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <motion.button
+            onClick={handleNavigateToScan}
+            className="px-6 py-3 bg-green-500 text-white rounded-full font-medium shadow-md hover:bg-green-600 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            Scan Food Now 🍎
+          </motion.button>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <SeasonalFoodCTA 
+              variant="button" 
+              size="large" 
+              color="blue" 
+              label="Find Seasonal Foods"
+            />
+          </motion.div>
+        </div>
       </motion.div>
     </div>
   );
@@ -133,17 +152,26 @@ export default function MyNotePage() {
       >
         <h1 className="text-3xl font-bold text-green-700 text-center mb-4 sm:mb-0">My Nutrition Notes</h1>
         
-        <motion.button
-          onClick={handleDeleteAllNotes}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="sm:absolute sm:right-0 text-red-500 text-sm font-medium hover:text-red-600 flex items-center gap-1 px-3 py-1 rounded-full border border-red-200 hover:bg-red-50"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          Clear All
-        </motion.button>
+        <div className="sm:absolute sm:right-0 flex items-center space-x-2">
+          <SeasonalFoodCTA 
+            variant="iconButton" 
+            size="medium" 
+            color="blue" 
+            toolTip="Find seasonal foods and local farmers markets" 
+          />
+          
+          <motion.button
+            onClick={handleDeleteAllNotes}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="text-red-500 text-sm font-medium hover:text-red-600 flex items-center gap-1 px-3 py-1 rounded-full border border-red-200 hover:bg-red-50"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            Clear All
+          </motion.button>
+        </div>
       </motion.div>
 
       <motion.div 

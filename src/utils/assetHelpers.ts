@@ -49,3 +49,11 @@ export function getChildAvatarUrl(gender: string, avatarNumber: number): string 
   
   return `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/${normalizedGender}_avatar_${avatarNum}.png`;
 }
+
+/**
+ * Gets the CDN URL for an Australian state image
+ * @returns Full URL to the Australian state image
+ */
+export function getAuStateImageUrl(): string {
+  return `${process.env.NEXT_PUBLIC_CDN_URL}/au-states/au.png`;
+}

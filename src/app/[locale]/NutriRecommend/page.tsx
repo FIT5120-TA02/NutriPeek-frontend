@@ -24,6 +24,7 @@ import { FoodItem } from '@/types/notes';
 import TooltipButton from '@/components/ui/TooltipButton';
 import { STORAGE_KEYS, STORAGE_DEFAULTS } from '@/types/storage';
 import RecommendedFoodsUtil from '@/utils/RecommendedFoodsUtil';
+import SeasonalFoodCTA from '@/components/SeasonalFood/SeasonalFoodCTA';
 
 export default function NutriRecommendPage() {
   const { ingredientIds, selectedChildId, clearIngredientIds } = useNutrition();
@@ -51,6 +52,11 @@ export default function NutriRecommendPage() {
   
   // Store nutrient gap data for reprocessing when recommendation type changes
   const [nutrientGapData, setNutrientGapData] = useState<NutrientGapResponse | null>(null);
+
+  // Navigation handlers
+  const handleNavigateToSeasonalFood = () => {
+    router.push('/SeasonalFood');
+  };
 
   // Load the selected region from storage when the component mounts
   useEffect(() => {
@@ -625,6 +631,15 @@ export default function NutriRecommendPage() {
             </svg>
             Scan Another Food
           </TooltipButton>
+          
+          {/* Seasonal Foods button - always enabled */}
+          <SeasonalFoodCTA
+            variant="button"
+            size="large"
+            color="amber"
+            label="Find Seasonal Foods"
+            className="w-full sm:w-auto text-base sm:text-lg font-semibold"
+          />
         </div>
 
         {/* Region Selection Dialog */}

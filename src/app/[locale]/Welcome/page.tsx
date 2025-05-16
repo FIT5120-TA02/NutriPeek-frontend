@@ -14,7 +14,8 @@ import {
   ToolsIntegrationSection,
   FAQSection,
   FooterSection,
-  SectionIndicator
+  SectionIndicator,
+  SeasonalFoodSection
 } from '@/components/Welcome';
 
 /**
@@ -54,6 +55,7 @@ export default function WelcomePage() {
     'hero',
     'product-video',
     'features',
+    'seasonal-food',
     'plate-builder',
     'match-and-learn',
     'benefits',
@@ -170,6 +172,9 @@ export default function WelcomePage() {
         </div>
         <div id="features" className="snap-start snap-always w-full">
           <FeatureSection />
+        </div>
+        <div id="seasonal-food" className="snap-start snap-always w-full">
+          <SeasonalFoodSection />
         </div>
         <div id="plate-builder" className="snap-start snap-always w-full">
           <PlateBuilderSection />
