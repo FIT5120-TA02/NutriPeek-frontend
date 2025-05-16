@@ -31,13 +31,6 @@ const PinnedItemsLayout = () => {
       // Set a flag in localStorage to indicate the popup was opened from the sheet
       localStorage.setItem('foodPopupSource', 'sheet');
       setOpenedFromSheet(true);
-      
-      const event = new CustomEvent('pinnedFoodSelected', { 
-        detail: food,
-        // Make the event non-bubbling to prevent it from affecting the sheet
-        bubbles: false 
-      });
-      window.dispatchEvent(event);
     }
   };
 

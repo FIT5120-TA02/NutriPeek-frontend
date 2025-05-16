@@ -10,7 +10,9 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import CompactNoteCard from '@/components/Note/CompactNoteCard';
 import NoteDetailPopup from '@/components/Note/NoteDetailPopup';
+import FoodDetailPopup from '@/components/SeasonalFood/FoodDetailPopup';
 import { toast } from 'sonner';
+import { SeasonalFoodResponse } from '@/api/types';
 
 export interface PinnedItemsContentProps {
   onFoodSelect?: (food: SeasonalFood) => void;
@@ -32,6 +34,7 @@ const PinnedItemsContent: React.FC<PinnedItemsContentProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [selectedNote, setSelectedNote] = useState<NutritionalNote | null>(null);
+  const [selectedFood, setSelectedFood] = useState<SeasonalFoodResponse | null>(null);
 
   // Load data function - made reusable for event listeners
   const loadData = useCallback(async () => {
@@ -100,6 +103,67 @@ const PinnedItemsContent: React.FC<PinnedItemsContentProps> = ({
     }
   };
 
+  // Handle food selection to show popup
+  const handleFoodSelect = (food: SeasonalFood) => {
+    // Convert SeasonalFood to SeasonalFoodResponse for the popup
+    const foodResponse: SeasonalFoodResponse = {
+      id: food.id,
+      name: food.name,
+      imageUrl: food.image || '',
+      description: food.description || '',
+      category: '',
+      db_category: '',
+      region: food.region || 'Unknown',
+      availableMonths: food.seasons ? getMonthsFromSeasons(food.seasons) : [],
+      nutritionalValue: food.nutritionalInfo ? formatNutritionalInfo(food.nutritionalInfo) : ''
+    };
+    
+    setSelectedFood(foodResponse);
+    if (onFoodSelect) {
+      onFoodSelect(food);
+    }
+  };
+
+  // Helper to convert seasons to months (approximate mapping)
+  const getMonthsFromSeasons = (seasons: string[]): number[] => {
+    const months: number[] = [];
+    
+    for (const season of seasons) {
+      switch(season.toLowerCase()) {
+        case 'spring':
+          months.push(3, 4, 5);
+          break;
+        case 'summer':
+          months.push(6, 7, 8);
+          break;
+        case 'autumn':
+        case 'fall':
+          months.push(9, 10, 11);
+          break;
+        case 'winter':
+          months.push(12, 1, 2);
+          break;
+      }
+    }
+    
+    // Return unique months
+    return [...new Set(months)];
+  };
+
+  // Format nutritional info for display
+  const formatNutritionalInfo = (info: any): string => {
+    if (!info) return '';
+    
+    const parts = [];
+    if (info.calories) parts.push(`Calories: ${info.calories}`);
+    if (info.proteins) parts.push(`Proteins: ${info.proteins}g`);
+    if (info.carbs) parts.push(`Carbs: ${info.carbs}g`);
+    if (info.fats) parts.push(`Fats: ${info.fats}g`);
+    if (info.fiber) parts.push(`Fiber: ${info.fiber}g`);
+    
+    return parts.join(', ');
+  };
+
   // Empty state components
   const EmptyFoodsState = () => (
     <div className="flex flex-col items-center justify-center h-64 text-center px-4">
@@ -141,137 +205,151 @@ const PinnedItemsContent: React.FC<PinnedItemsContentProps> = ({
   );
 
   return (
-    <Tab.Group selectedIndex={activeTab} onChange={setActiveTab}>
-      <Tab.List className="flex border-b border-gray-200 sticky top-0 bg-white z-10">
-        <Tab
-          className={({ selected }: { selected: boolean }) =>
-            `flex-1 py-3 text-sm font-medium ${
-              selected
-                ? 'text-green-600 border-b-2 border-green-500'
-                : 'text-gray-500 hover:text-green-600'
-            }`
-          }
-        >
-          Pinned Foods
-        </Tab>
-        <Tab
-          className={({ selected }: { selected: boolean }) =>
-            `flex-1 py-3 text-sm font-medium ${
-              selected
-                ? 'text-green-600 border-b-2 border-green-500'
-                : 'text-gray-500 hover:text-green-600'
-            }`
-          }
-        >
-          Your Notes
-        </Tab>
-      </Tab.List>
-      <Tab.Panels>
-        {/* Pinned Foods Panel */}
-        <Tab.Panel>
-          {isLoading ? (
-            <LoadingState />
-          ) : pinnedFoods.length === 0 ? (
-            <EmptyFoodsState />
-          ) : (
-            <div className="p-4 space-y-4">
-              <AnimatePresence initial={false}>
-                {pinnedFoods.map(food => (
-                  <motion.div
-                    key={food.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    transition={{ duration: 0.2 }}
-                    whileHover={{ scale: 1.02 }}
-                    className="border border-gray-100 rounded-lg p-3 cursor-pointer hover:border-green-200 hover:bg-green-50/30 transition-colors shadow-sm"
-                    onClick={() => onFoodSelect?.(food)}
-                  >
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 mr-3">
-                        {food.image ? (
-                          <img
-                            src={food.image}
-                            alt={food.name}
-                            className="w-16 h-16 object-cover rounded-md shadow-sm"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 bg-green-50 rounded-md flex items-center justify-center text-2xl shadow-sm">
-                            🍎
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <h4 className="font-medium text-gray-900">{food.name}</h4>
-                          <button
-                            onClick={(e) => handleUnpinFood(e, food.id)}
-                            className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors"
-                            aria-label={`Remove ${food.name}`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                              <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clipRule="evenodd" />
-                            </svg>
-                          </button>
+    <div className="relative">
+      <Tab.Group selectedIndex={activeTab} onChange={setActiveTab}>
+        <Tab.List className="flex border-b border-gray-200 sticky top-0 bg-white z-10">
+          <Tab
+            className={({ selected }: { selected: boolean }) =>
+              `flex-1 py-3 text-sm font-medium ${
+                selected
+                  ? 'text-green-600 border-b-2 border-green-500'
+                  : 'text-gray-500 hover:text-green-600'
+              }`
+            }
+          >
+            Pinned Foods
+          </Tab>
+          <Tab
+            className={({ selected }: { selected: boolean }) =>
+              `flex-1 py-3 text-sm font-medium ${
+                selected
+                  ? 'text-green-600 border-b-2 border-green-500'
+                  : 'text-gray-500 hover:text-green-600'
+              }`
+            }
+          >
+            Your Notes
+          </Tab>
+        </Tab.List>
+        <Tab.Panels>
+          {/* Pinned Foods Panel */}
+          <Tab.Panel>
+            {isLoading ? (
+              <LoadingState />
+            ) : pinnedFoods.length === 0 ? (
+              <EmptyFoodsState />
+            ) : (
+              <div className="p-4 space-y-4">
+                <AnimatePresence initial={false}>
+                  {pinnedFoods.map(food => (
+                    <motion.div
+                      key={food.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -100 }}
+                      transition={{ duration: 0.2 }}
+                      whileHover={{ scale: 1.02 }}
+                      className="border border-gray-100 rounded-lg p-3 cursor-pointer hover:border-green-200 hover:bg-green-50/30 transition-colors shadow-sm"
+                      onClick={() => handleFoodSelect(food)}
+                    >
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mr-3">
+                          {food.image ? (
+                            <img
+                              src={food.image}
+                              alt={food.name}
+                              className="w-16 h-16 object-cover rounded-md shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-green-50 rounded-md flex items-center justify-center text-2xl shadow-sm">
+                              🍎
+                            </div>
+                          )}
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          Available in: {food.seasons.join(', ')}
-                        </div>
-                        {food.region && (
-                          <div className="text-xs text-gray-400 mt-1">
-                            Region: {food.region}
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-medium text-gray-900">{food.name}</h4>
+                            <button
+                              onClick={(e) => handleUnpinFood(e, food.id)}
+                              className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors"
+                              aria-label={`Remove ${food.name}`}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clipRule="evenodd" />
+                              </svg>
+                            </button>
                           </div>
-                        )}
+                          <div className="text-sm text-gray-500 mt-1">
+                            Available in: {food.seasons.join(', ')}
+                          </div>
+                          {food.region && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              Region: {food.region}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </Tab.Panel>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </Tab.Panel>
 
-        {/* Notes Panel */}
-        <Tab.Panel>
-          {isLoading ? (
-            <LoadingState />
-          ) : notes.length === 0 ? (
-            <EmptyNotesState />
-          ) : (
-            <div className="p-4 space-y-4">
-              <AnimatePresence initial={false}>
-                {notes.map(note => (
-                  <motion.div
-                    key={note.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <CompactNoteCard 
-                      note={note}
-                      onClick={() => {
-                        setSelectedNote(note);
-                        onNoteSelect?.(note);
-                      }}
-                      onDelete={handleDeleteNote}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </Tab.Panel>
-      </Tab.Panels>
+          {/* Notes Panel */}
+          <Tab.Panel>
+            {isLoading ? (
+              <LoadingState />
+            ) : notes.length === 0 ? (
+              <EmptyNotesState />
+            ) : (
+              <div className="p-4 space-y-4">
+                <AnimatePresence initial={false}>
+                  {notes.map(note => (
+                    <motion.div
+                      key={note.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <CompactNoteCard 
+                        note={note}
+                        onClick={() => {
+                          setSelectedNote(note);
+                          onNoteSelect?.(note);
+                        }}
+                        onDelete={handleDeleteNote}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </Tab.Panel>
+        </Tab.Panels>
+      </Tab.Group>
 
-      {/* Note Detail Popup */}
+      {/* Note Detail Popup - Moved outside Tab.Group to ensure proper positioning */}
       {selectedNote && (
-        <NoteDetailPopup 
-          note={selectedNote}
-          onClose={() => setSelectedNote(null)}
-          navbarHeight={navbarHeight}
-        />
+        <div className="fixed inset-0 z-[10000]">
+          <NoteDetailPopup 
+            note={selectedNote}
+            onClose={() => setSelectedNote(null)}
+            navbarHeight={navbarHeight}
+          />
+        </div>
       )}
-    </Tab.Group>
+
+      {/* Food Detail Popup - Moved outside Tab.Group to ensure proper positioning */}
+      {selectedFood && (
+        <div className="fixed inset-0 z-[10000]">
+          <FoodDetailPopup 
+            food={selectedFood}
+            onClose={() => setSelectedFood(null)}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 

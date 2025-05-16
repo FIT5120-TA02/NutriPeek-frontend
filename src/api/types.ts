@@ -43,6 +43,7 @@ export interface SeasonalFoodResponse {
   name: string;
   region: string;
   category: string;
+  db_category: string;
   description: string;
   nutritionalValue: string;
   availableMonths: number[];

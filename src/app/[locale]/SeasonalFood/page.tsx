@@ -15,7 +15,9 @@ export default function SeasonalFoodPage() {
       emojisCount={30}
       backgroundClasses="bg-gradient-to-b from-green-50 to-blue-50"
     >
-      <FarmersMarketMap />
+      <main className="w-full min-h-screen pb-20 pt-20">
+        <FarmersMarketMap />
+      </main>
     </FloatingEmojisLayout>
   );
 } 

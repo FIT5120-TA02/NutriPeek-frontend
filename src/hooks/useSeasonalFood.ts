@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { nutripeekApi } from '../api/nutripeekApi';
 import { SeasonalFoodResponse, Season, SeasonalFoodDetailResponse } from '../api/types';
 import { RegionMapping } from '../api/hooks';
+import { getFoodImageUrl } from '@/utils/assetHelpers';
 
 export interface SeasonalFoodFilters {
   region: string | null;
@@ -138,6 +139,9 @@ export function useSeasonalFood() {
           if (!foodsByRegion[food.region]) {
             foodsByRegion[food.region] = [];
           }
+          
+          food.imageUrl = getFoodImageUrl(food.db_category);
+          
           foodsByRegion[food.region].push(food);
         });
         
