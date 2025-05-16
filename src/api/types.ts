@@ -348,3 +348,34 @@ export interface SeasonalFoodDetailResponse {
   seasonal_availability: SeasonalAvailability[];
   nutrient_data?: FoodNutrientSummary | null;
 }
+
+/**
+ * Request for optimized food recommendations based on nutrient gaps
+ */
+export interface OptimizedFoodRecommendationRequest {
+  nutrient_name: string;
+  target_amount: number;
+  current_amount?: number;
+  limit?: number;
+}
+
+/**
+ * Optimized food recommendation with gap satisfaction information
+ */
+export interface OptimizedFoodRecommendation {
+  id: string;
+  food_name: string;
+  food_category: string;
+  nutrient_value: number;
+  nutrients?: Record<string, number>;
+  amount_needed: number;
+  gap_satisfaction_percentage: number;
+}
+
+/**
+ * Recommendation type for categorizing different recommendation approaches
+ */
+export enum RecommendationType {
+  STANDARD = 'standard',
+  OPTIMIZED = 'optimized'
+}

@@ -30,6 +30,8 @@ import {
   FarmersMarketListResponse,
   FarmersMarketResponse,
   SeasonalFoodDetailResponse,
+  OptimizedFoodRecommendation,
+  OptimizedFoodRecommendationRequest,
 } from "./types";
 
 /**
@@ -570,6 +572,20 @@ export class NutriPeekApi {
     return apiClient.get<FoodRecommendation[]>(
       "/api/v1/nutrient/recommend-food",
       { nutrient_name, limit }
+    );
+  }
+
+  /**
+   * Get optimized food recommendations to fill specific nutrient gaps
+   * @param request - The request containing nutrient name, target amount, and other parameters
+   * @returns List of optimized food recommendations with gap satisfaction information
+   */
+  async getOptimizedFoodRecommendations(
+    request: OptimizedFoodRecommendationRequest
+  ): Promise<OptimizedFoodRecommendation[]> {
+    return apiClient.post<OptimizedFoodRecommendation[]>(
+      "/api/v1/nutrient/recommend-optimized-food",
+      request
     );
   }
 

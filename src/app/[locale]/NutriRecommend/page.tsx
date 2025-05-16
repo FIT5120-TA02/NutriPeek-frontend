@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ChildProfile } from '@/types/profile';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import storageService from '@/libs/StorageService';
-import { ChildEnergyRequirementsResponse, type NutrientGapResponse } from '@/api/types';
+import { ChildEnergyRequirementsResponse, type NutrientGapResponse, RecommendationType } from '@/api/types';
 import {
   RecommendHeader,
   NutrientList,
@@ -16,7 +16,8 @@ import {
   LoadingSpinner,
   ErrorMessage,
   ExtendedNutrientGap,
-  NutriRecommendService
+  NutriRecommendService,
+  RecommendationTypeToggle
 } from '@/components/NutriRecommend';
 import { FoodItem } from '@/types/notes';
 import TooltipButton from '@/components/ui/TooltipButton';
@@ -34,13 +35,17 @@ export default function NutriRecommendPage() {
   const [missingNutrients, setMissingNutrients] = useState<ExtendedNutrientGap[]>([]);
   const [selectedFoods, setSelectedFoods] = useState<FoodItem[]>([]);
   const [activeNutrient, setActiveNutrient] = useState<string | null>(null);
-  const [totalEnergy, setTotalEnergy] = useState<number | null>(null); // TODO: Display this in the somewhere in the UI
+  const [totalEnergy, setTotalEnergy] = useState<number | null>(null);
   const [energyRequirements, setEnergyRequirements] = useState<ChildEnergyRequirementsResponse | null>(null);
   const [hasAdjustedEnergy, setHasAdjustedEnergy] = useState(false);
   const [prevRecommendedFoods, setPrevRecommendedFoods] = useState<FoodItem[]>([]);
+  const [recommendationType, setRecommendationType] = useState<RecommendationType>(RecommendationType.STANDARD);
   
   // State to track if there are new selections made compared to previously recommended foods
   const [hasNewSelections, setHasNewSelections] = useState(false);
+  
+  // Store nutrient gap data for reprocessing when recommendation type changes
+  const [nutrientGapData, setNutrientGapData] = useState<NutrientGapResponse | null>(null);
 
   // Fetch initial data
   useEffect(() => {
@@ -62,8 +67,14 @@ export default function NutriRecommendPage() {
             defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS]
           });
           if (storedResults) {
+            setNutrientGapData(storedResults);
+            
             const { missingNutrients, totalEnergy, childProfile } = 
-              await NutriRecommendService.processStoredResults(storedResults, selectedChildId);
+              await NutriRecommendService.processStoredResultsWithType(
+                storedResults, 
+                selectedChildId,
+                recommendationType
+              );
             
             setMissingNutrients(missingNutrients);
             setTotalEnergy(totalEnergy);
@@ -141,9 +152,14 @@ export default function NutriRecommendPage() {
           },
           ingredient_ids: ingredientIds
         });
+        
+        // Store the gap results for later reprocessing when recommendation type changes
+        setNutrientGapData(result);
 
-        const { missingNutrients, totalEnergy } = 
-          await NutriRecommendService.processNutrientGapResult(result, childProfile);
+        // Process the nutrient gap with the selected recommendation type
+        const { missingNutrients, totalEnergy } = recommendationType === RecommendationType.OPTIMIZED
+          ? await NutriRecommendService.processOptimizedFoodResults(result)
+          : await NutriRecommendService.processNutrientGapResult(result);
         
         setMissingNutrients(missingNutrients);
         setTotalEnergy(totalEnergy);
@@ -196,7 +212,18 @@ export default function NutriRecommendPage() {
     };
 
     fetchRecommendations();
-  }, [ingredientIds, selectedChildId]);
+  }, [ingredientIds, selectedChildId, recommendationType]);
+
+  // Handle recommendation type change
+  const handleRecommendationTypeChange = async (newType: RecommendationType) => {
+    if (newType === recommendationType) return;
+    
+    // Set loading state while we refresh the recommendations
+    setLoading(true);
+    
+    // Update the recommendation type, which will trigger the useEffect
+    setRecommendationType(newType);
+  };
 
   // Calculate if there are new selections compared to previously recommended foods
   useEffect(() => {
@@ -433,6 +460,26 @@ export default function NutriRecommendPage() {
             </div>
           </div>
         )}
+        
+        {/* Recommendation Type Toggle */}
+        <RecommendationTypeToggle 
+          selectedType={recommendationType} 
+          onTypeChange={handleRecommendationTypeChange} 
+        />
+        
+        {/* Information Banner about current recommendation type */}
+        <div className={`mb-6 p-4 rounded-lg border text-sm bg-blue-50 border-blue-200 text-blue-800`}>
+          {recommendationType === RecommendationType.STANDARD ? (
+            <p>
+              <strong>Standard Recommendation:</strong> Shows recommended foods based on their maximum nutrient content.
+            </p>
+          ) : (
+            <p>
+              <strong>Optimized Recommendation:</strong> Shows foods with precise amounts needed to fill nutrient gaps efficiently. 
+              The quantity shown (in grams) indicates how much is needed to meet the specific nutrient gap.
+            </p>
+          )}
+        </div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4 w-full">
