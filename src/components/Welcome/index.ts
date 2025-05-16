@@ -10,3 +10,4 @@ export { default as FooterSection } from './FooterSection';
 export { default as ProductVideoSection } from './ProductVideoSection';
 export { default as SectionContainer } from './SectionContainer';
 export { default as SectionIndicator } from './SectionIndicator';
+export { default as SeasonalFoodSection } from './SeasonalFoodSection';
