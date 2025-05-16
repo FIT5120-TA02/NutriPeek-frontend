@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { EditableFoodItem } from '../types';
 import IngredientItem from './IngredientItem';
 import AddIngredientForm from './AddIngredientForm';
@@ -8,7 +8,6 @@ import AddIngredientForm from './AddIngredientForm';
 interface IngredientsListProps {
   ingredients: EditableFoodItem[];
   onIngredientsChange: (ingredients: EditableFoodItem[]) => void;
-  onCalculateGap: (ingredientIds: string[]) => void;
 }
 
 /**
@@ -17,7 +16,6 @@ interface IngredientsListProps {
 export default function IngredientsList({
   ingredients,
   onIngredientsChange,
-  onCalculateGap
 }: IngredientsListProps) {
   const [isAddingIngredient, setIsAddingIngredient] = useState(false);
 
@@ -55,6 +53,33 @@ export default function IngredientsList({
       
       onIngredientsChange(updatedIngredients);
     }
+  };
+
+  // Increase ingredient quantity by 1
+  const handleIncreaseIngredient = (id: string | undefined, index: number) => {
+    const itemToIncrease = ingredients[index];
+    
+    // Create a copy of the ingredients array
+    const updatedIngredients = [...ingredients];
+    
+    // Increase quantity by 1
+    const currentQuantity = itemToIncrease.quantity || 1;
+    const newQuantity = currentQuantity + 1;
+    
+    updatedIngredients[index] = {
+      ...itemToIncrease,
+      quantity: newQuantity,
+      // Update nutrients if they exist
+      nutrients: itemToIncrease.nutrients ? 
+        Object.entries(itemToIncrease.nutrients).reduce((acc, [key, value]) => {
+          // Calculate new nutrient value based on quantity ratio
+          acc[key] = (value / currentQuantity) * newQuantity;
+          return acc;
+        }, {} as Record<string, number>) : 
+        itemToIncrease.nutrients
+    };
+    
+    onIngredientsChange(updatedIngredients);
   };
 
   // Remove all of a specific ingredient at once
@@ -116,19 +141,6 @@ export default function IngredientsList({
     setIsAddingIngredient(false);
   };
 
-  // Handle the calculate gap button click
-  const handleCalculateGap = () => {
-    // Extract IDs from ingredients that have them
-    // Note: The actual expansion of IDs based on quantity happens in ResultsSection
-    const ingredientIds = ingredients
-      .filter(item => item.id)
-      .map(item => item.id as string);
-    
-    if (ingredientIds.length > 0) {
-      onCalculateGap(ingredientIds);
-    }
-  };
-
   return (
     <div className="w-full">
       {/* Add ingredient form or button */}
@@ -166,6 +178,7 @@ export default function IngredientsList({
                 index={index}
                 onRemove={handleRemoveIngredient} 
                 onRemoveAll={handleRemoveAllIngredients}
+                onIncrease={handleIncreaseIngredient}
               />
             ))}
           </ul>

@@ -10,11 +10,7 @@ interface MealScanCardProps {
   isProcessing: boolean;
   processingStep: 'idle' | 'detecting' | 'mapping' | 'complete';
   imagePreviewUrl: string | null;
-  isMobile: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
-  // cameraInputRef: React.RefObject<HTMLInputElement | null>;
-  // onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onCameraCapture: () => void;
 }
 
 export default function MealScanCard({
@@ -23,11 +19,7 @@ export default function MealScanCard({
   isProcessing,
   processingStep,
   imagePreviewUrl,
-  isMobile,
   fileInputRef,
-  // cameraInputRef,
-  // onFileChange,
-  onCameraCapture
 }: MealScanCardProps) {
   const [isImageExpanded, setIsImageExpanded] = useState(false);
 
@@ -148,16 +140,6 @@ export default function MealScanCard({
             >
               {file ? 'Change Photo' : 'Browse Files'}
             </button>
-            
-            {isMobile && (
-              <button
-                onClick={onCameraCapture}
-                className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
-                disabled={isProcessing}
-              >
-                {file ? 'Take New Photo' : 'Take Photo'}
-              </button>
-            )}
           </div>
         )}
       </div>

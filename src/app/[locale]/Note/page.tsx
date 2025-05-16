@@ -1,45 +1,35 @@
 'use client';
 
 import { motion } from "framer-motion";
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import NoteCard from '@/components/Note/NoteCard';
 import { NutritionalNote } from '@/types/notes';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
-import noteService from '@/libs/NoteService';
+import { useNoteEvents } from '@/hooks/useNoteEvents';
 import { toast } from 'sonner';
 import { showConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export default function MyNotePage() {
   const router = useRouter();
-  const [notes, setNotes] = useState<NutritionalNote[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Use the custom hook to manage notes with real-time updates
+  const { notes, loading, deleteNote, deleteAllNotes } = useNoteEvents();
 
-  useEffect(() => {
-    // Fetch notes using the note service
-    const savedNotes = noteService.getAllNotes();
-    setNotes(savedNotes);
-    setLoading(false);
-  }, []);
-
-  const deleteNote = (noteId: string | number) => {
-    // Delete the note using the note service
-    const success = noteService.deleteNote(noteId);
+  const handleDeleteNote = (noteId: string | number) => {
+    const success = deleteNote(noteId);
     if (success) {
-      setNotes(noteService.getAllNotes());
       toast.success("Note deleted successfully");
     }
   };
 
-  const deleteAllNotes = async () => {
+  const handleDeleteAllNotes = async () => {
     // Ask for confirmation before deleting all notes
     await showConfirmDialog({
       message: "Are you sure you want to delete all notes? This action cannot be undone.",
       header: "Clear All Notes",
       onConfirm: () => {
-        const success = noteService.deleteAllNotes();
+        const success = deleteAllNotes();
         if (success) {
-          setNotes([]);
           toast.success("All notes have been deleted");
         } else {
           toast.error("Failed to delete notes");
@@ -144,7 +134,7 @@ export default function MyNotePage() {
         <h1 className="text-3xl font-bold text-green-700 text-center mb-4 sm:mb-0">My Nutrition Notes</h1>
         
         <motion.button
-          onClick={deleteAllNotes}
+          onClick={handleDeleteAllNotes}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="sm:absolute sm:right-0 text-red-500 text-sm font-medium hover:text-red-600 flex items-center gap-1 px-3 py-1 rounded-full border border-red-200 hover:bg-red-50"
@@ -178,7 +168,7 @@ export default function MyNotePage() {
             >
               <NoteCard
                 note={note}
-                onDelete={() => deleteNote(note.id)}
+                onDelete={() => handleDeleteNote(note.id)}
                 child={child}
               />
             </motion.div>

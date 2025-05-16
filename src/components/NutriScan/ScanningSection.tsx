@@ -20,7 +20,6 @@ interface ScanningSectionProps {
     mealType: MealType,
     event: React.ChangeEvent<HTMLInputElement>
   ) => void;
-  handleCameraCapture: (mealType: MealType) => void;
   handleScan: (newImages: MealImage[] | null) => void;
 }
 
@@ -37,7 +36,6 @@ export default function ScanningSection({
   activateQRCode,
   closeQRSession,
   handleFileChange,
-  handleCameraCapture,
   handleScan,
 }: ScanningSectionProps) {
   // Create refs for file inputs for each meal type
@@ -438,11 +436,7 @@ export default function ScanningSection({
                 isProcessing={mealImages[currentSlide].isProcessing}
                 processingStep={mealImages[currentSlide].processingStep}
                 imagePreviewUrl={mealImages[currentSlide].imagePreviewUrl}
-                isMobile={isMobile}
                 fileInputRef={fileInputRefs[mealImages[currentSlide].mealType]}
-                onCameraCapture={() =>
-                  handleCameraCapture(mealImages[currentSlide].mealType)
-                }
               />
             </div>
 

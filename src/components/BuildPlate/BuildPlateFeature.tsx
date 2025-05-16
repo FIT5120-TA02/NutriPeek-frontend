@@ -19,13 +19,11 @@ import {
   PlateSummary,
   CategoryFoods,
   AvatarEmotion,
-  PlateSection
 } from './types';
 import { PLATE_SECTIONS } from './constants';
 import { 
   transformCategoryDataToFoods, 
   getDefaultFoods, 
-  calculateNutritionSummary,
   getAvatarEmotion,
   getFeedbackMessage 
 } from './utils';
@@ -52,11 +50,6 @@ const containerVariants = {
 };
 
 type ViewMode = 'build' | 'review';
-
-// Type guard to determine if a string is a valid view mode
-const isViewMode = (mode: string): mode is ViewMode => {
-  return mode === 'build' || mode === 'review';
-};
 
 // Function to toggle between view modes
 const getOppositeViewMode = (mode: ViewMode): ViewMode => {
@@ -508,7 +501,7 @@ function BuildMode({
         <p className="text-gray-600 max-w-2xl mx-auto">{t('plate_instructions')}</p>
       </div>
       
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row items-center gap-8">
         {/* Left Side - Plate */}
         <div className="lg:w-1/2">
           <DndContext>

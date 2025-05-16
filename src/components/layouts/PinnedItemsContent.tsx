@@ -4,7 +4,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { SeasonalFood } from '@/types/seasonal';
 import seasonalFoodService from '@/libs/SeasonalFoodService';
 import { NutritionalNote } from '@/types/notes';
-import noteService from '@/libs/NoteService';
 import { Tab } from '@headlessui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CompactNoteCard from '@/components/Note/CompactNoteCard';
@@ -12,6 +11,7 @@ import NoteDetailPopup from '@/components/Note/NoteDetailPopup';
 import FoodDetailPopup from '@/components/SeasonalFood/FoodDetailPopup';
 import { toast } from 'sonner';
 import { SeasonalFoodResponse } from '@/api/types';
+import { useNoteEvents } from '@/hooks/useNoteEvents';
 
 export interface PinnedItemsContentProps {
   onFoodSelect?: (food: SeasonalFood) => void;
@@ -29,25 +29,24 @@ const PinnedItemsContent: React.FC<PinnedItemsContentProps> = ({
   navbarHeight = '72px',
 }) => {
   const [pinnedFoods, setPinnedFoods] = useState<SeasonalFood[]>([]);
-  const [notes, setNotes] = useState<NutritionalNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  
+  // Use custom hook for notes management with real-time updates
+  const { notes, loading: notesLoading, deleteNote } = useNoteEvents();
+  
   const [selectedNote, setSelectedNote] = useState<NutritionalNote | null>(null);
   const [selectedFood, setSelectedFood] = useState<SeasonalFoodResponse | null>(null);
 
-  // Load data function - made reusable for event listeners
-  const loadData = useCallback(async () => {
+  // Load pinned foods data - made reusable for event listeners
+  const loadFoodsData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Load pinned foods
       const foods = seasonalFoodService.getAllPinnedFoods();
       setPinnedFoods(foods);
-
-      // Load notes
-      const userNotes = noteService.getAllNotes();
-      setNotes(userNotes);
     } catch (error) {
-      console.error('Error loading pinned data:', error);
+      console.error('Error loading pinned foods data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -55,19 +54,19 @@ const PinnedItemsContent: React.FC<PinnedItemsContentProps> = ({
 
   // Load data on component mount
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadFoodsData();
+  }, [loadFoodsData]);
 
-  // Listen for update events to refresh data
+  // Listen for update events to refresh pinned foods data
   useEffect(() => {
     const handlePinnedFoodsUpdated = () => {
-      loadData();
+      loadFoodsData();
     };
     
     window.addEventListener('pinnedFoodsUpdated', handlePinnedFoodsUpdated);
     window.addEventListener('storage', (e) => {
       if (e.key === 'pinnedSeasonalFoods') {
-        loadData();
+        loadFoodsData();
       }
     });
     
@@ -75,7 +74,7 @@ const PinnedItemsContent: React.FC<PinnedItemsContentProps> = ({
       window.removeEventListener('pinnedFoodsUpdated', handlePinnedFoodsUpdated);
       window.removeEventListener('storage', handlePinnedFoodsUpdated);
     };
-  }, [loadData]);
+  }, [loadFoodsData]);
 
   const handleUnpinFood = (event: React.MouseEvent, foodId: string) => {
     event.stopPropagation();
@@ -87,18 +86,11 @@ const PinnedItemsContent: React.FC<PinnedItemsContentProps> = ({
 
   // Handle note deletion
   const handleDeleteNote = (noteId: string) => {
-    try {
-      const success = noteService.deleteNote(noteId);
-      if (success) {
-        // Update the notes list
-        setNotes(prev => prev.filter(note => note.id.toString() !== noteId));
-        toast.success("Note deleted successfully");
-      } else {
-        toast.error("Failed to delete note");
-      }
-    } catch (error) {
-      console.error('Error deleting note:', error);
-      toast.error("An error occurred while deleting the note");
+    const success = deleteNote(noteId);
+    if (success) {
+      toast.success("Note deleted successfully");
+    } else {
+      toast.error("Failed to delete note");
     }
   };
 
@@ -295,9 +287,9 @@ const PinnedItemsContent: React.FC<PinnedItemsContentProps> = ({
             )}
           </Tab.Panel>
 
-          {/* Notes Panel */}
+          {/* Notes Panel - updated to use the notes from the hook */}
           <Tab.Panel>
-            {isLoading ? (
+            {notesLoading ? (
               <LoadingState />
             ) : notes.length === 0 ? (
               <EmptyNotesState />

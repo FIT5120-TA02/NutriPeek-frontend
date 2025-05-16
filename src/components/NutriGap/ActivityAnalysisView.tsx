@@ -102,7 +102,7 @@ export default function ActivityAnalysisView({ activityResult, energyRequirement
           <div className="w-full h-2 bg-gray-200 rounded-full mb-2">
             <div 
               className="h-full rounded-full bg-gradient-to-r from-yellow-500 via-green-500 to-blue-500" 
-              style={{ width: `${Math.min(100, (activityResult.pal / 2.5) * 100)}%` }}
+              style={{ width: `${Math.min(100, ((activityResult.pal - 1.0) / (2.5 - 1.0)) * 100)}%` }}
             />
           </div>
           <div className="flex justify-between text-xs text-gray-500">
