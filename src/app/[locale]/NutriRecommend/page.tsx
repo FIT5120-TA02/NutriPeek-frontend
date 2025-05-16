@@ -450,7 +450,7 @@ export default function NutriRecommendPage() {
 
   // Loading state
   if (loading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner recommendationType={recommendationType} />;
   }
 
   // Error state
@@ -470,27 +470,6 @@ export default function NutriRecommendPage() {
           hasNewSelections={hasNewSelections}
         />
 
-        {/* Display message about adjusted energy if applicable */}
-        {hasAdjustedEnergy && energyRequirements && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 mt-0.5">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium">Adjusted Energy Requirements</h3>
-                <p className="mt-1 text-sm">
-                  Due to your child's high activity level (PAL: {energyRequirements.input_physical_activity_level.toFixed(2)}), 
-                  their energy requirements have been increased to {energyRequirements.estimated_energy_requirement.toFixed(0)} {energyRequirements.unit}.
-                  Consider adding energy-rich foods to meet these needs.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
         {/* Show a banner if we pre-populated foods from a previous selection */}
         {prevRecommendedFoods.length > 0 && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
@@ -517,6 +496,27 @@ export default function NutriRecommendPage() {
           onTypeChange={handleRecommendationTypeChange}
           selectedRegion={selectedRegion}
         />
+
+        {/* Display message about adjusted energy if applicable */}
+        {hasAdjustedEnergy && energyRequirements && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium">Adjusted Energy Requirements</h3>
+                <p className="mt-1 text-sm">
+                  Due to your child's high activity level (PAL: {energyRequirements.input_physical_activity_level.toFixed(2)}), 
+                  their energy requirements have been increased to {energyRequirements.estimated_energy_requirement.toFixed(0)} {energyRequirements.unit}.
+                  Consider adding energy-rich foods to meet these needs.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Information Banner about current recommendation type */}
         <div className={`mb-6 p-4 rounded-lg border text-sm bg-blue-50 border-blue-200 text-blue-800`}>

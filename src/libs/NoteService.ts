@@ -80,6 +80,13 @@ export class NoteService {
     const existingNotes = this.getAllNotes();
     storageService.setLocalItem<NutritionalNote[]>(STORAGE_KEYS.NUTRI_NOTES, [newNote, ...existingNotes]);
     
+    // Dispatch event to notify listeners about the new note
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('noteCreated', { 
+        detail: { note: newNote }
+      }));
+    }
+    
     return newNote;
   }
   
@@ -108,6 +115,13 @@ export class NoteService {
     notes[noteIndex] = updatedNote;
     storageService.setLocalItem<NutritionalNote[]>(STORAGE_KEYS.NUTRI_NOTES, notes);
     
+    // Dispatch event to notify listeners about the updated note
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('noteUpdated', { 
+        detail: { note: updatedNote }
+      }));
+    }
+    
     return updatedNote;
   }
   
@@ -125,21 +139,37 @@ export class NoteService {
     }
     
     storageService.setLocalItem<NutritionalNote[]>(STORAGE_KEYS.NUTRI_NOTES, updatedNotes);
+    
+    // Dispatch event to notify listeners about the deleted note
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('noteDeleted', { 
+        detail: { noteId: id }
+      }));
+    }
+    
     return true;
   }
 
   /**
-   * Delete all nutritional notes
-   * @returns True if notes were successfully cleared
+   * Delete all notes
+   * @returns True if notes were deleted, false if there were no notes
    */
   deleteAllNotes(): boolean {
-    try {
-      storageService.setLocalItem<NutritionalNote[]>(STORAGE_KEYS.NUTRI_NOTES, []);
-      return true;
-    } catch (error) {
-      console.error('Error deleting all notes:', error);
+    const notes = this.getAllNotes();
+    
+    if (notes.length === 0) {
       return false;
     }
+    
+    // Save an empty array
+    storageService.setLocalItem<NutritionalNote[]>(STORAGE_KEYS.NUTRI_NOTES, []);
+    
+    // Dispatch event to notify listeners about all notes being deleted
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('allNotesDeleted'));
+    }
+    
+    return true;
   }
 
   /**
