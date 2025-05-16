@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { getMealTitle } from "./utils";
 import { STORAGE_KEYS, STORAGE_DEFAULTS } from "@/types/storage";
 import { FoodItem } from "@/types/notes";
+import InfoPopup from "@/components/ui/InfoPopup";
 
 interface ResultsSectionProps {
   mealImages: MealImage[];
@@ -446,6 +447,17 @@ export default function ResultsSection({
     );
   };
 
+  // Nutrient info content for the InfoPopup
+  const nutrientInfoContent = (
+    <div className="max-w-[280px]">
+      <p className="font-medium text-gray-800 mb-2">About Nutritional Information</p>
+      <p className="text-xs text-gray-600">
+        All nutritional values shown are based on 100g edible portions of each food item. 
+        When increasing quantity, nutrients are scaled proportionally.
+      </p>
+    </div>
+  );
+
   return (
     <div className="flex flex-col items-center w-full max-w-5xl">
       {/* Meal Images Section */}
@@ -509,9 +521,17 @@ export default function ResultsSection({
         {/* Ingredients Management Section */}
         <div className="bg-white rounded-lg shadow-md p-6 w-full min-h-[400px]">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-center">
-              Check Your Ingredients
-            </h2>
+            <div className="flex items-center">
+              <h2 className="text-xl font-semibold text-center">
+                Check Your Ingredients
+              </h2>
+              <InfoPopup 
+                content={nutrientInfoContent} 
+                position="bottom" 
+                iconSize={16} 
+                iconClassName="ml-1.5 text-gray-400 hover:text-gray-600"
+              />
+            </div>
             {ingredientsInitialized && (
               <button
                 onClick={handleResetIngredients}
@@ -538,7 +558,6 @@ export default function ResultsSection({
           <IngredientsList
             ingredients={ingredients}
             onIngredientsChange={handleIngredientsChange}
-            onCalculateGap={handleCalculateGap}
           />
         </div>
 

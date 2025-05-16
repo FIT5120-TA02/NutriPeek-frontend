@@ -381,22 +381,6 @@ export default function NutriScanPage() {
     }
   };
 
-  const handleCameraCapture = (mealType: MealType) => {
-    // Find the corresponding meal's index
-    const mealIndex = mealImages.findIndex(
-      (meal) => meal.mealType === mealType
-    );
-    if (mealIndex === -1) return;
-
-    // Get a reference to the hidden camera input
-    const input = document.getElementById(
-      `camera-input-${mealType}`
-    ) as HTMLInputElement;
-    if (input) {
-      input.click();
-    }
-  };
-
   const handleScan = async (newImages: MealImage[] | null = null) => {
     // Check if there are any images to scan
     if (newImages !== null) {
@@ -875,7 +859,6 @@ export default function NutriScanPage() {
           activateQRCode={handleActivateQRCode}
           closeQRSession={handleCloseQRSession}
           handleFileChange={handleFileChange}
-          handleCameraCapture={handleCameraCapture}
           handleScan={handleScan}
         />
       )}
