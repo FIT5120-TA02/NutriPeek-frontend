@@ -37,20 +37,6 @@ const SeasonalFoodsList: React.FC<SeasonalFoodsListProps> = React.memo(({
     ];
     return monthNames[month - 1] || '';
   };
-  
-  // Log month information for verification
-  useEffect(() => {
-    console.log("SeasonalFoodsList: Current month details", {
-      month: currentMonth,
-      name: getMonthName(currentMonth),
-      abbreviation: getMonthAbbreviation(currentMonth)
-    });
-    
-    // Log a sample food item for debugging
-    if (foods && foods.length > 0) {
-      console.log("Sample food item:", foods[0]);
-    }
-  }, [currentMonth, getMonthAbbreviation, foods]);
 
   // Memoized and filtered foods by category with search filtering
   const { foodsByCategory, categories } = useMemo(() => {
@@ -90,8 +76,6 @@ const SeasonalFoodsList: React.FC<SeasonalFoodsListProps> = React.memo(({
       categories: allCategories
     };
   }, [foods, searchText, activeFilter]);
-
-  console.log("foods", foods);
 
   // Skeleton loading state
   if (isLoading) {

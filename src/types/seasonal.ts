@@ -15,7 +15,12 @@ export interface SeasonalFood {
    * Name of the food
    */
   name: string;
-  
+
+  /**
+   * Database category of the food
+   */
+  dbCategory: string;
+
   /**
    * URL to the food's image
    */

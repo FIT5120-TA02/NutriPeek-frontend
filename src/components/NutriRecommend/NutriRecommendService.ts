@@ -1,5 +1,5 @@
 import { nutripeekApi } from '@/api/nutripeekApi';
-import { NutrientGapResponse, ChildEnergyRequirementsResponse, type ActivityResult, type ActivityEntry, type NutrientInfo, OptimizedFoodRecommendation, RecommendationType } from '@/api/types';
+import { NutrientGapResponse, ChildEnergyRequirementsResponse, type ActivityResult, type ActivityEntry, type NutrientInfo, OptimizedFoodRecommendation, RecommendationType, FoodRecommendation } from '@/api/types';
 import { ChildProfile } from '@/types/profile';
 import { getFoodImageUrl } from '@/utils/assetHelpers';
 import { mapNutrientNameToDbField, mapDbFieldToNutrientName } from '@/utils/nutritionMappings';
@@ -514,13 +514,13 @@ export const NutriRecommendService = {
                   // Use the mapped display name we've already identified
                   const displayName = missingNutrientFields.get(dbFieldName);
                   if (displayName) {
-                    completeNutrients[displayName] = value;
+                    completeNutrients[displayName] = value as number;
                   }
                 } else {
                   // Try the generic mapping for nutrients not in our missing list
                   const displayName = mapDbFieldToNutrientName(dbFieldName);
                   if (displayName && missingNutrientsArray.some(n => n.name === displayName)) {
-                    completeNutrients[displayName] = value;
+                    completeNutrients[displayName] = value as number;
                   }
                 }
               });
@@ -574,12 +574,202 @@ export const NutriRecommendService = {
   },
 
   /**
+   * Process the nutrient gap result and fetch seasonal food recommendations
+   * This provides recommendations for foods that are in season and rich in the missing nutrients
+   */
+  async processSeasonalFoodResults(
+    result: NutrientGapResponse,
+    region?: string,
+  ): Promise<{
+    missingNutrients: ExtendedNutrientGap[],
+    totalEnergy: number | null
+  }> {
+    const totalEnergy = result.total_calories || 0;
+    
+    // Apply energy requirements adjustment if available
+    const energyRequirements = storageService.getLocalItem<ChildEnergyRequirementsResponse | null>({
+      key: STORAGE_KEYS.ENERGY_REQUIREMENTS,
+      defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.ENERGY_REQUIREMENTS]
+    });
+    
+    let adjustedResult = { ...result };
+    
+    // If we have energy requirements that are higher than the base recommendation,
+    // adjust the energy nutrient target in the result
+    if (energyRequirements) {
+      const energyNutrientKey = Object.keys(result.nutrient_gaps).find(key => 
+        key.toLowerCase().includes('energy')
+      );
+      
+      if (energyNutrientKey) {
+        const baseEnergy = result.nutrient_gaps[energyNutrientKey];
+        const adjustedTarget = energyRequirements.estimated_energy_requirement;
+        
+        // Only adjust if the estimated requirement is higher
+        if (adjustedTarget > baseEnergy.recommended_intake) {
+          adjustedResult = {
+            ...result,
+            nutrient_gaps: {
+              ...result.nutrient_gaps,
+              [energyNutrientKey]: {
+                ...baseEnergy,
+                recommended_intake: adjustedTarget,
+                gap: Math.max(0, adjustedTarget - baseEnergy.current_intake),
+                // Mark this as adjusted so UI can show it appropriately
+                isAdjustedForActivity: true
+              }
+            }
+          };
+        }
+      }
+    }
+    
+    // Get missing nutrients from the potentially adjusted result
+    const missingNutrientsArray = Object.entries(adjustedResult.nutrient_gaps)
+      .filter(([_, info]) => info.recommended_intake > 0 && info.current_intake / info.recommended_intake < 1)
+      .map(([name, info]) => {
+        const percentage = (info.current_intake / info.recommended_intake) * 100;
+        return {
+          name,
+          gap: info.gap,
+          unit: info.unit,
+          recommended_intake: info.recommended_intake,
+          current_intake: info.current_intake,
+          percentage: percentage,
+          updatedPercentage: percentage,
+          isAdjustedForActivity: (info as any).isAdjustedForActivity || false,
+          recommendedFoods: []
+        };
+      });
+
+    // Create a map of nutrient DB fields to their display names for quick lookup
+    const missingNutrientFields = new Map<string, string>();
+    missingNutrientsArray.forEach(nutrient => {
+      const dbField = mapNutrientNameToDbField(nutrient.name);
+      if (dbField) {
+        missingNutrientFields.set(dbField, nutrient.name);
+      }
+    });
+
+    // Get the current month for seasonal food recommendations
+    const currentMonth = new Date().toLocaleString('en-AU', { month: 'long' }).toLowerCase();
+    // Use the provided region or get from storage, or default to Australia
+    const selectedRegion = region || this.getSelectedRegion() || 'australia';
+
+    // Fetch seasonal food recommendations for each missing nutrient
+    const enrichedNutrients = await Promise.all(
+      missingNutrientsArray.map(async (nutrient) => {
+        const dbField = mapNutrientNameToDbField(nutrient.name);
+        if (!dbField) return nutrient;
+
+        try {
+          // Call the new seasonal food recommendation endpoint
+          const seasonalFoods = await nutripeekApi.getSeasonalFoodRecommendations({
+            nutrient_name: dbField,
+            region: selectedRegion,
+            month: currentMonth,
+            limit: RECOMMENDED_FOODS_LIMIT
+          });
+          
+          // Convert to FoodItem format
+          const foodItems: FoodItem[] = seasonalFoods.map((food: FoodRecommendation) => {
+            // Create a complete nutrients map with all available nutrients
+            const completeNutrients: Record<string, number> = {};
+            
+            // Initialize with the specific nutrient that was being searched for
+            completeNutrients[nutrient.name] = food.nutrient_value;
+            
+            // Add all other nutrients from the food
+            if (food.nutrients) {
+              // Process each nutrient in the food
+              Object.entries(food.nutrients).forEach(([dbFieldName, value]) => {
+                // Try to find this nutrient in our missing nutrients list first
+                if (missingNutrientFields.has(dbFieldName)) {
+                  // Use the mapped display name we've already identified
+                  const displayName = missingNutrientFields.get(dbFieldName);
+                  if (displayName) {
+                    completeNutrients[displayName] = value as number;
+                  }
+                } else {
+                  // Try the generic mapping for nutrients not in our missing list
+                  const displayName = mapDbFieldToNutrientName(dbFieldName);
+                  if (displayName && missingNutrientsArray.some(n => n.name === displayName)) {
+                    completeNutrients[displayName] = value as number;
+                  }
+                }
+              });
+            }
+            
+            // Add a seasonal indicator to the food name
+            return {
+              id: food.id,
+              name: `${food.food_name} (Seasonal)`,
+              category: food.food_category,
+              imageUrl: getFoodImageUrl(food.food_category),
+              nutrients: completeNutrients,
+              selected: false,
+              quantity: 1,
+              isSeasonal: true
+            };
+          });
+
+          return {
+            ...nutrient,
+            recommendedFoods: foodItems
+          };
+        } catch (error) {
+          console.error(`Failed to fetch seasonal recommendations for ${nutrient.name}:`, error);
+          return nutrient;
+        }
+      })
+    );
+
+    // Store gap results in local storage for future reference
+    storageService.setLocalItem<NutrientGapResponse>(STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, adjustedResult);
+
+    return {
+      missingNutrients: enrichedNutrients,
+      totalEnergy
+    };
+  },
+
+  /**
+   * Store the selected region for seasonal food recommendations
+   * @param region The region to store
+   */
+  saveSelectedRegion(region: string): void {
+    storageService.setLocalItem<string>(STORAGE_KEYS.SELECTED_REGION, region);
+  },
+  
+  /**
+   * Get the currently selected region for seasonal food recommendations
+   * @returns The selected region or undefined if not set
+   */
+  getSelectedRegion(): string | undefined {
+    const region = storageService.getLocalItem<string | null>({
+      key: STORAGE_KEYS.SELECTED_REGION,
+      defaultValue: null
+    });
+    
+    return region || undefined;
+  },
+  
+  /**
+   * Check if a region has been selected for seasonal food recommendations
+   * @returns True if a region has been selected
+   */
+  hasSelectedRegion(): boolean {
+    return !!this.getSelectedRegion();
+  },
+
+  /**
    * Process stored results with a specific recommendation type
    */
   async processStoredResultsWithType(
     result: NutrientGapResponse, 
     selectedChildId: number | null,
-    recommendationType: RecommendationType = RecommendationType.STANDARD
+    recommendationType: RecommendationType = RecommendationType.STANDARD,
+    region?: string
   ): Promise<{
     missingNutrients: ExtendedNutrientGap[], 
     totalEnergy: number | null,
@@ -635,10 +825,19 @@ export const NutriRecommendService = {
 
     // Process the nutrient gap with the selected recommendation type
     let processResult;
-    if (recommendationType === RecommendationType.OPTIMIZED) {
-      processResult = await this.processOptimizedFoodResults(adjustedResult);
-    } else {
-      processResult = await this.processNutrientGapResult(adjustedResult);
+    switch (recommendationType) {
+      case RecommendationType.OPTIMIZED:
+        processResult = await this.processOptimizedFoodResults(adjustedResult);
+        break;
+      case RecommendationType.SEASONAL:
+        // Use provided region or get from storage
+        const selectedRegion = region || this.getSelectedRegion();
+        processResult = await this.processSeasonalFoodResults(adjustedResult, selectedRegion || undefined);
+        break;
+      case RecommendationType.STANDARD:
+      default:
+        processResult = await this.processNutrientGapResult(adjustedResult);
+        break;
     }
     
     const { missingNutrients, totalEnergy } = processResult;

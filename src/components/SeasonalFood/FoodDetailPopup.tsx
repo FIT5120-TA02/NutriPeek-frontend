@@ -152,6 +152,7 @@ export default function FoodDetailPopup({ food, onClose }: FoodDetailPopupProps)
       // Pin the food (first create the food with the appropriate ID)
       const newPinnedFood = seasonalFoodService.pinSeasonalFood({
         name: food.name,
+        dbCategory: food.db_category,
         image: food.imageUrl,
         description: food.description,
         seasons,

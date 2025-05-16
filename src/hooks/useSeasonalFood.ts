@@ -115,7 +115,6 @@ export function useSeasonalFood() {
         if (filters.month !== null) {
           // Convert month number to abbreviated lowercase string (jan, feb, etc.)
           params.month = getMonthAbbreviation(filters.month);
-          console.log("useSeasonalFood: Using month abbreviation:", params.month);
         }
         
         if (filters.season) {

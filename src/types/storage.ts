@@ -39,6 +39,7 @@ export const STORAGE_KEYS = {
 
   // Seasonal food related keys
   PINNED_SEASONAL_FOODS: 'pinnedSeasonalFoods',
+  SELECTED_REGION: 'selectedRegion',
 } as const;
 
 // Type for storage key values (makes the keys type-safe)
@@ -78,6 +79,7 @@ export interface StorageSchema {
 
   // Seasonal food data
   [STORAGE_KEYS.PINNED_SEASONAL_FOODS]: SeasonalFood[];
+  [STORAGE_KEYS.SELECTED_REGION]: string | null;
 }
 
 /**
@@ -113,4 +115,5 @@ export const STORAGE_DEFAULTS: {
   [STORAGE_KEYS.AUTHENTICATED]: false,
   [STORAGE_KEYS.BANNER_DISMISSED_PREFIX]: {},
   [STORAGE_KEYS.PINNED_SEASONAL_FOODS]: [],
+  [STORAGE_KEYS.SELECTED_REGION]: null,
 }; 

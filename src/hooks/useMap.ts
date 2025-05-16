@@ -68,12 +68,9 @@ export const useMap = () => {
    * Process location update from geolocation or manual selection
    * Updates map position, finds nearby markets, and updates food filters
    */
-  const processLocationUpdate = useCallback(async (lat: number, lng: number, initialRegion: string = '') => {
-    console.log("useMap: processLocationUpdate called", { lat, lng, initialRegion });
-    
+  const processLocationUpdate = useCallback(async (lat: number, lng: number, initialRegion: string = '') => {    
     // Prevent duplicate processing
     if (processingLocationRef.current) {
-      console.log("useMap: skipping duplicate processing");
       return;
     }
     
@@ -100,7 +97,6 @@ export const useMap = () => {
       
       // Get the full name of the region for display
       const regionFullName = getRegionFullName(regionCode);
-      console.log("useMap: setSelectedLocation", { region: regionFullName });
       
       // Set the selected location
       setSelectedLocation({
@@ -112,7 +108,6 @@ export const useMap = () => {
       // Fetch farmers markets for the region
       try {
         const response = await nutripeekApi.getFarmersMarkets({ region: regionFullName });
-        console.log("response.items", response.items);
         
         // Filter markets with valid coordinates and calculate distance
         const marketsWithDistance = response.items
@@ -145,12 +140,6 @@ export const useMap = () => {
           region: regionCode,
           month: seasonalFood.currentMonth,
         });
-        
-        console.log("useMap: Updated filters with region and month", {
-          region: regionCode,
-          month: seasonalFood.currentMonth,
-          monthAbbrev: seasonalFood.getMonthAbbreviation(seasonalFood.currentMonth)
-        });
       }
     } finally {
       // Clear processing flags
@@ -164,17 +153,10 @@ export const useMap = () => {
    * Triggered when the user shares their location
    */
   useEffect(() => {
-    console.log("useMap: useEffect for geolocation.location", { 
-      hasLocation: !!geolocation.location, 
-      isProcessed: locationProcessedRef.current,
-      locationShared
-    });
-    
     if (geolocation.location && !locationProcessedRef.current) {
       const { latitude, longitude, region } = geolocation.location;
       
       // Mark location as shared and processed
-      console.log("useMap: setLocationShared to true");
       setLocationShared(true);
       locationProcessedRef.current = true;
       
@@ -212,7 +194,6 @@ export const useMap = () => {
    * Handle location selection from search or click
    */
   const selectLocation = useCallback((location: MapLocation) => {
-    console.log("useMap: selectLocation called", location);
     processLocationUpdate(location.latitude, location.longitude, location.region);
   }, [processLocationUpdate]);
   
@@ -256,12 +237,6 @@ export const useMap = () => {
         region: regionCode,
         month: seasonalFood.currentMonth,
       });
-      
-      console.log("useMap: Updated filters for market with region and month", {
-        region: regionCode,
-        month: seasonalFood.currentMonth,
-        monthAbbrev: seasonalFood.getMonthAbbreviation(seasonalFood.currentMonth)
-      });
     }
   }, [seasonalFood.updateFilters, seasonalFood.currentMonth, seasonalFood.getMonthAbbreviation]);
   
@@ -289,7 +264,6 @@ export const useMap = () => {
     try {
       const regionFullName = getRegionFullName(region);
       const response = await nutripeekApi.getFarmersMarkets({ region: regionFullName });
-      console.log("response.items", response.items);
       return response.items;
     } catch (error) {
       console.error("Failed to fetch markets for region:", error);
@@ -302,7 +276,6 @@ export const useMap = () => {
    * Prevents multiple requests if location already shared
    */
   const requestAndFocusOnLocation = useCallback(() => {
-    console.log("useMap: requestAndFocusOnLocation called", { locationShared });
     if (!locationShared) {
       // Reset the processed flag when we explicitly request location again
       locationProcessedRef.current = false;

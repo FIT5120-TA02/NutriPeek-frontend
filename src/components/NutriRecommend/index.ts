@@ -7,4 +7,5 @@ export { default as RecommendHeader } from './RecommendHeader';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as ErrorMessage } from './ErrorMessage';
 export { default as RecommendationTypeToggle } from './RecommendationTypeToggle';
+export { default as RegionSelectionDialog } from './RegionSelectionDialog';
 export { NutriRecommendService } from './NutriRecommendService';

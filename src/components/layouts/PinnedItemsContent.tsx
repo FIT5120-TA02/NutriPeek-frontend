@@ -6,7 +6,6 @@ import seasonalFoodService from '@/libs/SeasonalFoodService';
 import { NutritionalNote } from '@/types/notes';
 import noteService from '@/libs/NoteService';
 import { Tab } from '@headlessui/react';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import CompactNoteCard from '@/components/Note/CompactNoteCard';
 import NoteDetailPopup from '@/components/Note/NoteDetailPopup';

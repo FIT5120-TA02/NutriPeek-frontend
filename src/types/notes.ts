@@ -15,6 +15,8 @@ export interface FoodItem {
   amount_needed?: number;
   gap_satisfaction_percentage?: number;
   excess_nutrients?: Record<string, number>[];
+  // Seasonal food specific property
+  isSeasonal?: boolean;
 }
 
 /**

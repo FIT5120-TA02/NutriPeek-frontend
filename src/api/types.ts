@@ -378,5 +378,6 @@ export interface OptimizedFoodRecommendation {
  */
 export enum RecommendationType {
   STANDARD = 'standard',
-  OPTIMIZED = 'optimized'
+  OPTIMIZED = 'optimized',
+  SEASONAL = 'seasonal'
 }
