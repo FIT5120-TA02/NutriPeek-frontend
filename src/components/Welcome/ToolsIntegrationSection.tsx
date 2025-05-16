@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Card from '../ui/Card';
 import Link from 'next/link';
-import { Database, ArrowSquareOut, FileCsv, Calendar, Shield, Activity, Lightning, CaretRight } from 'phosphor-react';
+import { Database, ArrowSquareOut, FileCsv, Calendar, Shield, Activity, Lightning, CaretRight, Leaf, MapPin } from 'phosphor-react';
 import SectionContainer from './SectionContainer';
 import MobileCarousel, { CarouselItem } from '../ui/MobileCarousel';
 
@@ -52,6 +52,18 @@ export default function ToolsIntegrationSection() {
       description: "Age/gender-based energy needs • MJ/day measurements • Table format",
       icon: <Lightning size={28} weight="duotone" className="text-amber-500" />,
       link: "https://www.eatforhealth.gov.au/nutrient-reference-values/nutrients/dietary-energy"
+    },
+    {
+      name: "Regional Seasonal Foods in Australia",
+      description: "CSV format • No regular update schedule • High granularity",
+      icon: <Leaf size={28} weight="duotone" className="text-emerald-600" />,
+      link: "https://didoesdigital.com/growing/seasonality"
+    },
+    {
+      name: "Regional Farmers Markets",
+      description: "Manual XLS creation • Annual updates • High granularity",
+      icon: <MapPin size={28} weight="duotone" className="text-red-600" />,
+      link: "http://seasonalfoodguide.com/#google_vignette"
     }
   ];
 
@@ -114,7 +126,7 @@ export default function ToolsIntegrationSection() {
 
       {/* Desktop View - Grid Layout */}
       {!isMobile ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 px-4 sm:px-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 px-4 sm:px-0">
           {integrations.map((integration, index) => (
             <motion.div
               key={index}
@@ -168,8 +180,8 @@ export default function ToolsIntegrationSection() {
         <h3 className="text-base sm:text-lg font-bold text-green-700 mb-2 sm:mb-3 text-center">Data-Driven Nutritional Guidance</h3>
         <p className="text-xs sm:text-sm text-gray-700 text-center">
           Our nutritional recommendations are powered by high-quality datasets focused on 
-          Australian dietary guidelines and children's nutritional needs, updated regularly 
-          to ensure accuracy and relevance.
+          Australian dietary guidelines, regional seasonal foods, and children's nutritional needs, 
+          updated regularly to ensure accuracy and relevance.
         </p>
       </motion.div>
     </SectionContainer>

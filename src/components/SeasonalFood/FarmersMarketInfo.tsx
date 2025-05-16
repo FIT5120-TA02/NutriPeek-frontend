@@ -149,9 +149,7 @@ const FarmersMarketInfo: React.FC<FarmersMarketInfoProps> = ({
       ) : (
         /* Market details */
         <div className="p-4 overflow-y-auto flex-1">
-          <div className="space-y-4">
-            <p className="text-gray-700">{selectedMarket.description || 'No description available.'}</p>
-            
+          <div className="space-y-4">            
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-1">Address</h4>
               <p className="text-gray-600">
