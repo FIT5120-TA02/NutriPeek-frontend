@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ChildProfile } from '@/types/profile';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import storageService from '@/libs/StorageService';
-import { ChildEnergyRequirementsResponse, type NutrientGapResponse } from '@/api/types';
+import { ChildEnergyRequirementsResponse, type NutrientGapResponse, RecommendationType } from '@/api/types';
 import {
   RecommendHeader,
   NutrientList,
@@ -16,7 +16,9 @@ import {
   LoadingSpinner,
   ErrorMessage,
   ExtendedNutrientGap,
-  NutriRecommendService
+  NutriRecommendService,
+  RecommendationTypeToggle,
+  RegionSelectionDialog
 } from '@/components/NutriRecommend';
 import { FoodItem } from '@/types/notes';
 import TooltipButton from '@/components/ui/TooltipButton';
@@ -34,13 +36,29 @@ export default function NutriRecommendPage() {
   const [missingNutrients, setMissingNutrients] = useState<ExtendedNutrientGap[]>([]);
   const [selectedFoods, setSelectedFoods] = useState<FoodItem[]>([]);
   const [activeNutrient, setActiveNutrient] = useState<string | null>(null);
-  const [totalEnergy, setTotalEnergy] = useState<number | null>(null); // TODO: Display this in the somewhere in the UI
+  const [totalEnergy, setTotalEnergy] = useState<number | null>(null);
   const [energyRequirements, setEnergyRequirements] = useState<ChildEnergyRequirementsResponse | null>(null);
   const [hasAdjustedEnergy, setHasAdjustedEnergy] = useState(false);
   const [prevRecommendedFoods, setPrevRecommendedFoods] = useState<FoodItem[]>([]);
+  const [recommendationType, setRecommendationType] = useState<RecommendationType>(RecommendationType.STANDARD);
+  
+  // State for region selection
+  const [showRegionDialog, setShowRegionDialog] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   
   // State to track if there are new selections made compared to previously recommended foods
   const [hasNewSelections, setHasNewSelections] = useState(false);
+  
+  // Store nutrient gap data for reprocessing when recommendation type changes
+  const [nutrientGapData, setNutrientGapData] = useState<NutrientGapResponse | null>(null);
+
+  // Load the selected region from storage when the component mounts
+  useEffect(() => {
+    const region = NutriRecommendService.getSelectedRegion();
+    if (region) {
+      setSelectedRegion(region);
+    }
+  }, []);
 
   // Fetch initial data
   useEffect(() => {
@@ -62,8 +80,15 @@ export default function NutriRecommendPage() {
             defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS]
           });
           if (storedResults) {
+            setNutrientGapData(storedResults);
+            
             const { missingNutrients, totalEnergy, childProfile } = 
-              await NutriRecommendService.processStoredResults(storedResults, selectedChildId);
+              await NutriRecommendService.processStoredResultsWithType(
+                storedResults, 
+                selectedChildId,
+                recommendationType,
+                selectedRegion || undefined
+              );
             
             setMissingNutrients(missingNutrients);
             setTotalEnergy(totalEnergy);
@@ -141,9 +166,14 @@ export default function NutriRecommendPage() {
           },
           ingredient_ids: ingredientIds
         });
+        
+        // Store the gap results for later reprocessing when recommendation type changes
+        setNutrientGapData(result);
 
-        const { missingNutrients, totalEnergy } = 
-          await NutriRecommendService.processNutrientGapResult(result, childProfile);
+        // Process the nutrient gap with the selected recommendation type
+        const { missingNutrients, totalEnergy } = recommendationType === RecommendationType.OPTIMIZED
+          ? await NutriRecommendService.processOptimizedFoodResults(result)
+          : await NutriRecommendService.processNutrientGapResult(result);
         
         setMissingNutrients(missingNutrients);
         setTotalEnergy(totalEnergy);
@@ -196,7 +226,54 @@ export default function NutriRecommendPage() {
     };
 
     fetchRecommendations();
-  }, [ingredientIds, selectedChildId]);
+  }, [ingredientIds, selectedChildId, recommendationType, selectedRegion]);
+
+  // Handle recommendation type change
+  const handleRecommendationTypeChange = async (newType: RecommendationType) => {
+    if (newType === recommendationType) return;
+    
+    // If changing to seasonal type, check if region is selected
+    if (newType === RecommendationType.SEASONAL) {
+      // Check if we already have a region
+      if (!NutriRecommendService.hasSelectedRegion()) {
+        // Show region selection dialog
+        setShowRegionDialog(true);
+        // Don't change recommendation type yet, wait for user to select region
+        return;
+      }
+    }
+    
+    // Set loading state while we refresh the recommendations
+    setLoading(true);
+    
+    // Update the recommendation type, which will trigger the useEffect
+    setRecommendationType(newType);
+    
+    // For seasonal recommendations, provide some feedback to the user
+    if (newType === RecommendationType.SEASONAL) {
+      // Get the current month for the UI
+      const currentMonth = new Date().toLocaleString('en-AU', { month: 'long' });
+    }
+  };
+
+  // Handle region selection from the dialog
+  const handleRegionSelect = (region: string) => {
+    // Save the selected region
+    NutriRecommendService.saveSelectedRegion(region);
+    setSelectedRegion(region);
+    
+    // Close the dialog
+    setShowRegionDialog(false);
+    
+    // Now set the recommendation type to seasonal
+    setLoading(true);
+    setRecommendationType(RecommendationType.SEASONAL);
+  };
+
+  // Handle closing the region dialog without selecting a region
+  const handleRegionDialogClose = () => {
+    setShowRegionDialog(false);
+  };
 
   // Calculate if there are new selections compared to previously recommended foods
   useEffect(() => {
@@ -433,6 +510,67 @@ export default function NutriRecommendPage() {
             </div>
           </div>
         )}
+        
+        {/* Recommendation Type Toggle */}
+        <RecommendationTypeToggle 
+          selectedType={recommendationType} 
+          onTypeChange={handleRecommendationTypeChange}
+          selectedRegion={selectedRegion}
+        />
+        
+        {/* Information Banner about current recommendation type */}
+        <div className={`mb-6 p-4 rounded-lg border text-sm bg-blue-50 border-blue-200 text-blue-800`}>
+          {recommendationType === RecommendationType.STANDARD ? (
+            <p>
+              <strong>Standard Recommendation:</strong> Shows recommended foods based on their maximum nutrient content.
+            </p>
+          ) : recommendationType === RecommendationType.OPTIMIZED ? (
+            <p>
+              <strong>Optimized Recommendation:</strong> Shows foods with precise amounts needed to fill nutrient gaps efficiently. 
+              The quantity shown (in grams) indicates how much is needed to meet the specific nutrient gap.
+            </p>
+          ) : (
+            <p>
+              <strong>Seasonal Recommendation:</strong> Shows foods that are currently in season and rich in the nutrients you need.
+              Eating seasonal foods can provide better taste, nutrition, and environmental benefits.
+            </p>
+          )}
+        </div>
+        
+        {/* Seasonal Banner - only shown when seasonal recommendation is selected */}
+        {recommendationType === RecommendationType.SEASONAL && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium">
+                  Showing Seasonal Foods for {new Date().toLocaleString('en-AU', { month: 'long' })}
+                  {selectedRegion && (
+                    <span className="ml-1">
+                      in <span className="font-semibold">{selectedRegion.charAt(0).toUpperCase() + selectedRegion.slice(1)}</span>
+                    </span>
+                  )}
+                </h3>
+                <p className="mt-1 text-sm">
+                  Seasonal foods are fresher, more nutritious, and often more affordable. 
+                  Look for the <span className="bg-orange-100 text-orange-700 text-xs px-1.5 py-0.5 rounded-full">Seasonal</span> label to identify foods that are currently in season.
+                </p>
+                {selectedRegion && (
+                  <button
+                    onClick={() => setShowRegionDialog(true)}
+                    className="text-xs text-amber-700 underline mt-2 hover:text-amber-800"
+                  >
+                    Change region
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4 w-full">
@@ -488,6 +626,13 @@ export default function NutriRecommendPage() {
             Scan Another Food
           </TooltipButton>
         </div>
+
+        {/* Region Selection Dialog */}
+        <RegionSelectionDialog 
+          visible={showRegionDialog}
+          onHide={handleRegionDialogClose}
+          onRegionSelect={handleRegionSelect}
+        />
       </div>
     </FloatingEmojisLayout>
   );

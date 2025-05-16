@@ -40,22 +40,6 @@ const FarmersMarketMap: React.FC = () => {
     }
   }, [mapHook.selectedLocation]);
 
-  // Effect to handle food selection from PinnedItemsLayout in the global layout
-  useEffect(() => {
-    // Listen for custom event when a food is selected from the pinned items sheet
-    const handlePinnedFoodSelected = (event: CustomEvent<SeasonalFood>) => {
-      const selectedPinnedFood = event.detail;
-      handlePinnedFoodSelect(selectedPinnedFood);
-    };
-
-    // Add event listener
-    window.addEventListener('pinnedFoodSelected', handlePinnedFoodSelected as EventListener);
-    
-    return () => {
-      window.removeEventListener('pinnedFoodSelected', handlePinnedFoodSelected as EventListener);
-    };
-  }, []);
-
   // Handler for market selection, potentially with details view
   const handleMarketSelect = (market: FarmersMarketResponse | null, showDetails = false) => {
     mapHook.selectMarket(market);
@@ -77,6 +61,7 @@ const FarmersMarketMap: React.FC = () => {
       nutritionalValue: '',
       region: food.region || 'Australia',
       category: '',
+      db_category: '',
       availableMonths: [],
       imageUrl: food.image || '',
     };
@@ -140,7 +125,7 @@ const FarmersMarketMap: React.FC = () => {
   ]);
 
   return (
-    <div className="container mx-auto px-4 pt-16 md:pt-20 pb-12 min-h-screen max-w-6xl">
+    <div className="container mx-auto px-4 pt-8 md:pt-20 pb-12 min-h-screen max-w-6xl">
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-green-600 mb-2">Seasonal Foods & Farmers Markets</h1>

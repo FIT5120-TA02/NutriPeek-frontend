@@ -34,18 +34,12 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   const prevSelectedLocationRef = useRef<string | null>(null);
   
   // Reset search when location is selected
-  useEffect(() => {
-    console.log("LocationSelector: useEffect triggered for selectedLocation", { 
-      selectedLocation: selectedLocation?.region,
-      prevRegion: prevSelectedLocationRef.current
-    });
-    
+  useEffect(() => {    
     if (selectedLocation) {
       // Only update if the region has changed to prevent infinite loops
       const currentRegion = selectedLocation.region;
       
       if (currentRegion !== prevSelectedLocationRef.current) {
-        console.log("LocationSelector: Clearing search with new location", currentRegion);
         prevSelectedLocationRef.current = currentRegion;
         
         setSearchText('');
@@ -65,9 +59,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       setShowResults(false);
       return;
     }
-    
-    console.log("LocationSelector: Searching for:", value);
-    
+        
     // Search for matching regions
     const results: MapLocation[] = [];
     
@@ -111,14 +103,12 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       }
     });
     
-    console.log("LocationSelector: Found results:", results.length);
     setSearchResults(results);
     setShowResults(true);
   }, []);
   
   // Handle location selection from dropdown
   const selectRegion = useCallback((location: MapLocation) => {
-    console.log("LocationSelector: selectRegion called with:", location.region);
     onLocationSelect(location);
     setSearchText('');
     setSearchResults([]);
@@ -127,7 +117,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   
   // Handle request location click
   const handleRequestLocation = useCallback(() => {
-    console.log("LocationSelector: handleRequestLocation called");
     onRequestLocation();
   }, [onRequestLocation]);
   

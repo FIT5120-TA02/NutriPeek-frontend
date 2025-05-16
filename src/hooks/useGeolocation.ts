@@ -34,9 +34,7 @@ export const useGeolocation = () => {
   const lastSuccessTimestampRef = useRef<number | null>(null);
   
   // Check permission status on mount
-  useEffect(() => {
-    console.log("useGeolocation: Checking permission status");
-    
+  useEffect(() => {    
     if (typeof navigator === 'undefined') return;
     
     try {
@@ -44,12 +42,10 @@ export const useGeolocation = () => {
         navigator.permissions
           .query({ name: 'geolocation' })
           .then((result) => {
-            console.log("useGeolocation: Permission status:", result.state);
             setPermissionStatus(result.state);
             
             // Listen for changes to the permission state
             result.onchange = () => {
-              console.log("useGeolocation: Permission changed to:", result.state);
               setPermissionStatus(result.state);
             };
           })
@@ -60,7 +56,6 @@ export const useGeolocation = () => {
           });
       } else {
         // For browsers that don't support permissions API
-        console.log("useGeolocation: Permissions API not supported");
         setPermissionStatus(GeolocationPermissionState.Prompt);
       }
     } catch (error) {
@@ -83,18 +78,14 @@ export const useGeolocation = () => {
     } as Location;
   }, [latitudeRef.current, longitudeRef.current, regionRef.current]);
   
-  const handleGeolocationSuccess = useCallback((position: GeolocationPosition) => {
-    console.log("useGeolocation: Location received successfully");
-    
+  const handleGeolocationSuccess = useCallback((position: GeolocationPosition) => {    
     const timestamp = Date.now();
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
     
     // Determine the region from the coordinates
     const region = getRegionFromCoordinates(latitude, longitude);
-    
-    console.log("useGeolocation: Setting location", { latitude, longitude, region });
-    
+        
     // Update the refs with the new values
     latitudeRef.current = latitude;
     longitudeRef.current = longitude;
@@ -128,18 +119,15 @@ export const useGeolocation = () => {
         break;
     }
     
-    console.log("useGeolocation: Setting error", errorMessage);
     setError(errorMessage);
     setIsRequesting(false);
     requestingRef.current = false;
   }, []);
   
   const requestGeolocation = useCallback(() => {
-    console.log("useGeolocation: Request geolocation");
     
     // Prevent multiple simultaneous requests
     if (requestingRef.current) {
-      console.log("useGeolocation: Already requesting, ignoring duplicate call");
       return;
     }
     
@@ -163,9 +151,7 @@ export const useGeolocation = () => {
     );
   }, [handleGeolocationSuccess, handleGeolocationError]);
   
-  const resetGeolocation = useCallback(() => {
-    console.log("useGeolocation: Reset geolocation");
-    
+  const resetGeolocation = useCallback(() => {    
     latitudeRef.current = null;
     longitudeRef.current = null;
     regionRef.current = null;

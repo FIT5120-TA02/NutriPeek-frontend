@@ -17,7 +17,7 @@ export default function PageWrapper({ title, description }: PageWrapperProps) {
   return (
     <FloatingEmojisLayout emojisCount={isMobile ? 10 : 20}>
       <main className={`w-full min-h-screen pb-16 ${isMobile ? 'pt-14' : 'pt-20'}`}>
-        <div className="container mx-auto px-4 pt-4">
+        <div className="container mx-auto px-4 pt-8">
           <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl'} font-bold text-green-600 mb-4 text-center`}>
             {title}
           </h1>

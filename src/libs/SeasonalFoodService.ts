@@ -61,6 +61,7 @@ export class SeasonalFoodService {
     const pinnedFood: SeasonalFood = {
       id,
       name: data.name,
+      dbCategory: data.dbCategory,
       image: data.image,
       description: data.description,
       seasons: data.seasons,

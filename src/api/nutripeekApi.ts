@@ -30,6 +30,8 @@ import {
   FarmersMarketListResponse,
   FarmersMarketResponse,
   SeasonalFoodDetailResponse,
+  OptimizedFoodRecommendation,
+  OptimizedFoodRecommendationRequest,
 } from "./types";
 
 /**
@@ -64,9 +66,6 @@ export class NutriPeekApi {
       file.type.toLowerCase().includes("heic") ||
       file.type.toLowerCase().includes("heif")
     ) {
-      console.log(
-        `Image conversion needed for ${file.name}: HEIC/HEIF format detected`
-      );
       return true;
     }
 
@@ -75,9 +74,6 @@ export class NutriPeekApi {
       // Check file extension for HEIC/HEIF
       const extension = file.name.split(".").pop()?.toLowerCase();
       if (extension === "heic" || extension === "heif") {
-        console.log(
-          `Image conversion needed for ${file.name}: HEIC/HEIF extension detected`
-        );
         return true;
       }
     }
@@ -87,9 +83,6 @@ export class NutriPeekApi {
       file.type === "image/jpeg" &&
       file.name.toLowerCase().endsWith(".heic")
     ) {
-      console.log(
-        `Image conversion needed for ${file.name}: HEIC file with incorrect mime type`
-      );
       return true;
     }
 
@@ -98,9 +91,6 @@ export class NutriPeekApi {
       (file.type === "image/png" || file.type === "image/webp") &&
       file.size > 2 * 1024 * 1024 // > 2MB
     ) {
-      console.log(
-        `Image conversion suggested for ${file.name}: Large ${file.type} file`
-      );
       return true;
     }
 
@@ -574,10 +564,42 @@ export class NutriPeekApi {
   }
 
   /**
-   * Get random fun facts for food categories
-   * @param count - Number of random fun facts to return (1-50)
-   * @param categories - Optional list of food categories to get fun facts for
-   * @returns List of food category fun facts
+   * Get optimized food recommendations for a specific nutrient
+   * @param request - Optimization request parameters
+   * @returns Array of food recommendations with optimized amounts
+   */
+  async getOptimizedFoodRecommendations(
+    request: OptimizedFoodRecommendationRequest
+  ): Promise<OptimizedFoodRecommendation[]> {
+    return apiClient.post<OptimizedFoodRecommendation[]>(
+      "/api/v1/nutrient/recommend-optimized-food",
+      request
+    );
+  }
+
+  /**
+   * Get seasonal food recommendations for a specific nutrient
+   * @param params - Parameters for seasonal food recommendation
+   * @returns Array of food recommendations that are in season
+   */
+  async getSeasonalFoodRecommendations(params: {
+    nutrient_name: string;
+    region: string;
+    month?: string;
+    season?: string;
+    limit?: number;
+  }): Promise<FoodRecommendation[]> {
+    return apiClient.post<FoodRecommendation[]>(
+      "/api/v1/nutrient/recommend-seasonal-food",
+      params
+    );
+  }
+
+  /**
+   * Get fun facts about food categories
+   * @param count - Number of fun facts to get (default: 5)
+   * @param categories - Optional list of categories to filter by
+   * @returns Food category fun facts
    */
   async getFoodCategoryFunFacts(
     count: number = 5,
