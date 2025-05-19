@@ -467,7 +467,6 @@ export default function NutriRecommendPage() {
   return (
     <FloatingEmojisLayout
       backgroundClasses="min-h-screen w-full flex flex-col bg-gradient-to-b from-green-50 to-green-100"
-      emojisCount={15}
     >
       <div className="w-full px-6 lg:px-8 pt-24 pb-16 max-w-7xl mx-auto">
         {/* Header with Back Button, Title, and Avatar in one row */}

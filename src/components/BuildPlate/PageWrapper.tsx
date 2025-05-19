@@ -17,7 +17,7 @@ interface BuildPlateWrapperProps {
  */
 export default function BuildPlateWrapper({ title, description }: BuildPlateWrapperProps) {
   return (
-    <FloatingEmojisLayout emojisCount={20}>
+    <FloatingEmojisLayout>
       <main className="w-full min-h-screen pb-20 pt-20">
         <div className="container mx-auto px-4 pt-8">
           <h1 className="text-4xl font-bold text-green-600 mb-4 text-center">{title}</h1>

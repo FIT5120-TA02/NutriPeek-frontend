@@ -197,7 +197,6 @@ export default function ResultsPage() {
   return (
     <FloatingEmojisLayout
       backgroundClasses="min-h-screen w-full bg-gradient-to-b from-green-50 to-green-100"
-      emojisCount={20}
     >
       <div className="max-w-7xl mx-auto pt-24 pb-16 px-6 lg:px-8 w-full">
         
