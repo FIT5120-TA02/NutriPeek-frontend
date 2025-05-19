@@ -15,7 +15,6 @@ export default function ProductVideoSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [videoLoaded, setVideoLoaded] = useState(false);
 
   // Check screen size for responsive design
   useEffect(() => {
@@ -127,17 +126,14 @@ export default function ProductVideoSection() {
               margin: '0 auto'
             }}
           >
-            <div className={`absolute inset-0 flex items-center justify-center bg-gray-100 ${videoLoaded ? 'hidden' : 'flex'}`}>
+            <div className={`absolute inset-0 flex items-center justify-center bg-gray-100`}>
               <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <iframe 
+            <video 
               src={`${process.env.NEXT_PUBLIC_CDN_URL}/product_video/NutriPeek.mp4`}
               className="absolute inset-0 w-full h-full rounded-xl"
-              title="NutriPeek Product Video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              onLoad={() => setVideoLoaded(true)}
-              style={{ opacity: videoLoaded ? 1 : 0, transition: 'opacity 0.5s' }}
+              controls
+              preload="metadata"
             />
           </motion.div>
         </div>

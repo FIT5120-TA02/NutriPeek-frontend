@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-screen flex flex-col bg-gradient-to-b from-white to-green-50">
         <NutritionProvider>
           <Navbar />
-          <main className="flex-1 flex flex-col items-center justify-center pb-12">
+          <main className="flex-1 flex flex-col items-center justify-center">
             {children}
             <Toaster 
               position="top-center"

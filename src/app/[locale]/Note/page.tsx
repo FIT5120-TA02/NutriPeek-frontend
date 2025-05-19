@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import NoteCard from '@/components/Note/NoteCard';
-import { NutritionalNote } from '@/types/notes';
 import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import { useNoteEvents } from '@/hooks/useNoteEvents';
 import { toast } from 'sonner';
@@ -215,7 +214,6 @@ export default function MyNotePage() {
 
   return (
     <FloatingEmojisLayout
-      emojisCount={20}
       backgroundClasses="min-h-screen flex flex-col bg-gradient-to-b from-green-50 to-green-100"
     >
       {renderContent()}

@@ -31,7 +31,7 @@ interface EmojiProps {
 export default function FloatingEmojisLayout({
   children,
   emojis,
-  emojisCount = 30,
+  emojisCount = 8,
   backgroundClasses = "min-h-screen flex flex-col bg-gradient-to-b from-green-50 to-green-100"
 }: FloatingEmojisLayoutProps) {
   const [mounted, setMounted] = useState(false);

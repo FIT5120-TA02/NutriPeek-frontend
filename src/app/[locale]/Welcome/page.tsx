@@ -147,7 +147,6 @@ export default function WelcomePage() {
 
   return (
     <FloatingEmojisLayout key={floatingEmojisLayoutKey} 
-      emojisCount={isMobile ? 10 : 20}
       backgroundClasses="min-h-screen flex flex-col w-full bg-gradient-to-b from-green-50 to-green-100"
     >
       {/* Section navigation dots */}
