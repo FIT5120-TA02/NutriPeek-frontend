@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNutrition } from '@/contexts/NutritionContext';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import { useRouter } from 'next/navigation';
@@ -53,6 +53,61 @@ export default function NutriRecommendPage() {
   // Store nutrient gap data for reprocessing when recommendation type changes
   const [nutrientGapData, setNutrientGapData] = useState<NutrientGapResponse | null>(null);
 
+  // Ref to track the current processing request to prevent race conditions
+  const processingRef = useRef<AbortController | null>(null);
+
+  /**
+   * Process recommendations with the specified type
+   * This function ensures the correct processing method is called for each recommendation type
+   */
+  const processRecommendationsWithType = useCallback(async (
+    result: NutrientGapResponse,
+    type: RecommendationType,
+    region?: string
+  ): Promise<{ missingNutrients: ExtendedNutrientGap[], totalEnergy: number | null }> => {
+    console.log(`Processing recommendations with type: ${type}`, { region });
+    
+    switch (type) {
+      case RecommendationType.OPTIMIZED:
+        return await NutriRecommendService.processOptimizedFoodResults(result);
+      
+      case RecommendationType.SEASONAL:
+        // Ensure we have a region for seasonal recommendations
+        const seasonalRegion = region || selectedRegion || NutriRecommendService.getSelectedRegion();
+        if (!seasonalRegion) {
+          console.warn('No region selected for seasonal recommendations, falling back to standard');
+          return await NutriRecommendService.processNutrientGapResult(result);
+        }
+        return await NutriRecommendService.processSeasonalFoodResults(result, seasonalRegion);
+      
+      case RecommendationType.STANDARD:
+      default:
+        return await NutriRecommendService.processNutrientGapResult(result);
+    }
+  }, [selectedRegion]);
+
+  /**
+   * Apply previously recommended foods to the current nutrient list
+   */
+  const applyPreviousRecommendations = useCallback((
+    nutrients: ExtendedNutrientGap[], 
+    previousFoods: FoodItem[]
+  ): ExtendedNutrientGap[] => {
+    if (previousFoods.length === 0) return nutrients;
+
+    return nutrients.map(nutrient => {
+      const updatedFoods = nutrient.recommendedFoods.map(food => {
+        const matchingFood = previousFoods.find(selected => selected.id === food.id);
+        if (matchingFood) {
+          return { ...food, selected: true, quantity: matchingFood.quantity || 1 };
+        }
+        return food;
+      });
+      
+      return { ...nutrient, recommendedFoods: updatedFoods };
+    });
+  }, []);
+
   // Navigation handlers
   const handleNavigateToSeasonalFood = () => {
     router.push('/SeasonalFood');
@@ -69,7 +124,19 @@ export default function NutriRecommendPage() {
   // Fetch initial data
   useEffect(() => {
     const fetchRecommendations = async () => {
+      // Cancel any previous processing
+      if (processingRef.current) {
+        processingRef.current.abort();
+      }
+      
+      // Create new abort controller for this request
+      const abortController = new AbortController();
+      processingRef.current = abortController;
+
       try {
+        setLoading(true);
+        setError(null);
+
         // Check for energy requirements based on activity level
         const storedEnergyRequirements = storageService.getLocalItem<ChildEnergyRequirementsResponse>({
           key: STORAGE_KEYS.ENERGY_REQUIREMENTS,
@@ -80,14 +147,17 @@ export default function NutriRecommendPage() {
           setEnergyRequirements(storedEnergyRequirements);
         }
         
+        // Handle case where no ingredients are selected (using stored results)
         if (ingredientIds.length === 0) {
           const storedResults = storageService.getLocalItem<NutrientGapResponse>({
             key: STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS,
             defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS]
           });
+          
           if (storedResults) {
             setNutrientGapData(storedResults);
             
+            // Use the centralized processing function with proper type handling
             const { missingNutrients, totalEnergy, childProfile } = 
               await NutriRecommendService.processStoredResultsWithType(
                 storedResults, 
@@ -95,6 +165,9 @@ export default function NutriRecommendPage() {
                 recommendationType,
                 selectedRegion || undefined
               );
+            
+            // Check if request was aborted
+            if (abortController.signal.aborted) return;
             
             setMissingNutrients(missingNutrients);
             setTotalEnergy(totalEnergy);
@@ -124,25 +197,15 @@ export default function NutriRecommendPage() {
               
               setSelectedFoods(preSelectedFoods);
               
-              // Mark the foods as selected in the nutrient lists
-              setMissingNutrients(prevNutrients => {
-                return prevNutrients.map(nutrient => {
-                  const updatedFoods = nutrient.recommendedFoods.map(food => {
-                    const matchingFood = preSelectedFoods.find(selected => selected.id === food.id);
-                    if (matchingFood) {
-                      return { ...food, selected: true, quantity: matchingFood.quantity || 1 };
-                    }
-                    return food;
-                  });
-                  
-                  return { ...nutrient, recommendedFoods: updatedFoods };
-                });
-              });
+              // Apply previous recommendations to the nutrient lists
+              const updatedNutrients = applyPreviousRecommendations(missingNutrients, preSelectedFoods);
+              setMissingNutrients(updatedNutrients);
             }
             
             setLoading(false);
             return;
           }
+          
           setError('No ingredients selected');
           setLoading(false);
           return;
@@ -173,13 +236,22 @@ export default function NutriRecommendPage() {
           ingredient_ids: ingredientIds
         });
         
+        // Check if request was aborted
+        if (abortController.signal.aborted) return;
+        
         // Store the gap results for later reprocessing when recommendation type changes
         setNutrientGapData(result);
 
         // Process the nutrient gap with the selected recommendation type
-        const { missingNutrients, totalEnergy } = recommendationType === RecommendationType.OPTIMIZED
-          ? await NutriRecommendService.processOptimizedFoodResults(result)
-          : await NutriRecommendService.processNutrientGapResult(result);
+        // 🔧 BUG FIX: Use proper switch statement instead of ternary operator
+        const { missingNutrients, totalEnergy } = await processRecommendationsWithType(
+          result, 
+          recommendationType, 
+          selectedRegion || undefined
+        );
+        
+        // Check if request was aborted after processing
+        if (abortController.signal.aborted) return;
         
         setMissingNutrients(missingNutrients);
         setTotalEnergy(totalEnergy);
@@ -208,31 +280,33 @@ export default function NutriRecommendPage() {
           
           setSelectedFoods(preSelectedFoods);
           
-          // Mark the foods as selected in the nutrient lists
-          setMissingNutrients(prevNutrients => {
-            return prevNutrients.map(nutrient => {
-              const updatedFoods = nutrient.recommendedFoods.map(food => {
-                const matchingFood = preSelectedFoods.find(selected => selected.id === food.id);
-                if (matchingFood) {
-                  return { ...food, selected: true, quantity: matchingFood.quantity || 1 };
-                }
-                return food;
-              });
-              
-              return { ...nutrient, recommendedFoods: updatedFoods };
-            });
-          });
+          // Apply previous recommendations to the nutrient lists
+          const updatedNutrients = applyPreviousRecommendations(missingNutrients, preSelectedFoods);
+          setMissingNutrients(updatedNutrients);
         }
       } catch (err) {
+        // Don't set error if request was aborted
+        if (abortController.signal.aborted) return;
+        
         console.error('Error fetching recommendations:', err);
         setError('Failed to load recommendations. Please try again.');
       } finally {
-        setLoading(false);
+        // Don't update loading state if request was aborted
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchRecommendations();
-  }, [ingredientIds, selectedChildId, recommendationType, selectedRegion]);
+
+    // Cleanup function to abort ongoing requests
+    return () => {
+      if (processingRef.current) {
+        processingRef.current.abort();
+      }
+    };
+  }, [ingredientIds, selectedChildId, recommendationType, selectedRegion, processRecommendationsWithType, applyPreviousRecommendations]);
 
   // Handle recommendation type change
   const handleRecommendationTypeChange = async (newType: RecommendationType) => {
@@ -259,6 +333,7 @@ export default function NutriRecommendPage() {
     if (newType === RecommendationType.SEASONAL) {
       // Get the current month for the UI
       const currentMonth = new Date().toLocaleString('en-AU', { month: 'long' });
+      console.log(`Switching to seasonal recommendations for ${currentMonth}`);
     }
   };
 
