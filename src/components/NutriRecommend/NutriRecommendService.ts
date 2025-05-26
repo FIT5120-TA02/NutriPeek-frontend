@@ -764,6 +764,8 @@ export const NutriRecommendService = {
 
   /**
    * Process stored results with a specific recommendation type
+   * This method ensures the correct processing function is called for each recommendation type
+   * and provides comprehensive error handling and logging for debugging
    */
   async processStoredResultsWithType(
     result: NutrientGapResponse, 
@@ -775,9 +777,16 @@ export const NutriRecommendService = {
     totalEnergy: number | null,
     childProfile: ChildProfile | null
   }> {
+    console.log(`[NutriRecommendService] Processing stored results with type: ${recommendationType}`, {
+      region,
+      selectedChildId,
+      hasNutrientGaps: !!result.nutrient_gaps
+    });
+
     const childProfile = this.getChildProfile(selectedChildId);
     
     if (!childProfile) {
+      console.warn('[NutriRecommendService] No child profile found');
       return {
         missingNutrients: [],
         totalEnergy: null,
@@ -819,28 +828,47 @@ export const NutriRecommendService = {
               }
             }
           };
+          console.log(`[NutriRecommendService] Adjusted energy requirements from ${baseEnergy.recommended_intake} to ${adjustedTarget}`);
         }
       }
     }
 
     // Process the nutrient gap with the selected recommendation type
     let processResult;
-    switch (recommendationType) {
-      case RecommendationType.OPTIMIZED:
-        processResult = await this.processOptimizedFoodResults(adjustedResult);
-        break;
-      case RecommendationType.SEASONAL:
-        // Use provided region or get from storage
-        const selectedRegion = region || this.getSelectedRegion();
-        processResult = await this.processSeasonalFoodResults(adjustedResult, selectedRegion || undefined);
-        break;
-      case RecommendationType.STANDARD:
-      default:
-        processResult = await this.processNutrientGapResult(adjustedResult);
-        break;
+    try {
+      switch (recommendationType) {
+        case RecommendationType.OPTIMIZED:
+          console.log('[NutriRecommendService] Processing optimized food results');
+          processResult = await this.processOptimizedFoodResults(adjustedResult);
+          break;
+        case RecommendationType.SEASONAL:
+          // Use provided region or get from storage
+          const selectedRegion = region || this.getSelectedRegion();
+          console.log(`[NutriRecommendService] Processing seasonal food results for region: ${selectedRegion}`);
+          
+          if (!selectedRegion) {
+            console.warn('[NutriRecommendService] No region available for seasonal recommendations, falling back to standard');
+            processResult = await this.processNutrientGapResult(adjustedResult);
+          } else {
+            processResult = await this.processSeasonalFoodResults(adjustedResult, selectedRegion);
+          }
+          break;
+        case RecommendationType.STANDARD:
+        default:
+          console.log('[NutriRecommendService] Processing standard food results');
+          processResult = await this.processNutrientGapResult(adjustedResult);
+          break;
+      }
+    } catch (error) {
+      console.error(`[NutriRecommendService] Error processing ${recommendationType} recommendations:`, error);
+      // Fallback to standard processing if there's an error
+      console.log('[NutriRecommendService] Falling back to standard processing due to error');
+      processResult = await this.processNutrientGapResult(adjustedResult);
     }
     
     const { missingNutrients, totalEnergy } = processResult;
+    
+    console.log(`[NutriRecommendService] Successfully processed ${missingNutrients.length} missing nutrients with ${recommendationType} type`);
     
     return {
       missingNutrients,
