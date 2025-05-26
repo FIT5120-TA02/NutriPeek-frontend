@@ -3,6 +3,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { Leaf, Heart, MapPin, House, Hamburger } from 'phosphor-react';
+import { Acorn, Avocado, Carrot } from '@phosphor-icons/react';
 import SectionContainer from './SectionContainer';
 import { getAuStateImageUrl } from '@/utils/assetHelpers';
 
@@ -88,17 +90,17 @@ export default function SeasonalFoodSection() {
           {/* Benefits list */}
           <motion.ul className="space-y-3 mb-8" variants={containerVariants}>
             {[
-              { icon: '🌱', text: 'Higher nutritional value from freshly harvested produce' },
-              { icon: '🍎', text: 'Better taste and quality from seasonal foods' },
-              { icon: '🗺️', text: 'Interactive map of nearby farmers markets' },
-              { icon: '🌿', text: 'Support local farmers and sustainable food systems' }
+              { icon: <Leaf size={24} className="text-green-600" />, text: 'Higher nutritional value from freshly harvested produce' },
+              { icon: <Heart size={24} className="text-red-500" />, text: 'Better taste and quality from seasonal foods' },
+              { icon: <MapPin size={24} className="text-blue-600" />, text: 'Interactive map of nearby farmers markets' },
+              { icon: <House size={24} className="text-green-700" />, text: 'Support local farmers and sustainable food systems' }
             ].map((item, index) => (
               <motion.li 
                 key={index} 
                 className="flex items-start gap-3"
                 variants={itemVariants}
               >
-                <span className="text-xl flex-shrink-0 mt-0.5">{item.icon}</span>
+                <span className="flex-shrink-0 mt-0.5">{item.icon}</span>
                 <span className="text-gray-700">{item.text}</span>
               </motion.li>
             ))}
@@ -126,28 +128,14 @@ export default function SeasonalFoodSection() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            style={{ 
-              filter: 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.1))' 
-            }}
           >
-            {/* Background blur effect */}
-            <div 
-              className="absolute inset-4 rounded-3xl -z-10"
-              style={{ 
-                background: 'linear-gradient(135deg, rgba(167, 243, 208, 0.2), rgba(186, 230, 253, 0.2), rgba(254, 215, 170, 0.2))',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)'
-              }}
-            ></div>
-            
             <div className="relative aspect-square max-w-lg mx-auto">
               {/* Main Image */}
               <div className="absolute inset-0 z-10 flex items-center justify-center">
                 <img 
                   src={getAuStateImageUrl()} 
                   alt="Interactive map showing farmers markets and seasonal foods" 
-                  className="w-full h-full object-contain rounded-xl shadow-lg"
+                  className="w-full h-full object-contain rounded-xl"
                   onError={(e) => {
                     // Fallback if image doesn't exist
                     const target = e.target as HTMLImageElement;
@@ -162,21 +150,21 @@ export default function SeasonalFoodSection() {
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
               >
-                <span className="text-2xl">🥕</span>
+                <Carrot size={24} className="text-orange-500" />
               </motion.div>
               <motion.div 
                 className="absolute bottom-50 left-54 bg-white p-2 rounded-full shadow-md z-20"
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", delay: 1 }}
               >
-                <span className="text-2xl">🍎</span>
+                <Avocado size={24} className="text-green-500" />
               </motion.div>
               <motion.div 
                 className="absolute top-2/5 left-20 bg-white p-2 rounded-full shadow-md z-20"
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 3.5, repeat: Infinity, repeatType: "reverse", delay: 0.5 }}
               >
-                <span className="text-2xl">🥦</span>
+                <Acorn size={24} className="text-amber-600" />
               </motion.div>
             </div>
           </motion.div>
