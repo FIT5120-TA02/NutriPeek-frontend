@@ -3,6 +3,7 @@ import storageService from './StorageService';
 import { NutritionalNote, type NutritionalNoteData } from '@/types/notes';
 import { type NutrientInfo } from '@/api/types';
 import { STORAGE_DEFAULTS, STORAGE_KEYS } from '@/types/storage';
+import { calculateNutritionScore, type NutrientDataForScoring } from '@/utils/NutritionScoreUtils';
 
 /**
  * Service for managing nutritional notes
@@ -205,38 +206,37 @@ export class NoteService {
 
   /**
    * Calculate the overall nutritional score based on nutrient data
+   * 
+   * This method serves as a bridge between the NoteService and the centralized
+   * nutrition scoring utility, maintaining backward compatibility while ensuring
+   * consistent scoring logic across the application.
+   * 
    * @param nutrients Record of nutrient information
    * @param missingNutrients Optional count of missing nutrients for fallback calculation
    * @param excessNutrients Optional count of excess nutrients for fallback calculation
    * @returns A score from 0-100 representing nutritional completeness
+   * 
+   * @deprecated Consider using calculateNutritionScore from NutritionScoreUtils directly
    */
   calculateNutritionalScore(
     nutrients: Record<string, NutrientInfo>,
     missingNutrients: number = 0,
     excessNutrients: number = 0
   ): number {
-    // If we have nutrient data, calculate the average percentage
-    if (Object.keys(nutrients).length > 0) {
-      let totalPercentage = 0;
-      let nutrientCount = 0;
-      
-      Object.values(nutrients).forEach(nutrient => {
-        if (nutrient.recommended_intake > 0) {
-          // Calculate percentage (capped at 100%)
-          const percentage = Math.min(100, (nutrient.current_intake / nutrient.recommended_intake) * 100);
-          totalPercentage += percentage;
-          nutrientCount++;
-        }
-      });
-      
-      // Return the average percentage, rounded to nearest integer
-      return nutrientCount > 0 ? Math.round(totalPercentage / nutrientCount) : 50;
-    }
+    // Convert NutrientInfo to NutrientDataForScoring format
+    const convertedNutrients: Record<string, NutrientDataForScoring> = {};
     
-    // Fallback to the old method if no nutrient data is available
-    const totalNutrientsScore = 100 - (missingNutrients * 3) - (excessNutrients * 2);
-    return Math.max(0, Math.min(100, totalNutrientsScore));
-  } 
+    Object.entries(nutrients).forEach(([key, nutrient]) => {
+      convertedNutrients[key] = {
+        current_intake: nutrient.current_intake,
+        recommended_intake: nutrient.recommended_intake,
+        unit: nutrient.unit
+      };
+    });
+    
+    // Use the centralized scoring utility
+    return calculateNutritionScore(convertedNutrients, missingNutrients, excessNutrients);
+  }
 }
 
 // Create a singleton instance

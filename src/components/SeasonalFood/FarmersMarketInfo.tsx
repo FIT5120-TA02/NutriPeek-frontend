@@ -77,20 +77,37 @@ const FarmersMarketInfo: React.FC<FarmersMarketInfoProps> = ({
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col h-[540px]">
       {/* Header */}
-      <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="text-lg font-semibold">
-          {selectedMarket 
-            ? expandedInfo 
-              ? selectedMarket.name 
-              : `Farmers Markets in ${selectedMarket.city || selectedMarket.region}`
-            : `Nearby Farmers Markets (${markets.length})`}
-        </h3>
+      <div className="p-4 border-b border-gray-100 flex justify-between items-start">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold">
+            {selectedMarket 
+              ? expandedInfo 
+                ? selectedMarket.name 
+                : `Farmers Markets in ${selectedMarket.city || selectedMarket.region}`
+              : `Nearby Farmers Markets (${markets.length})`}
+          </h3>
+          
+          {/* Data source description - only show when not viewing individual market details */}
+          {(!selectedMarket || !expandedInfo) && (
+            <p className="text-xs text-gray-500 mt-1">
+              source:{' '}
+              <a 
+                href="http://seasonalfoodguide.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+              >
+                seasonalfoodguide.com
+              </a>
+            </p>
+          )}
+        </div>
         
         {/* Back button when viewing details */}
         {selectedMarket && (
           <button 
             onClick={handleBackOrShowAll}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium ml-4 flex-shrink-0"
           >
             {expandedInfo ? 'Back to List' : 'Show All Markets'}
           </button>

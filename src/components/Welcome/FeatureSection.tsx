@@ -174,9 +174,29 @@ export default function FeatureSection() {
         transition={{ duration: 0.7 }}
       >
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-600 mb-3 md:mb-4">How NutriPeek Works</h2>
-        <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto px-4">
+        <p className="text-sm md:text-base text-gray-600 max-w-3xl mx-auto px-4 mb-6">
           Discover our simple 4-step process to create healthier lunch boxes for your children based on both nutritional needs and physical activity.
         </p>
+        
+        {/* CTA Button */}
+        <motion.div
+          className="flex justify-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Link href="/NutriScan" passHref>
+            <motion.button
+              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full text-sm sm:text-base font-medium transition-colors shadow-md"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+            >
+              Try NutriScan Now
+              <ArrowRight size={20} weight="bold" />
+            </motion.button>
+          </Link>
+        </motion.div>
       </motion.div>
 
       {/* Desktop View - Horizontal Timeline Layout */}
@@ -302,26 +322,6 @@ export default function FeatureSection() {
           />
         </div>
       )}
-
-      {/* CTA Button */}
-      <motion.div
-        className="flex justify-center mt-6 md:mt-8"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        <Link href="/NutriScan" passHref>
-          <motion.button
-            className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 sm:px-6 sm:py-3 rounded-full text-sm sm:text-base font-medium transition-colors shadow-md"
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-          >
-            Try NutriScan Now
-            <ArrowRight size={20} weight="bold" />
-          </motion.button>
-        </Link>
-      </motion.div>
     </SectionContainer>
   );
 } 

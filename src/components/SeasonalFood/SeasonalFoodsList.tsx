@@ -120,8 +120,8 @@ const SeasonalFoodsList: React.FC<SeasonalFoodsListProps> = React.memo(({
     <div className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col h-[540px]">
       {/* Header */}
       <div className="p-4 border-b border-gray-100">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+          <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-800">
               Seasonal Foods in {region}
             </h3>
@@ -129,8 +129,8 @@ const SeasonalFoodsList: React.FC<SeasonalFoodsListProps> = React.memo(({
               Foods in season during {currentSeason} ({getMonthName(currentMonth)})
             </p>
           </div>
-          <div className="mt-2 sm:mt-0">
-            <span className="text-xs font-medium text-gray-500">
+          <div className="flex-shrink-0 self-start sm:self-center">
+            <span className="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
               {foods.length} foods available
             </span>
           </div>
