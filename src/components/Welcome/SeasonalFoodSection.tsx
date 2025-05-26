@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { Leaf, Heart, MapPin, House } from 'phosphor-react';
 import SectionContainer from './SectionContainer';
 import { getAuStateImageUrl } from '@/utils/assetHelpers';
 
@@ -88,17 +89,17 @@ export default function SeasonalFoodSection() {
           {/* Benefits list */}
           <motion.ul className="space-y-3 mb-8" variants={containerVariants}>
             {[
-              { icon: '🌱', text: 'Higher nutritional value from freshly harvested produce' },
-              { icon: '🍎', text: 'Better taste and quality from seasonal foods' },
-              { icon: '🗺️', text: 'Interactive map of nearby farmers markets' },
-              { icon: '🌿', text: 'Support local farmers and sustainable food systems' }
+              { icon: <Leaf size={24} className="text-green-600" />, text: 'Higher nutritional value from freshly harvested produce' },
+              { icon: <Heart size={24} className="text-red-500" />, text: 'Better taste and quality from seasonal foods' },
+              { icon: <MapPin size={24} className="text-blue-600" />, text: 'Interactive map of nearby farmers markets' },
+              { icon: <House size={24} className="text-green-700" />, text: 'Support local farmers and sustainable food systems' }
             ].map((item, index) => (
               <motion.li 
                 key={index} 
                 className="flex items-start gap-3"
                 variants={itemVariants}
               >
-                <span className="text-xl flex-shrink-0 mt-0.5">{item.icon}</span>
+                <span className="flex-shrink-0 mt-0.5">{item.icon}</span>
                 <span className="text-gray-700">{item.text}</span>
               </motion.li>
             ))}
