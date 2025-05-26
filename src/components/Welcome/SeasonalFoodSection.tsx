@@ -3,7 +3,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Leaf, Heart, MapPin, House } from 'phosphor-react';
+import { Leaf, Heart, MapPin, House, Hamburger } from 'phosphor-react';
+import { Acorn, Avocado, Carrot } from '@phosphor-icons/react';
 import SectionContainer from './SectionContainer';
 import { getAuStateImageUrl } from '@/utils/assetHelpers';
 
@@ -163,21 +164,21 @@ export default function SeasonalFoodSection() {
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
               >
-                <span className="text-2xl">🥕</span>
+                <Carrot size={24} className="text-orange-500" />
               </motion.div>
               <motion.div 
                 className="absolute bottom-50 left-54 bg-white p-2 rounded-full shadow-md z-20"
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", delay: 1 }}
               >
-                <span className="text-2xl">🍎</span>
+                <Avocado size={24} className="text-green-500" />
               </motion.div>
               <motion.div 
                 className="absolute top-2/5 left-20 bg-white p-2 rounded-full shadow-md z-20"
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 3.5, repeat: Infinity, repeatType: "reverse", delay: 0.5 }}
               >
-                <span className="text-2xl">🥦</span>
+                <Acorn size={24} className="text-amber-600" />
               </motion.div>
             </div>
           </motion.div>
