@@ -66,8 +66,15 @@ export const NutriRecommendService = {
     }
     
     // Get missing nutrients from the potentially adjusted result
+    // Exclude alcohol and caffeine from nutrition improvements display
     const missingNutrientsArray = Object.entries(adjustedResult.nutrient_gaps)
-      .filter(([_, info]) => info.recommended_intake > 0 && info.current_intake / info.recommended_intake < 1)
+      .filter(([name, info]) => {
+        // Exclude alcohol and caffeine from nutrition improvements
+        if (name === 'Alcohol(d)' || name === 'Caffeine') {
+          return false;
+        }
+        return info.recommended_intake > 0 && info.current_intake / info.recommended_intake < 1;
+      })
       .map(([name, info]) => {
         const percentage = (info.current_intake / info.recommended_intake) * 100;
         return {
@@ -625,8 +632,15 @@ export const NutriRecommendService = {
     }
     
     // Get missing nutrients from the potentially adjusted result
+    // Exclude alcohol and caffeine from nutrition improvements display
     const missingNutrientsArray = Object.entries(adjustedResult.nutrient_gaps)
-      .filter(([_, info]) => info.recommended_intake > 0 && info.current_intake / info.recommended_intake < 1)
+      .filter(([name, info]) => {
+        // Exclude alcohol and caffeine from nutrition improvements
+        if (name === 'Alcohol(d)' || name === 'Caffeine') {
+          return false;
+        }
+        return info.recommended_intake > 0 && info.current_intake / info.recommended_intake < 1;
+      })
       .map(([name, info]) => {
         const percentage = (info.current_intake / info.recommended_intake) * 100;
         return {
