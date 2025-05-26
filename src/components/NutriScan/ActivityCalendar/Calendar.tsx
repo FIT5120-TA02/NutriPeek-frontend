@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowsOut, ArrowsIn, X } from 'phosphor-react';
 import { ActivityEntry } from '@/api/types';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import ActivityTimeBlock from './ActivityTimeBlock';
@@ -28,6 +30,7 @@ interface ScheduledActivity extends ActivityEntry {
  * - Edit activity duration by dragging
  * - Remove activities from the calendar
  * - View the breakdown of their child's daily activities
+ * - Maximize to fullscreen view for better visibility
  * 
  * Note: PAL (Physical Activity Level) calculation is not performed by this component.
  * The parent component should trigger PAL calculation when needed using the selectedActivities.
@@ -44,6 +47,7 @@ export default function ActivityCalendar({
   const [selectedActivityName, setSelectedActivityName] = useState('');
   const [isTimeDialogOpen, setIsTimeDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isMaximized, setIsMaximized] = useState(false);
   
   // Fetch available activities from API
   useEffect(() => {
@@ -188,20 +192,42 @@ export default function ActivityCalendar({
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
-  return (
-    <div className="flex flex-col w-full">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Daily Activity Schedule</h2>
+  // Handle background click to close maximized view
+  const handleBackgroundClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setIsMaximized(false);
+    }
+  };
+
+  // Render the calendar content
+  const renderCalendarContent = () => (
+    <div className={`flex flex-col ${isMaximized ? 'h-full' : 'w-full'}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">Daily Activity Schedule</h2>
+        <button
+          onClick={() => setIsMaximized(!isMaximized)}
+          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          title={isMaximized ? "Minimize calendar" : "Maximize calendar"}
+        >
+          {isMaximized ? (
+            <ArrowsIn size={20} weight="bold" />
+          ) : (
+            <ArrowsOut size={20} weight="bold" />
+          )}
+        </button>
+      </div>
       
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className={`flex ${isMaximized ? 'flex-row' : 'flex-col md:flex-row'} gap-4 ${isMaximized ? 'flex-1 min-h-0' : ''}`}>
         {/* Calendar Timeline - Left Side */}
-        <div className="flex-1 border rounded-lg overflow-hidden bg-white shadow flex flex-col">
+        <div className={`${isMaximized ? 'flex-1' : 'flex-1'} border rounded-lg overflow-hidden bg-white shadow flex flex-col ${isMaximized ? 'min-h-0' : ''}`}>
           <div className="sticky top-0 z-10 flex text-sm font-medium bg-gray-100 p-3 border-b">
             <div className="w-20 text-gray-700">Time</div>
             <div className="flex-1 text-gray-700">Activities</div>
           </div>
           
           {/* Calendar grid */}
-          <div className="relative overflow-y-auto h-[450px]">
+          <div className={`relative overflow-y-auto ${isMaximized ? 'flex-1 pb-4' : 'h-[450px]'}`}>
             {timeSlots.map((timeSlot, index) => (
               <div 
                 key={index}
@@ -239,9 +265,9 @@ export default function ActivityCalendar({
         </div>
         
         {/* Activity Selection - Right Side */}
-        <div className="w-full md:w-80 flex flex-col">
+        <div className={`${isMaximized ? 'w-96 flex flex-col min-h-0' : 'w-full md:w-80 flex flex-col'}`}>
           {/* Activity Library */}
-          <div className="bg-white border rounded-lg shadow p-4 space-y-4 overflow-y-auto h-[350px]">
+          <div className={`bg-white border rounded-lg shadow p-4 space-y-4 overflow-y-auto ${isMaximized ? 'flex-1 min-h-0 mb-4' : 'h-[350px]'}`}>
             <h3 className="font-medium text-gray-800 mb-2">Activity Library</h3>
             
             {/* Search input */}
@@ -326,7 +352,7 @@ export default function ActivityCalendar({
           
           {/* Activity summary */}
           {scheduledActivities.length > 0 && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 w-full h-[130px] overflow-y-auto">
+            <div className={`p-4 bg-blue-50 rounded-lg border border-blue-200 w-full overflow-y-auto ${isMaximized ? 'h-48 flex-shrink-0' : 'mt-4 h-[130px]'}`}>
               <h3 className="font-medium text-blue-800 mb-2">Activity Summary</h3>
               <div className="text-xs space-y-2">
                 {scheduledActivities.map((activity) => (
@@ -353,6 +379,39 @@ export default function ActivityCalendar({
           )}
         </div>
       </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Normal view */}
+      {!isMaximized && renderCalendarContent()}
+      
+      {/* Maximized fullscreen view */}
+      <AnimatePresence>
+        {isMaximized && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[2px] cursor-pointer"
+            onClick={handleBackgroundClick}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", damping: 20 }}
+              className="h-full w-full p-6 cursor-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-xl shadow-2xl h-full p-6 overflow-hidden">
+                {renderCalendarContent()}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Time selection dialog */}
       <ActivityTimeDialog
@@ -361,6 +420,6 @@ export default function ActivityCalendar({
         onClose={() => setIsTimeDialogOpen(false)}
         onAddActivity={handleAddActivity}
       />
-    </div>
+    </>
   );
 } 

@@ -3,7 +3,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { NutrientInfo } from '@/api/types';
-import noteService from '@/libs/NoteService';
+import { 
+  calculateNutritionScore, 
+  getNutritionScoreColorClasses, 
+  type NutrientDataForScoring 
+} from '@/utils/NutritionScoreUtils';
+
 interface NutritionScoreCardProps {
   allNutrients: Record<string, NutrientInfo>;
   totalCalories?: number;
@@ -29,15 +34,25 @@ export default function NutritionScoreCard({
   className = '',
   compact = false,
 }: NutritionScoreCardProps) {
-  // Calculate the score based on nutrient data
-  const score = noteService.calculateNutritionalScore(allNutrients, missingCount, excessCount);
+  // Convert NutrientInfo to NutrientDataForScoring format and calculate score
+  const score = React.useMemo(() => {
+    const convertedNutrients: Record<string, NutrientDataForScoring> = {};
+    
+    Object.entries(allNutrients).forEach(([key, nutrient]) => {
+      convertedNutrients[key] = {
+        current_intake: nutrient.current_intake,
+        recommended_intake: nutrient.recommended_intake,
+        unit: nutrient.unit
+      };
+    });
+    
+    // Use the centralized scoring function directly
+    return calculateNutritionScore(convertedNutrients, missingCount, excessCount);
+  }, [allNutrients, missingCount, excessCount]);
   
-  // Determine the color based on score
-  const scoreColor = score < 60 
-    ? 'text-red-500 border-red-200' 
-    : score < 80 
-      ? 'text-yellow-500 border-yellow-200' 
-      : 'text-green-500 border-green-200';
+  // Get consistent color styling using the centralized utility
+  const scoreColorClasses = getNutritionScoreColorClasses(score);
+  const scoreColor = `${scoreColorClasses.textColor} ${scoreColorClasses.borderColor}`;
   
   // If compact mode is enabled, just return the score circle
   if (compact) {

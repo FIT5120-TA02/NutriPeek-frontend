@@ -2,11 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Info } from 'phosphor-react';
 import { ExtendedNutrientGap } from './types';
 import { FoodItem } from '@/types/notes';
 import storageService from '@/libs/StorageService';
 import { STORAGE_KEYS, STORAGE_DEFAULTS } from '@/types/storage';
 import { SeasonalFood } from '@/types/seasonal';
+import Banner from '@/components/ui/Banner';
 
 interface RecommendedFoodsProps {
   activeNutrient: string | null;
@@ -87,6 +89,17 @@ export default function RecommendedFoods({
       <h2 className="font-bold text-lg text-gray-800 mb-3">
         {activeNutrient ? `Recommended Foods for ${activeNutrient}` : 'Select a nutrient'}
       </h2>
+
+      {/* Nutrition Information Banner */}
+      <Banner
+        id="recommended-foods-nutrition-info"
+        message="Nutrition information shown is based on per 100g edible portion of each food."
+        variant="info"
+        icon={<Info size={20} weight="fill" className="text-blue-600" />}
+        className="rounded-lg mb-4 border-blue-200"
+        position="static"
+        persistDismissal={false}
+      />
       
       <style jsx>{`
         /* Remove arrow buttons from number input */

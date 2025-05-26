@@ -5,6 +5,11 @@ import { useMemo } from 'react';
 import { ChildEnergyRequirementsResponse } from '@/api/types';
 import ChildAvatar from '@/components/ui/ChildAvatar';
 import InfoPopup from '@/components/ui/InfoPopup';
+import { 
+  calculateNutritionScore, 
+  getNutritionScoreColorClasses, 
+  type NutrientDataForScoring 
+} from '@/utils/NutritionScoreUtils';
 
 interface NutrientData {
   name: string;
@@ -83,32 +88,29 @@ export default function ProfileSummary({
     return Math.round(((adjustedEnergyTarget - baseEnergyTarget) / baseEnergyTarget) * 100);
   }, [shouldIncreaseEnergy, baseEnergyTarget, adjustedEnergyTarget]);
 
-  const getOverallScore = () => {
-    // If we have nutrient data, calculate the average percentage
-    if (Object.keys(allNutrients).length > 0) {
-      let totalPercentage = 0;
-      let nutrientCount = 0;
-      
-      Object.values(allNutrients).forEach(nutrient => {
-        if (nutrient.recommended_intake > 0) {
-          // Calculate percentage (capped at 100%)
-          const percentage = Math.min(100, (nutrient.current_intake / nutrient.recommended_intake) * 100);
-          totalPercentage += percentage;
-          nutrientCount++;
-        }
-      });
-      
-      // Return the average percentage, rounded to nearest integer
-      return nutrientCount > 0 ? Math.round(totalPercentage / nutrientCount) : 50;
-    }
+  /**
+   * Calculate the overall nutrition score using the centralized utility
+   * Converts the component's nutrient data format to the utility's expected format
+   */
+  const score = useMemo(() => {
+    // Convert allNutrients to the format expected by the scoring utility
+    const convertedNutrients: Record<string, NutrientDataForScoring> = {};
     
-    // Fallback to the old method if no nutrient data is available
-    const totalNutrientsScore = 100 - (missingNutrients * 3) - (excessNutrients * 2);
-    return Math.max(0, Math.min(100, totalNutrientsScore));
-  };
+    Object.entries(allNutrients).forEach(([key, nutrient]) => {
+      convertedNutrients[key] = {
+        current_intake: nutrient.current_intake,
+        recommended_intake: nutrient.recommended_intake,
+        unit: nutrient.unit
+      };
+    });
+    
+    // Use the centralized scoring function
+    return calculateNutritionScore(convertedNutrients, missingNutrients, excessNutrients);
+  }, [allNutrients, missingNutrients, excessNutrients]);
 
-  const score = getOverallScore();
-  const scoreColor = score < 60 ? 'text-red-500' : score < 80 ? 'text-yellow-500' : 'text-green-500';
+  // Get consistent color styling using the utility
+  const scoreColorClasses = getNutritionScoreColorClasses(score);
+  const scoreColor = scoreColorClasses.textColor;
   
   // Determine PAL status text and color
   const getPALStatus = () => {

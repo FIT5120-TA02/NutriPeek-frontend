@@ -28,6 +28,8 @@ import { getMealTitle } from "./utils";
 import { STORAGE_KEYS, STORAGE_DEFAULTS } from "@/types/storage";
 import { FoodItem } from "@/types/notes";
 import InfoPopup from "@/components/ui/InfoPopup";
+import AddProfilePopup from "./AddProfilePopup";
+import ChildAvatar from "@/components/ui/ChildAvatar";
 
 interface ResultsSectionProps {
   mealImages: MealImage[];
@@ -50,6 +52,7 @@ export default function ResultsSection({
     []
   );
   const [ingredientsInitialized, setIngredientsInitialized] = useState(false);
+  const [showAddProfilePopup, setShowAddProfilePopup] = useState(false);
 
   // Use device detection hook to check if screen is mobile
   const { isMobile, isTablet } = useDeviceDetection();
@@ -201,6 +204,32 @@ export default function ResultsSection({
     setCurrentProfileIndex((prev) =>
       prev === childProfiles.length - 1 ? 0 : prev + 1
     );
+  };
+
+  // Handle adding a new profile
+  const handleAddProfile = (newProfile: ChildProfile) => {
+    try {
+      // Add the new profile to the current list
+      const updatedProfiles = [...childProfiles, newProfile];
+      
+      // Update local state
+      setChildProfiles(updatedProfiles);
+      
+      // Update localStorage
+      storageService.setLocalItem<ChildProfile[]>(
+        STORAGE_KEYS.CHILDREN_PROFILES,
+        updatedProfiles
+      );
+      
+      // Set the newly created profile as the current selection
+      setCurrentProfileIndex(updatedProfiles.length - 1);
+      
+      // Show success message
+      toast.success(`Profile for ${newProfile.name} has been created successfully!`);
+    } catch (error) {
+      console.error('Error adding new profile:', error);
+      toast.error('Failed to create profile. Please try again.');
+    }
   };
 
   /**
@@ -403,10 +432,10 @@ export default function ResultsSection({
             No child profiles available
           </p>
           <button
-            onClick={() => router.push("/Profile")}
+            onClick={() => setShowAddProfilePopup(true)}
             className="px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
           >
-            Create a Profile
+            Add Profile
           </button>
         </div>
       );
@@ -423,6 +452,16 @@ export default function ResultsSection({
           transition={{ duration: 0.3 }}
           className="bg-white rounded-lg p-4 shadow-md w-full"
         >
+          {/* Avatar */}
+          <div className="flex justify-center mb-3">
+            <ChildAvatar 
+              name={profile.name} 
+              gender={profile.gender} 
+              avatarNumber={(profile as any).avatarNumber || 1}
+              size={80}
+            />
+          </div>
+
           <h3 className="text-xl font-semibold text-green-700 text-center mb-3">
             {profile.name}
           </h3>
@@ -630,10 +669,10 @@ export default function ResultsSection({
           {childProfiles.length > 0 && (
             <div className="mt-4 text-center">
               <button
-                onClick={() => router.push("/Profile")}
+                onClick={() => setShowAddProfilePopup(true)}
                 className="text-green-600 hover:underline text-sm font-medium"
               >
-                Manage Profiles
+                Add Profile
               </button>
             </div>
           )}
@@ -764,6 +803,13 @@ export default function ResultsSection({
           </div>
         </div>
       )}
+
+      {/* Add Profile Popup */}
+      <AddProfilePopup
+        isOpen={showAddProfilePopup}
+        onClose={() => setShowAddProfilePopup(false)}
+        onAddProfile={handleAddProfile}
+      />
     </div>
   );
 }

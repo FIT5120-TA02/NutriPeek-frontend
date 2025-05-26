@@ -57,3 +57,12 @@ export function getChildAvatarUrl(gender: string, avatarNumber: number): string 
 export function getAuStateImageUrl(): string {
   return `${process.env.NEXT_PUBLIC_CDN_URL}/au-states/au.png`;
 }
+
+/**
+ * Gets the CDN URL for a landing page asset
+ * @param assetName - Name of the landing page asset
+ * @returns Full URL to the landing page asset
+ */
+export function getLandingPageAssetUrl(assetName: string): string {
+  return `${process.env.NEXT_PUBLIC_CDN_URL}/landing-page/${assetName}`;
+}

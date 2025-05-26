@@ -116,4 +116,60 @@
 
 .rotate-y-180 {
   transform: rotateY(180deg);
+}
+
+/* Custom slider styles for ActivityTimeDialog */
+.slider-green {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider-green::-webkit-slider-track {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.slider-green::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(135deg, #10b981, #059669);
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.slider-green::-webkit-slider-thumb:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.slider-green::-moz-range-track {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+  border: none;
+}
+
+.slider-green::-moz-range-thumb {
+  background: linear-gradient(135deg, #10b981, #059669);
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.slider-green::-moz-range-thumb:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 } 

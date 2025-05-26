@@ -33,6 +33,7 @@ import {
 export default function WelcomePage() {
   const [activeSection, setActiveSection] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLastSectionInView, setIsLastSectionInView] = useState(false);
   
   // Check if screen is mobile
   useEffect(() => {
@@ -93,6 +94,20 @@ export default function WelcomePage() {
     });
     
     setActiveSection(maxVisibleSection);
+    
+    // Check if last section is significantly in view (more than 30% visible)
+    const lastSection = sectionElements[sectionElements.length - 1];
+    if (lastSection) {
+      const rect = lastSection.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const visibleTop = Math.max(0, rect.top);
+      const visibleBottom = Math.min(windowHeight, rect.bottom);
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+      const sectionHeight = rect.height;
+      const visibilityPercentage = visibleHeight / sectionHeight;
+      
+      setIsLastSectionInView(visibilityPercentage > 0.3);
+    }
   }, [sectionIds]);
   
   useEffect(() => {
@@ -140,6 +155,17 @@ export default function WelcomePage() {
   // Handle section change from SectionIndicator
   const handleSectionChange = (index: number) => {
     setActiveSection(index);
+  };
+
+  // Handle scroll to next section
+  const handleScrollToNext = () => {
+    const nextSectionIndex = Math.min(activeSection + 1, sectionIds.length - 1);
+    const nextSectionId = sectionIds[nextSectionIndex];
+    const element = document.getElementById(nextSectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      setActiveSection(nextSectionIndex);
+    }
   };
 
   // Inside the component definition, after state variables
@@ -199,14 +225,17 @@ export default function WelcomePage() {
       </div>
 
       {/* Floating Scroll Indicator - hidden in features sections and footer */}
-      {!isMobile && (
+      {!isMobile && !isLastSectionInView && (
         <AnimatePresence>
             <motion.div
-              className="fixed bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-white/80 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 shadow-md flex items-center"
+              className="fixed bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-white/80 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 shadow-md flex items-center cursor-pointer"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.4 }}
+              onClick={handleScrollToNext}
+              whileHover={{ scale: 1.05, backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+              whileTap={{ scale: 0.95 }}
             >
               <motion.div
                 animate={{ opacity: [0.6, 1, 0.6] }}
