@@ -128,28 +128,14 @@ export default function SeasonalFoodSection() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            style={{ 
-              filter: 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.1))' 
-            }}
           >
-            {/* Background blur effect */}
-            <div 
-              className="absolute inset-4 rounded-3xl -z-10"
-              style={{ 
-                background: 'linear-gradient(135deg, rgba(167, 243, 208, 0.2), rgba(186, 230, 253, 0.2), rgba(254, 215, 170, 0.2))',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)'
-              }}
-            ></div>
-            
             <div className="relative aspect-square max-w-lg mx-auto">
               {/* Main Image */}
               <div className="absolute inset-0 z-10 flex items-center justify-center">
                 <img 
                   src={getAuStateImageUrl()} 
                   alt="Interactive map showing farmers markets and seasonal foods" 
-                  className="w-full h-full object-contain rounded-xl shadow-lg"
+                  className="w-full h-full object-contain rounded-xl"
                   onError={(e) => {
                     // Fallback if image doesn't exist
                     const target = e.target as HTMLImageElement;
