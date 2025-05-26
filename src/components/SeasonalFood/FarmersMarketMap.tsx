@@ -78,7 +78,7 @@ const FarmersMarketMap: React.FC = () => {
       return (
         <div className="bg-white rounded-xl shadow-md p-6 text-center mb-4">
           <div className="flex justify-center mb-4">
-            <NavigationArrow size={64} className="text-green-500" />
+            <NavigationArrow size={48} className="text-green-500" />
           </div>
           <h3 className="text-xl font-medium text-gray-800 mb-2">Select a Location</h3>
           <p className="text-gray-600 max-w-lg mx-auto">
