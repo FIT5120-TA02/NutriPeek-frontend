@@ -9,6 +9,7 @@ import { useNoteEvents } from '@/hooks/useNoteEvents';
 import { toast } from 'sonner';
 import { showConfirmDialog } from "@/components/ui/ConfirmDialog";
 import SeasonalFoodCTA from '@/components/SeasonalFood/SeasonalFoodCTA';
+import { Hamburger } from 'phosphor-react';
 
 export default function MyNotePage() {
   const router = useRouter();
@@ -114,14 +115,15 @@ export default function MyNotePage() {
         <div className="flex flex-col sm:flex-row gap-4">
           <motion.button
             onClick={handleNavigateToScan}
-            className="px-6 py-3 bg-green-500 text-white rounded-full font-medium shadow-md hover:bg-green-600 transition-colors"
+            className="px-6 py-3 bg-green-500 text-white rounded-full font-medium shadow-md hover:bg-green-600 transition-colors flex items-center gap-2"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            Scan Food Now 🍎
+            <Hamburger size={20} weight="fill" />
+            Scan Food Now
           </motion.button>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
