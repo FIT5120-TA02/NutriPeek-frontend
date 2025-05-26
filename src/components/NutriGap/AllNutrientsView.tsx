@@ -99,6 +99,12 @@ export default function AllNutrientsView({
   const filteredAndSortedNutrients = useMemo(() => {
     let result = Object.values(adjustedGaps);
 
+    // Filter out alcohol and caffeine from the main nutrition view
+    // These should be in notes section, not nutrition improvements
+    result = result.filter(nutrient => 
+      nutrient.name !== 'Alcohol(d)' && nutrient.name !== 'Caffeine'
+    );
+
     // Apply search filter
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
