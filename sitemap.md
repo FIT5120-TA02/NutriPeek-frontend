@@ -1,19 +1,12 @@
 ```mermaid
 graph TD
     %% Main application structure
-    Root["/"] --> Password["Password Entry Page"]
-    Password -->|"Correct password"| Welcome["/Welcome"]
-    
-    %% Main navigation areas with color coding
-    subgraph Authentication [Authentication]
-        style Authentication fill:#e6f7ff,stroke:#1890ff
-        Root
-        Password
-    end
+    Root["/"] --> Welcome["/Welcome"]
     
     %% Welcome Landing Page as its own group
     subgraph LandingPage [Landing Page]
         style LandingPage fill:#d9f7be,stroke:#389e0d
+        Root
         Welcome
     end
     
