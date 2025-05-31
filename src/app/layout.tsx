@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const [showPinnedItems, setShowPinnedItems] = useState(true);
   
   // Paths where the pinned items layout should be hidden
-  const excludedPaths = ['/', '/Welcome'];
+  const excludedPaths = ['/Welcome'];
   
   useEffect(() => {
     // Update the visibility based on current path

@@ -1,45 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import storageService from '@/libs/StorageService';
-import { STORAGE_KEYS } from '@/types/storage';
 
-
-export default function PasswordPage() {
-  const [password, setPassword] = useState('');
+export default function HomePage() {
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === 'nutri123') {
-      storageService.setLocalItem<boolean>(STORAGE_KEYS.AUTHENTICATED, true);
-      toast.success('Password correct!');
-      router.push('/Welcome'); 
-    } else {
-      toast.error('Incorrect password!');
-    }
-  };
+  useEffect(() => {
+    // Redirect to Welcome page immediately
+    router.replace('/Welcome');
+  }, [router]);
 
+  // Show a loading state while redirecting
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-white to-green-50">
-      <form onSubmit={handleSubmit} className="flex flex-col space-y-4 w-80">
-        <h1 className="text-2xl font-bold mb-6 text-center">Enter Password</h1>
-        <input
-          type="password"
-          placeholder="Enter password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="p-3 border rounded-md"
-        />
-        <button
-          type="submit"
-          className="bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
-        >
-          Submit
-        </button>
-      </form>
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-lg text-gray-600">Loading NutriPeek...</p>
+      </div>
     </div>
   );
 }

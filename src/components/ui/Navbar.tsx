@@ -8,12 +8,7 @@ import nutriPeekLogo from '@/../public/nutripeek.png';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const isHiddenPage = pathname === '/';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  if (isHiddenPage) {
-    return null;
-  }
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen((prev) => !prev);
