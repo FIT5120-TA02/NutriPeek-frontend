@@ -55,6 +55,7 @@ export default function ProductVideoSection() {
                 width={isMobile ? 55 : isTablet ? 70 : 85}
                 height={isMobile ? 55 : isTablet ? 70 : 85}
                 className="object-contain drop-shadow-md"
+                priority
               />
             </div>
             
@@ -66,6 +67,7 @@ export default function ProductVideoSection() {
                 width={isMobile ? 50 : isTablet ? 65 : 80}
                 height={isMobile ? 50 : isTablet ? 65 : 80}
                 className="object-contain drop-shadow-md"
+                priority
               />
             </div>
             
@@ -77,6 +79,7 @@ export default function ProductVideoSection() {
                 width={isMobile ? 45 : isTablet ? 55 : 70}
                 height={isMobile ? 45 : isTablet ? 55 : 70}
                 className="object-contain drop-shadow-md"
+                priority
               />
             </div>
             
@@ -88,6 +91,7 @@ export default function ProductVideoSection() {
                 width={isMobile ? 35 : isTablet ? 45 : 60}
                 height={isMobile ? 35 : isTablet ? 45 : 60}
                 className="object-contain drop-shadow-md"
+                priority
               />
             </div>
           </div>

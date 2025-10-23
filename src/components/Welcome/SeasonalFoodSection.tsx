@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Leaf, Heart, MapPin, House, Hamburger } from 'phosphor-react';
@@ -132,16 +133,20 @@ export default function SeasonalFoodSection() {
             <div className="relative aspect-square max-w-lg mx-auto">
               {/* Main Image */}
               <div className="absolute inset-0 z-10 flex items-center justify-center">
-                <img 
-                  src={getAuStateImageUrl()} 
-                  alt="Interactive map showing farmers markets and seasonal foods" 
-                  className="w-full h-full object-contain rounded-xl"
-                  onError={(e) => {
-                    // Fallback if image doesn't exist
-                    const target = e.target as HTMLImageElement;
-                    target.src = "https://placehold.co/600x400/e6f4ea/1b873d?text=Seasonal+Foods+Map&font=montserrat";
-                  }}
-                />
+                <div className="relative w-full h-full">
+                  <Image 
+                    src={getAuStateImageUrl()} 
+                    alt="Interactive map showing farmers markets and seasonal foods" 
+                    fill
+                    className="object-contain rounded-xl"
+                    priority
+                    onError={(e) => {
+                      // Fallback if image doesn't exist
+                      const target = e.target as HTMLImageElement;
+                      target.src = "https://placehold.co/600x400/e6f4ea/1b873d?text=Seasonal+Foods+Map&font=montserrat";
+                    }}
+                  />
+                </div>
               </div>
               
               {/* Floating food icons */}

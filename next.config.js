@@ -15,11 +15,32 @@ const nextConfig = {
       },
     ],
   },
-  // Add cache control for better handling of locale switching
+  // Add cache control with optimized settings for images and static assets
   headers: async () => {
     return [
       {
-        source: '/:path*',
+        // Cache static assets (images, fonts, etc.)
+        source: '/public/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Cache images from CDN
+        source: '/_next/image',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      {
+        // Only HTML pages have no-store for locale switching
+        source: '/:path*.html',
         headers: [
           {
             key: 'Cache-Control',

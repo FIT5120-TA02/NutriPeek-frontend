@@ -4,16 +4,33 @@
  */
 
 /**
+ * Validates and returns the CDN URL
+ * @returns CDN URL or empty string if not configured
+ */
+function getCDNUrl(): string {
+  const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL;
+  
+  if (!cdnUrl || cdnUrl === 'undefined') {
+    console.warn('NEXT_PUBLIC_CDN_URL is not properly configured. Images may not load correctly.');
+    return '';
+  }
+  
+  return cdnUrl;
+}
+
+/**
  * Gets the CDN URL for a food image
  * @param foodName - Name of the food item
  * @returns Full URL to the food image
  */
 export function getFoodImageUrl(foodName: string): string {
+  const cdnUrl = getCDNUrl();
+  
   // Replace forward slashes with colons before encoding
   const sanitizedName = foodName.replace(/\//g, ':');
   // Encode food name to handle spaces and special characters
   const encodedName = encodeURIComponent(`asset_${sanitizedName}`);
-  return `${process.env.NEXT_PUBLIC_CDN_URL}/foods/${encodedName}.png`;
+  return `${cdnUrl}/foods/${encodedName}.png`;
 }
 
 /**
@@ -22,7 +39,8 @@ export function getFoodImageUrl(foodName: string): string {
  * @returns Full URL to the plate/lunchbox image
  */
 export function getPlateImageUrl(imageName: string): string {
-  return `${process.env.NEXT_PUBLIC_CDN_URL}/plates/${imageName}.png`;
+  const cdnUrl = getCDNUrl();
+  return `${cdnUrl}/plates/${imageName}.png`;
 }
 
 /**
@@ -31,7 +49,8 @@ export function getPlateImageUrl(imageName: string): string {
  * @returns Full URL to the avatar image
  */
 export function getAvatarImageUrl(emotionType: string): string {
-  return `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/${emotionType}_avatar.png`;
+  const cdnUrl = getCDNUrl();
+  return `${cdnUrl}/avatars/${emotionType}_avatar.png`;
 }
 
 /**
@@ -41,13 +60,15 @@ export function getAvatarImageUrl(emotionType: string): string {
  * @returns Full URL to the child avatar image
  */
 export function getChildAvatarUrl(gender: string, avatarNumber: number): string {
+  const cdnUrl = getCDNUrl();
+  
   // Normalize gender to ensure it's either 'boy' or 'girl'
   const normalizedGender = gender.toLowerCase() === 'female' ? 'girl' : 'boy';
   
   // Ensure avatar number is between 1-5
   const avatarNum = Math.max(1, Math.min(5, avatarNumber));
   
-  return `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/${normalizedGender}_avatar_${avatarNum}.png`;
+  return `${cdnUrl}/avatars/${normalizedGender}_avatar_${avatarNum}.png`;
 }
 
 /**
@@ -55,7 +76,8 @@ export function getChildAvatarUrl(gender: string, avatarNumber: number): string 
  * @returns Full URL to the Australian state image
  */
 export function getAuStateImageUrl(): string {
-  return `${process.env.NEXT_PUBLIC_CDN_URL}/au-states/au.png`;
+  const cdnUrl = getCDNUrl();
+  return `${cdnUrl}/au-states/au.png`;
 }
 
 /**
@@ -64,5 +86,6 @@ export function getAuStateImageUrl(): string {
  * @returns Full URL to the landing page asset
  */
 export function getLandingPageAssetUrl(assetName: string): string {
-  return `${process.env.NEXT_PUBLIC_CDN_URL}/landing-page/${assetName}`;
+  const cdnUrl = getCDNUrl();
+  return `${cdnUrl}/landing-page/${assetName}`;
 }
