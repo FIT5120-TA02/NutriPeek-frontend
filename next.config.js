@@ -19,7 +19,8 @@ const nextConfig = {
   headers: async () => {
     return [
       {
-        source: '/:path*',
+        // Only apply no-cache to HTML pages, not static assets
+        source: '/:locale(en|zh)/:path*',
         headers: [
           {
             key: 'Cache-Control',
