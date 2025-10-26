@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import nutriPeekLogo from '@/../public/nutripeek.png';
+// Import static asset from public folder
+const nutriPeekLogo = '/nutripeek.png';
 
 export default function Navbar() {
   const pathname = usePathname();

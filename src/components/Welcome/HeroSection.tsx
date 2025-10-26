@@ -6,7 +6,8 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowCircleRight, Eye, Heart, Sparkle } from 'phosphor-react';
 import { useRouter } from 'next/navigation';
-import nutriPeekLogo from '@/../public/nutripeek.png';
+// Import static asset from public folder
+const nutriPeekLogo = '/nutripeek.png';
 import SectionContainer from './SectionContainer';
 import { getLandingPageAssetUrl } from '@/utils/assetHelpers';
 
