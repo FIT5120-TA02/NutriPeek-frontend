@@ -10,6 +10,7 @@ interface FloatingEmojisLayoutProps {
   backgroundClasses?: string;
 }
 
+
 interface EmojiProps {
   emoji: string;
   x: number;
