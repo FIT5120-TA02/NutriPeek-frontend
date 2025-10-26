@@ -207,6 +207,12 @@ export default function HeroSection() {
                 height={600}
                 className="object-contain w-full max-w-[400px] sm:max-w-[500px] lg:max-w-[600px] h-auto drop-shadow-2xl"
                 priority
+                loading="eager"
+                onError={(e) => {
+                  console.error('Failed to load fridge image');
+                  const target = e.target as HTMLImageElement;
+                  target.style.opacity = '0.5';
+                }}
               />
             </motion.div>
           </motion.div>
