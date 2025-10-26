@@ -33,8 +33,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
-          source: ".next,public,package.json,next.config.js"
+          source: ".next,public,package.json,next.config.js,src"
           target: "~/main-project-frontend"
+          strip_components: 0
 
       - name: Restart PM2 on EC2 via SSH
         uses: appleboy/ssh-action@v0.1.6
@@ -45,4 +46,5 @@ jobs:
           script: |
             cd ~/main-project-frontend
             npm install --omit=dev
-            pm2 restart frontend || pm2 start "npm start" --name frontend
+            export NEXT_PUBLIC_CDN_URL="https://d3dod46kv415h5.cloudfront.net"
+            pm2 restart frontend --update-env || pm2 start "npm start" --name frontend
