@@ -48,11 +48,8 @@ export default function ProductVideoSection() {
   }, []);
 
   return (
-    <SectionContainer 
-      id="product-video" 
-      className="justify-center items-center"
-      backgroundClasses="bg-gradient-to-b from-green-50 to-green-100"
-    >
+    <div id="product-video" className="min-h-screen w-full flex flex-col justify-center items-center bg-gradient-to-b from-green-50 to-green-100 pt-20 pb-8 sm:py-12 md:py-16 px-4 scroll-mt-20 sm:scroll-mt-16">
+      <div className="container mx-auto max-w-7xl z-10 w-full">
       <div className="flex flex-col items-center justify-center w-full" ref={containerRef}>
         {/* Characters above header in a single group */}
         <div className="flex justify-center w-full mb-4 sm:mb-6">
@@ -175,6 +172,7 @@ export default function ProductVideoSection() {
           </motion.div>
         </div>
       </div>
-    </SectionContainer>
+      </div>
+    </div>
   );
 } 
