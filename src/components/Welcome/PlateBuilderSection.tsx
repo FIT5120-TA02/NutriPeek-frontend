@@ -198,7 +198,6 @@ export default function PlateBuilderSection() {
                   className="object-contain"
                   sizes="(max-width: 640px) 90vw, (max-width: 1024px) 60vw, 600px"
                   priority
-                  loading="eager"
                 />
               </div>
               
