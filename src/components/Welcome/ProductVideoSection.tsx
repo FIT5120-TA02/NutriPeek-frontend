@@ -39,14 +39,6 @@ export default function ProductVideoSection() {
     { name: 'Dog', src: getCharacterAvatarUrl('dog'), alt: 'Dog avatar' },
   ];
 
-  // Debug: Log image URLs
-  useEffect(() => {
-    console.log('🖼️ Character Image URLs:');
-    characters.forEach(char => {
-      console.log(`${char.name}: ${char.src}`);
-    });
-  }, []);
-
   return (
     <div id="product-video" className="min-h-screen w-full flex flex-col justify-center items-center bg-gradient-to-b from-green-50 to-green-100 pt-20 pb-8 sm:py-12 md:py-16 px-4 scroll-mt-20 sm:scroll-mt-16">
       <div className="container mx-auto max-w-7xl z-10 w-full">
@@ -63,6 +55,7 @@ export default function ProductVideoSection() {
                 height={isMobile ? 55 : isTablet ? 70 : 85}
                 className="object-contain drop-shadow-md"
                 priority
+                loading="eager"
               />
             </div>
             
@@ -75,6 +68,7 @@ export default function ProductVideoSection() {
                 height={isMobile ? 50 : isTablet ? 65 : 80}
                 className="object-contain drop-shadow-md"
                 priority
+                loading="eager"
               />
             </div>
             
@@ -87,6 +81,7 @@ export default function ProductVideoSection() {
                 height={isMobile ? 45 : isTablet ? 55 : 70}
                 className="object-contain drop-shadow-md"
                 priority
+                loading="eager"
               />
             </div>
             
@@ -99,6 +94,7 @@ export default function ProductVideoSection() {
                 height={isMobile ? 35 : isTablet ? 45 : 60}
                 className="object-contain drop-shadow-md"
                 priority
+                loading="eager"
               />
             </div>
           </div>
