@@ -39,6 +39,14 @@ export default function ProductVideoSection() {
     { name: 'Dog', src: getCharacterAvatarUrl('dog'), alt: 'Dog avatar' },
   ];
 
+  // Debug: Log image URLs
+  useEffect(() => {
+    console.log('🖼️ Character Image URLs:');
+    characters.forEach(char => {
+      console.log(`${char.name}: ${char.src}`);
+    });
+  }, []);
+
   return (
     <SectionContainer 
       id="product-video" 
