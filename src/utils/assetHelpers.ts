@@ -3,17 +3,35 @@
  * Provides utility functions for handling asset URLs
  */
 
+// Cache CDN URL to avoid repeated environment variable lookups
+let cachedCDNUrl: string | null = null;
+let cdnUrlChecked = false;
+
 /**
  * Validates and returns the CDN URL
  * @returns CDN URL or empty string if not configured
  */
 function getCDNUrl(): string {
-  const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL;
+  // Return cached value if already checked
+  if (cdnUrlChecked && cachedCDNUrl !== null) {
+    return cachedCDNUrl;
+  }
+
+  // Check both build-time and runtime environment variables
+  const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || 
+                 (typeof window !== 'undefined' && (window as any).ENV?.NEXT_PUBLIC_CDN_URL);
   
-  if (!cdnUrl || cdnUrl === 'undefined') {
-    console.warn('NEXT_PUBLIC_CDN_URL is not properly configured. Images may not load correctly.');
+  if (!cdnUrl || cdnUrl === 'undefined' || cdnUrl === '') {
+    console.error('NEXT_PUBLIC_CDN_URL is not properly configured. Images may not load correctly.');
+    console.error('Please ensure NEXT_PUBLIC_CDN_URL is set in your .env.local file');
+    cachedCDNUrl = '';
+    cdnUrlChecked = true;
     return '';
   }
+  
+  // Cache the valid URL
+  cachedCDNUrl = cdnUrl;
+  cdnUrlChecked = true;
   
   return cdnUrl;
 }
@@ -88,4 +106,23 @@ export function getAuStateImageUrl(): string {
 export function getLandingPageAssetUrl(assetName: string): string {
   const cdnUrl = getCDNUrl();
   return `${cdnUrl}/landing-page/${assetName}`;
+}
+
+/**
+ * Gets the CDN URL for character avatars (father, mother, child, dog)
+ * @param characterName - Name of the character (father, mother, child, dog)
+ * @returns Full URL to the character avatar image
+ */
+export function getCharacterAvatarUrl(characterName: string): string {
+  const cdnUrl = getCDNUrl();
+  return `${cdnUrl}/avatars/${characterName}.png`;
+}
+
+/**
+ * Gets the CDN URL for the product video
+ * @returns Full URL to the product video
+ */
+export function getProductVideoUrl(): string {
+  const cdnUrl = getCDNUrl();
+  return `${cdnUrl}/product_video/NutriPeek.mp4`;
 }
