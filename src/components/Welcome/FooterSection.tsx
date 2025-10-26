@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import SectionContainer from './SectionContainer';
-import nutriPeekLogo from '@/../public/nutripeek.png';
+// Import static asset from public folder
+const nutriPeekLogo = '/nutripeek.png';
 import { useRouter } from 'next/navigation';
 import LegalPolicies, { useLegalPolicies } from '../LegalPolicy/LegalPolicies';
 

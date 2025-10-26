@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import SectionContainer from './SectionContainer';
+import { getCharacterAvatarUrl, getProductVideoUrl } from '@/utils/assetHelpers';
 
 /**
  * ProductVideoSection component
@@ -15,6 +16,7 @@ export default function ProductVideoSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [videoError, setVideoError] = useState(false);
 
   // Check screen size for responsive design
   useEffect(() => {
@@ -31,18 +33,16 @@ export default function ProductVideoSection() {
 
   // Character avatar data - rearranged in order: father, mother, child, dog
   const characters = [
-    { name: 'Father', src: `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/father.png`, alt: 'Father avatar' },
-    { name: 'Mother', src: `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/mother.png`, alt: 'Mother avatar' },
-    { name: 'Child', src: `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/child.png`, alt: 'Child avatar' },
-    { name: 'Dog', src: `${process.env.NEXT_PUBLIC_CDN_URL}/avatars/dog.png`, alt: 'Dog avatar' },
+    { name: 'Father', src: getCharacterAvatarUrl('father'), alt: 'Father avatar' },
+    { name: 'Mother', src: getCharacterAvatarUrl('mother'), alt: 'Mother avatar' },
+    { name: 'Child', src: getCharacterAvatarUrl('child'), alt: 'Child avatar' },
+    { name: 'Dog', src: getCharacterAvatarUrl('dog'), alt: 'Dog avatar' },
   ];
 
+
   return (
-    <SectionContainer 
-      id="product-video" 
-      className="justify-center items-center"
-      backgroundClasses="bg-gradient-to-b from-green-50 to-green-100"
-    >
+    <div id="product-video" className="min-h-screen w-full flex flex-col justify-center items-center bg-gradient-to-b from-green-50 to-green-100 pt-20 pb-8 sm:py-12 md:py-16 px-4 scroll-mt-20 sm:scroll-mt-16">
+      <div className="container mx-auto max-w-7xl z-10 w-full">
       <div className="flex flex-col items-center justify-center w-full" ref={containerRef}>
         {/* Characters above header in a single group */}
         <div className="flex justify-center w-full mb-4 sm:mb-6">
@@ -55,6 +55,8 @@ export default function ProductVideoSection() {
                 width={isMobile ? 55 : isTablet ? 70 : 85}
                 height={isMobile ? 55 : isTablet ? 70 : 85}
                 className="object-contain drop-shadow-md"
+                priority
+                loading="eager"
               />
             </div>
             
@@ -66,6 +68,8 @@ export default function ProductVideoSection() {
                 width={isMobile ? 50 : isTablet ? 65 : 80}
                 height={isMobile ? 50 : isTablet ? 65 : 80}
                 className="object-contain drop-shadow-md"
+                priority
+                loading="eager"
               />
             </div>
             
@@ -77,6 +81,8 @@ export default function ProductVideoSection() {
                 width={isMobile ? 45 : isTablet ? 55 : 70}
                 height={isMobile ? 45 : isTablet ? 55 : 70}
                 className="object-contain drop-shadow-md"
+                priority
+                loading="eager"
               />
             </div>
             
@@ -88,6 +94,8 @@ export default function ProductVideoSection() {
                 width={isMobile ? 35 : isTablet ? 45 : 60}
                 height={isMobile ? 35 : isTablet ? 45 : 60}
                 className="object-contain drop-shadow-md"
+                priority
+                loading="eager"
               />
             </div>
           </div>
@@ -126,18 +134,42 @@ export default function ProductVideoSection() {
               margin: '0 auto'
             }}
           >
-            <div className={`absolute inset-0 flex items-center justify-center bg-gray-100`}>
-              <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
+            {!videoError && (
+              <div className={`absolute inset-0 flex items-center justify-center bg-gray-100`}>
+                <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
             <video 
-              src={`${process.env.NEXT_PUBLIC_CDN_URL}/product_video/NutriPeek.mp4`}
+              src={getProductVideoUrl()}
               className="absolute inset-0 w-full h-full rounded-xl"
               controls
               preload="metadata"
+              onError={() => {
+                console.error('Failed to load product video');
+                setVideoError(true);
+              }}
+              onLoadedData={() => setVideoError(false)}
             />
+            {videoError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-xl">
+                <div className="text-center p-4">
+                  <p className="text-gray-600 mb-2">Video temporarily unavailable</p>
+                  <button 
+                    onClick={() => {
+                      setVideoError(false);
+                      window.location.reload();
+                    }}
+                    className="text-green-600 underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
-    </SectionContainer>
+      </div>
+    </div>
   );
 } 

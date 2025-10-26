@@ -10,7 +10,8 @@
 
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import nutriPeekLogo from '@/../public/nutripeek.png';
+// Import static asset from public folder
+const nutriPeekLogo = '/nutripeek.png';
 import { PDFTemplateProps } from '@/types/pdf';
 
 // Define styles using the app's color scheme
@@ -379,7 +380,7 @@ export const NotesPDFTemplate: React.FC<PDFTemplateProps> = ({ data, options }) 
         <View style={styles.header}>
           <Image
             style={styles.logo}
-            src={nutriPeekLogo.src}
+            src={nutriPeekLogo}
           />
           <View style={styles.headerContent}>
             <Text style={styles.title}>
@@ -552,7 +553,7 @@ export const NotesPDFTemplate: React.FC<PDFTemplateProps> = ({ data, options }) 
           <View style={styles.header}>
             <Image
               style={styles.logo}
-              src={nutriPeekLogo.src}
+              src={nutriPeekLogo}
             />
             <View style={styles.headerContent}>
               <Text style={styles.title}>Nutrient Analysis</Text>

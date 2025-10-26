@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - main
+  # Removed pull_request trigger to prevent deployment on PRs
 
 jobs:
   build-and-deploy:
+    # Only deploy on direct pushes to main branch (after PR merge)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'FIT5120-TA02/NutriPeek-frontend'
     runs-on: ubuntu-latest
 
     steps:
