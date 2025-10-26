@@ -4,12 +4,9 @@ on:
   push:
     branches:
       - main
-  # Removed pull_request trigger to prevent deployment on PRs
 
 jobs:
   build-and-deploy:
-    # Only deploy on direct pushes to main branch (after PR merge)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'FIT5120-TA02/NutriPeek-frontend'
     runs-on: ubuntu-latest
 
     steps:
@@ -33,9 +30,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
-          source: ".next,public,package.json,next.config.js,src"
+          source: ".next,public,package.json,next.config.js"
           target: "~/main-project-frontend"
-          strip_components: 0
 
       - name: Restart PM2 on EC2 via SSH
         uses: appleboy/ssh-action@v0.1.6
@@ -46,5 +42,5 @@ jobs:
           script: |
             cd ~/main-project-frontend
             npm install --omit=dev
-            export NEXT_PUBLIC_CDN_URL="https://d3dod46kv415h5.cloudfront.net"
-            pm2 restart frontend --update-env || pm2 start "npm start" --name frontend
+            pm2 restart frontend || pm2 start "npm start" --name frontend
+            
