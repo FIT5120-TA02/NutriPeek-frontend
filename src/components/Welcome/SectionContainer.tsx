@@ -53,8 +53,8 @@ export default function SectionContainer({
       id={id}
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.7 }}
+      viewport={{ once: true, margin: "-200px" }}
+      transition={{ duration: 0.5 }}
       className={`
         relative 
         ${removeMinHeight ? '' : 'min-h-[100vh] h-auto md:h-screen'} 
