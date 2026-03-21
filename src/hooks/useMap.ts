@@ -105,28 +105,41 @@ export const useMap = () => {
         region: regionFullName,
       });
       
-      // Fetch farmers markets for the region
+      // Fetch nearby farmers markets using coordinates (Google Places API)
       try {
-        const response = await nutripeekApi.getFarmersMarkets({ region: regionFullName });
-        
-        // Filter markets with valid coordinates and calculate distance
-        const marketsWithDistance = response.items
-          .filter(market => market.latitude !== null && market.longitude !== null)
+        const nearbyResponse = await nutripeekApi.getNearbyFarmersMarkets({
+          latitude: lat,
+          longitude: lng,
+          radius_km: 30,
+          min_rating: 3.5,
+          max_results: 20,
+        });
+
+        // Adapt NearbyMarketItem → FarmersMarketResponse shape
+        const adapted: FarmersMarketResponse[] = nearbyResponse.items.map(item => ({
+          id: item.place_id,
+          name: item.name,
+          address: item.address || '',
+          opening_hours_text: item.opening_hours ? item.opening_hours.join(', ') : '',
+          region: regionFullName,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          website: item.website,
+          phone: item.phone,
+          description: item.rating != null ? `Rating: ${item.rating} (${item.user_rating_count ?? 0} reviews)` : undefined,
+        }));
+
+        // Sort by distance
+        const sorted = adapted
           .map(market => ({
             ...market,
-            distance: calculateDistance(
-              lat, 
-              lng, 
-              Number(market.latitude), 
-              Number(market.longitude)
-            )
+            distance: calculateDistance(lat, lng, Number(market.latitude), Number(market.longitude)),
           }))
-          .sort((a, b) => (a.distance as number) - (b.distance as number))
-          .slice(0, 5); // Limit to 5 nearest markets
-        
-        setNearbyMarkets(marketsWithDistance);
+          .sort((a, b) => (a.distance as number) - (b.distance as number));
+
+        setNearbyMarkets(sorted);
       } catch (error) {
-        console.error("Failed to fetch farmers markets:", error);
+        console.error("Failed to fetch nearby farmers markets:", error);
         setNearbyMarkets([]);
       }
       

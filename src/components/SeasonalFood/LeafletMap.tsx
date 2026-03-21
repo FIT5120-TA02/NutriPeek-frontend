@@ -7,53 +7,50 @@ import 'leaflet/dist/leaflet.css';
 import { FarmersMarketResponse } from '@/api/types';
 import styles from './FarmersMarketMap.module.css';
 
-// Fix Leaflet icon path issue
-const fixLeafletIcon = () => {
-  if (typeof window === 'undefined') return;
-
-  // @ts-ignore
-  delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  });
-};
-
 // Helper component to update map position and zoom
 const MapUpdater = ({ center, zoom }: { center: [number, number]; zoom: number }) => {
   const map = useMap();
-  
+
   useEffect(() => {
     map.setView(center, zoom);
   }, [map, center, zoom]);
-  
+
   return null;
 };
 
-// Custom marker icon creator
+// SVG pin marker — no external image dependency
 const createMarketIcon = (isSelected: boolean = false) => {
-  return new L.Icon({
-    iconUrl: isSelected 
-      ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
-      : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
+  const fill = isSelected ? '#16a34a' : '#6b7280';
+  const inner = isSelected ? '#bbf7d0' : '#e5e7eb';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
+    <ellipse cx="14" cy="34" rx="5" ry="1.5" fill="rgba(0,0,0,0.12)"/>
+    <path d="M14 1C8.477 1 4 5.477 4 11c0 7.5 10 23 10 23S24 18.5 24 11C24 5.477 19.523 1 14 1z"
+      fill="${fill}" stroke="white" stroke-width="1.5"/>
+    <circle cx="14" cy="11" r="5" fill="${inner}"/>
+    <circle cx="14" cy="11" r="2.5" fill="${fill}"/>
+  </svg>`;
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: [28, 36],
+    iconAnchor: [14, 36],
+    popupAnchor: [0, -36],
   });
 };
 
-// User location marker
+// Pulsing blue dot for user location
 const createUserLocationIcon = () => {
-  return new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
+    <circle cx="11" cy="11" r="9" fill="#3b82f6" fill-opacity="0.18" stroke="#3b82f6" stroke-width="1.5"/>
+    <circle cx="11" cy="11" r="4.5" fill="#3b82f6"/>
+    <circle cx="11" cy="11" r="2" fill="white"/>
+  </svg>`;
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -13],
   });
 };
 
@@ -83,11 +80,6 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   const [isMapInitialized, setIsMapInitialized] = useState(false);
   const [openPopupId, setOpenPopupId] = useState<string | null>(null);
   
-  // Fix Leaflet icon paths on component mount
-  useEffect(() => {
-    fixLeafletIcon();
-  }, []);
-
   // Handler for map ready event
   const handleMapReady = useCallback(() => {
     setIsMapInitialized(true);
@@ -102,9 +94,6 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
     }
   }, [selectedMarket]);
 
-  // Attribution text for map
-  const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-
   return (
     <div className="h-full w-full rounded-xl overflow-hidden relative">
       <MapContainer
@@ -115,10 +104,10 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         whenReady={handleMapReady}
         className={`${styles.mapContainer} ${styles.map}`}
       >
-        {/* Map tiles */}
+        {/* CartoDB Positron — clean light-grey tiles, minimal visual noise */}
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution={attribution}
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
         />
         
         {/* Zoom controls in bottom right */}
@@ -182,7 +171,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
                   <div className="mt-3 -mx-2 px-2">
                     <button
                       onClick={() => onMarketSelect(market, true)}
-                      className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors font-medium shadow-sm"
+                      className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors font-medium"
                     >
                       View Details
                     </button>
@@ -204,19 +193,13 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         </div>
       )}
       
-      {/* Map overlay with info text */}
-      <div className="absolute top-3 left-3 right-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm px-3 py-2 text-xs text-gray-600 flex justify-between items-center z-[400]">
-        <div>
-          <span className="font-medium">Showing:</span> {markets.filter(m => m.latitude !== null && m.longitude !== null).length} farmers markets 
-          {markets.length > 0 && ' in this area'}
+      {/* Market count badge */}
+      {markets.length > 0 && (
+        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full shadow-sm px-3 py-1 text-xs text-gray-500 flex items-center gap-2 z-[400]">
+          <span className="inline-block w-2 h-2 rounded-full bg-gray-500"></span>
+          {markets.filter(m => m.latitude !== null && m.longitude !== null).length} markets nearby
         </div>
-        {markets.length > 0 && (
-          <div>
-            <span className="text-blue-500 text-xs">●</span> Markets
-            <span className="text-green-500 text-xs ml-3">●</span> Your location
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };

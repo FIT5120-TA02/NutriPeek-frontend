@@ -140,18 +140,20 @@ const FarmersMarketMap: React.FC = () => {
       {/* Pinned Foods Carousel */}
       <PinnedFoodsCarousel onFoodSelect={handlePinnedFoodSelect} />
 
-      {/* Location selector */}
-      <LocationSelector
-        onLocationSelect={mapHook.selectLocation}
-        onRequestLocation={mapHook.requestAndFocusOnLocation}
-        locationShared={mapHook.locationShared}
-        locationLoading={mapHook.geolocation.isRequesting}
-        selectedLocation={mapHook.selectedLocation}
-        permissionStatus={mapHook.geolocation.permissionStatus}
-      />
+      {/* Location selector — needs z-index above map */}
+      <div className="relative z-50 mb-6">
+        <LocationSelector
+          onLocationSelect={mapHook.selectLocation}
+          onRequestLocation={mapHook.requestAndFocusOnLocation}
+          locationShared={mapHook.locationShared}
+          locationLoading={mapHook.geolocation.isRequesting}
+          selectedLocation={mapHook.selectedLocation}
+          permissionStatus={mapHook.geolocation.permissionStatus}
+        />
+      </div>
 
       {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left sidebar for results */}
         <div className="lg:col-span-4 space-y-6">
           {/* Tabs for markets/foods when a location is selected */}

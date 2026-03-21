@@ -38,6 +38,25 @@ export interface FarmersMarketListResponse {
   total: number;
 }
 
+// Response from /api/v1/farmers-markets/nearby (Google Places based)
+export interface NearbyMarketItem {
+  place_id: string;
+  name: string;
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  rating: number | null;
+  user_rating_count: number | null;
+  opening_hours: string[] | null;
+  website: string | null;
+  phone: string | null;
+}
+
+export interface NearbyMarketListResponse {
+  items: NearbyMarketItem[];
+  total: number;
+}
+
 export interface SeasonalFoodResponse {
   id: string;
   name: string;

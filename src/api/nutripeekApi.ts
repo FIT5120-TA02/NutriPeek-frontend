@@ -29,6 +29,7 @@ import {
   SeasonalFoodListResponse,
   FarmersMarketListResponse,
   FarmersMarketResponse,
+  NearbyMarketListResponse,
   SeasonalFoodDetailResponse,
   OptimizedFoodRecommendation,
   OptimizedFoodRecommendationRequest,
@@ -730,6 +731,21 @@ export class NutriPeekApi {
     region?: string;
   } = {}): Promise<FarmersMarketListResponse> {
     return apiClient.get<FarmersMarketListResponse>("/api/v1/farmers-markets", params);
+  }
+
+  /**
+   * Get nearby farmers markets using Google Places API
+   * @param params - latitude, longitude, and optional radius/filter params
+   * @returns List of nearby markets with Google Places data
+   */
+  async getNearbyFarmersMarkets(params: {
+    latitude: number;
+    longitude: number;
+    radius_km?: number;
+    min_rating?: number;
+    max_results?: number;
+  }): Promise<NearbyMarketListResponse> {
+    return apiClient.get<NearbyMarketListResponse>("/api/v1/farmers-markets/nearby", params);
   }
 
   /**
