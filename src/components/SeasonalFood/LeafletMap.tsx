@@ -118,7 +118,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
         
         {/* User location marker */}
         {showUserLocation && isMapInitialized && (
-          <Marker position={position} icon={createUserLocationIcon()}>
+          <Marker position={position} icon={createUserLocationIcon() as L.Icon<L.IconOptions>}>
             <Popup>
               <div className="text-sm">
                 <h3 className="font-semibold">Your Location</h3>
@@ -135,7 +135,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
             <Marker
               key={market.id}
               position={[Number(market.latitude), Number(market.longitude)]}
-              icon={createMarketIcon(selectedMarket?.id === market.id)}
+              icon={createMarketIcon(selectedMarket?.id === market.id) as L.Icon<L.IconOptions>}
               eventHandlers={{
                 click: () => {
                   onMarketSelect(market, true);
