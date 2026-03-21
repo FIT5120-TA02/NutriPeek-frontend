@@ -1,14 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowsOut, ArrowsIn, X } from 'phosphor-react';
+import React, { useState } from 'react';
 import { ActivityEntry } from '@/api/types';
-import { nutripeekApi } from '@/api/nutripeekApi';
-import ActivityTimeBlock from './ActivityTimeBlock';
-import ActivityTimeDialog from './ActivityTimeDialog';
-import ActivityGroup from './ActivityGroup';
-import { activityIntensityMap, groupActivitiesByCategory, intensityColorMap } from './activityData';
+import { CURATED_ACTIVITIES, ACTIVITY_CATEGORIES, CuratedActivity } from './activityData';
 
 interface ActivityCalendarProps {
   selectedActivities: ActivityEntry[];
@@ -16,410 +10,207 @@ interface ActivityCalendarProps {
   childAge?: number;
 }
 
-interface ScheduledActivity extends ActivityEntry {
-  id: string;
-  startTime: string;
-}
+type Category = typeof ACTIVITY_CATEGORIES[number] | 'All';
 
-/**
- * ActivityCalendar - A component that displays and manages a day's activities in a visual timeline
- * 
- * This component renders a 24-hour calendar view that allows users to:
- * - Select activities from categorized cards on the right
- * - Add activities to specific time slots
- * - Edit activity duration by dragging
- * - Remove activities from the calendar
- * - View the breakdown of their child's daily activities
- * - Maximize to fullscreen view for better visibility
- * 
- * Note: PAL (Physical Activity Level) calculation is not performed by this component.
- * The parent component should trigger PAL calculation when needed using the selectedActivities.
- */
+const INTENSITY_DOT: Record<string, string> = {
+  low:    'bg-blue-400',
+  medium: 'bg-amber-400',
+  high:   'bg-red-400',
+};
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  'All': (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  ),
+  'Rest & Screen Time': (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+    </svg>
+  ),
+  'Light Movement': (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+    </svg>
+  ),
+  'Moderate Activity': (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <circle cx="12" cy="12" r="9" strokeWidth={2} />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3" />
+    </svg>
+  ),
+  'Sports & Vigorous': (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  ),
+};
+
+const ALL_TABS: Category[] = ['All', ...ACTIVITY_CATEGORIES];
+
 export default function ActivityCalendar({
   selectedActivities,
   setSelectedActivities,
-  childAge,
 }: ActivityCalendarProps) {
-  const [activities, setActivities] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [scheduledActivities, setScheduledActivities] = useState<ScheduledActivity[]>([]);
-  const [groupedActivities, setGroupedActivities] = useState<Record<string, any>>({});
-  const [selectedActivityName, setSelectedActivityName] = useState('');
-  const [isTimeDialogOpen, setIsTimeDialogOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isMaximized, setIsMaximized] = useState(false);
-  
-  // Fetch available activities from API
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        setIsLoading(true);
-        const response = await nutripeekApi.getAllActivities();
-        setActivities(response.activities);
-        
-        // Group activities by category
-        const grouped = groupActivitiesByCategory(response.activities);
-        setGroupedActivities(grouped);
-      } catch (error) {
-        console.error('Failed to fetch activities:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const [activeTab, setActiveTab] = useState<Category>('All');
 
-    fetchActivities();
-  }, []);
+  /* ── helpers ── */
+  const findSelected = (dbName: string) =>
+    selectedActivities.find(a => a.name === dbName);
 
-  // Create time slots for the day (hourly)
-  const timeSlots = Array.from({ length: 24 }, (_, i) => {
-    return `${i.toString().padStart(2, '0')}:00`;
-  });
-
-  // Generate a unique ID
-  const generateId = () => {
-    return Math.random().toString(36).substring(2, 9);
-  };
-
-  // Open the time dialog for a selected activity
-  const handleSelectActivity = (activityName: string) => {
-    setSelectedActivityName(activityName);
-    setIsTimeDialogOpen(true);
-  };
-  
-  // Add a new activity to the schedule
-  const handleAddActivity = (activityName: string, startTime: string, hours: number) => {
-    // Create new scheduled activity
-    const newActivity: ScheduledActivity = {
-      id: generateId(),
-      name: activityName,
-      hours,
-      startTime
-    };
-    
-    setScheduledActivities(prev => [...prev, newActivity]);
-    
-    // Also add to selected activities for API calculation
-    setSelectedActivities(prev => [...prev, { name: activityName, hours }]);
-  };
-
-  // Update activity time or duration
-  const handleUpdateActivity = (
-    activity: ActivityEntry, 
-    newStartTime: string, 
-    id: string
-  ) => {
-    // Update scheduled activities
-    setScheduledActivities(prev => 
-      prev.map(item => 
-        item.id === id 
-          ? { ...item, hours: activity.hours, startTime: newStartTime } 
-          : item
-      )
-    );
-    
-    // Find the activity to update
-    const activityToUpdate = scheduledActivities.find(item => item.id === id);
-    
-    if (!activityToUpdate) return;
-    
-    // Also update selected activities for API calculation
-    setSelectedActivities(prev => {
-      // First remove the old activity entry
-      const filteredActivities = prev.filter(item => 
-        !(item.name === activityToUpdate.name && 
-          Math.abs(item.hours - activityToUpdate.hours) < 0.1)
-      );
-      
-      // Then add the updated activity
-      return [...filteredActivities, { name: activity.name, hours: activity.hours }];
-    });
-  };
-
-  // Delete an activity
-  const handleDeleteActivity = (id: string) => {
-    const activityToDelete = scheduledActivities.find(item => item.id === id);
-    
-    if (!activityToDelete) return;
-    
-    // Remove from scheduled activities
-    setScheduledActivities(prev => prev.filter(item => item.id !== id));
-    
-    // Also remove from selected activities for API calculation
-    setSelectedActivities(prev => 
-      prev.filter(item => 
-        !(item.name === activityToDelete.name && 
-          Math.abs(item.hours - activityToDelete.hours) < 0.1)
-      )
-    );
-  };
-
-  // Convert selectedActivities to scheduledActivities format when component loads
-  useEffect(() => {
-    if (selectedActivities.length > 0 && scheduledActivities.length === 0) {
-      // Start distributing activities from 8:00 AM with 30-minute gaps
-      let currentHour = 8;
-      let currentMinute = 0;
-      
-      const scheduled = selectedActivities.map((activity, index) => {
-        const startTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute === 0 ? '00' : '30'}`;
-        
-        // Move time forward for next activity
-        currentMinute += 30;
-        if (currentMinute >= 60) {
-          currentHour += 1;
-          currentMinute = 0;
-        }
-        
-        // Skip over to next hour + add a gap after each activity
-        currentHour += Math.floor(activity.hours);
-        
-        return {
-          ...activity,
-          id: generateId(),
-          startTime
-        };
-      });
-      
-      setScheduledActivities(scheduled);
-    }
-  }, [selectedActivities]);
-
-  // Format 24-hour time to 12-hour format
-  const formatTimeDisplay = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-  };
-
-  // Handle background click to close maximized view
-  const handleBackgroundClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      setIsMaximized(false);
+  const handleToggle = (activity: CuratedActivity) => {
+    if (findSelected(activity.dbName)) {
+      setSelectedActivities(prev => prev.filter(a => a.name !== activity.dbName));
+    } else {
+      setSelectedActivities(prev => [...prev, { name: activity.dbName, hours: 1 }]);
     }
   };
 
-  // Render the calendar content
-  const renderCalendarContent = () => (
-    <div className={`flex flex-col ${isMaximized ? 'h-full' : 'w-full'}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Daily Activity Schedule</h2>
-        <button
-          onClick={() => setIsMaximized(!isMaximized)}
-          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          title={isMaximized ? "Minimize calendar" : "Maximize calendar"}
-        >
-          {isMaximized ? (
-            <ArrowsIn size={20} weight="bold" />
-          ) : (
-            <ArrowsOut size={20} weight="bold" />
-          )}
-        </button>
-      </div>
-      
-      <div className={`flex ${isMaximized ? 'flex-row' : 'flex-col md:flex-row'} gap-4 ${isMaximized ? 'flex-1 min-h-0' : ''}`}>
-        {/* Calendar Timeline - Left Side */}
-        <div className={`${isMaximized ? 'flex-1' : 'flex-1'} border rounded-lg overflow-hidden bg-white shadow flex flex-col ${isMaximized ? 'min-h-0' : ''}`}>
-          <div className="sticky top-0 z-10 flex text-sm font-medium bg-gray-100 p-3 border-b">
-            <div className="w-20 text-gray-700">Time</div>
-            <div className="flex-1 text-gray-700">Activities</div>
+  const handleAdjust = (dbName: string, delta: number) => {
+    setSelectedActivities(prev =>
+      prev.map(a => {
+        if (a.name !== dbName) return a;
+        const next = Math.max(0.5, Math.round((a.hours + delta) * 2) / 2);
+        return { ...a, hours: next };
+      }),
+    );
+  };
+
+  /* ── filtered list ── */
+  const visible = activeTab === 'All'
+    ? CURATED_ACTIVITIES
+    : CURATED_ACTIVITIES.filter(a => a.category === activeTab);
+
+  const totalHours = selectedActivities.reduce((s, a) => s + a.hours, 0);
+
+  /* ── display name for a selected db activity ── */
+  const getDisplayName = (dbName: string) =>
+    CURATED_ACTIVITIES.find(a => a.dbName === dbName)?.displayName ?? dbName;
+
+  const getIntensity = (dbName: string) =>
+    CURATED_ACTIVITIES.find(a => a.dbName === dbName)?.intensity ?? 'medium';
+
+  return (
+    <div className="space-y-4 pt-4">
+
+      {/* ── Selected chips ── */}
+      {selectedActivities.length > 0 ? (
+        <div>
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              {selectedActivities.length} {selectedActivities.length === 1 ? 'activity' : 'activities'} &mdash; {totalHours.toFixed(1)} hrs total
+            </span>
+            <button
+              onClick={() => setSelectedActivities([])}
+              className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+            >
+              Clear all
+            </button>
           </div>
-          
-          {/* Calendar grid */}
-          <div className={`relative overflow-y-auto ${isMaximized ? 'flex-1 pb-4' : 'h-[450px]'}`}>
-            {timeSlots.map((timeSlot, index) => (
-              <div 
-                key={index}
-                className={`flex relative h-[80px] border-b ${
-                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                }`}
+          <div className="flex flex-wrap gap-2">
+            {selectedActivities.map(a => (
+              <div
+                key={a.name}
+                className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full pl-3 pr-1 py-1"
               >
-                {/* Time label */}
-                <div className="w-20 p-2 flex items-start text-sm text-gray-600 sticky left-0 bg-inherit">
-                  {formatTimeDisplay(timeSlot)}
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${INTENSITY_DOT[getIntensity(a.name)]}`} />
+                <span className="text-xs font-medium text-gray-800 max-w-[120px] truncate">
+                  {getDisplayName(a.name)}
+                </span>
+                <div className="flex items-center gap-0.5 ml-1">
+                  <button
+                    onClick={() => handleAdjust(a.name, -0.5)}
+                    className="w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 text-sm leading-none"
+                  >
+                    −
+                  </button>
+                  <span className="text-xs font-semibold text-gray-800 min-w-[2.25rem] text-center">
+                    {a.hours}h
+                  </span>
+                  <button
+                    onClick={() => handleAdjust(a.name, 0.5)}
+                    className="w-5 h-5 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 text-sm leading-none"
+                  >
+                    +
+                  </button>
                 </div>
-                
-                {/* Activity area - empty grid cell */}
-                <div className="flex-1 relative">
-                  {/* AM/PM indicator at the half-hour mark */}
-                  <div className="absolute left-0 right-0 top-[50%] border-t border-gray-200 border-dashed" />
-                </div>
-              </div>
-            ))}
-            
-            {/* Activity blocks rendered on top of the grid */}
-            {scheduledActivities.map((activity) => (
-              <ActivityTimeBlock
-                key={activity.id}
-                activity={activity}
-                startTime={activity.startTime}
-                color={intensityColorMap[activityIntensityMap[activity.name] || 'medium']}
-                onUpdate={(updatedActivity, newStartTime) => 
-                  handleUpdateActivity(updatedActivity, newStartTime, activity.id)
-                }
-                onDelete={() => handleDeleteActivity(activity.id)}
-              />
-            ))}
-          </div>
-        </div>
-        
-        {/* Activity Selection - Right Side */}
-        <div className={`${isMaximized ? 'w-96 flex flex-col min-h-0' : 'w-full md:w-80 flex flex-col'}`}>
-          {/* Activity Library */}
-          <div className={`bg-white border rounded-lg shadow p-4 space-y-4 overflow-y-auto ${isMaximized ? 'flex-1 min-h-0 mb-4' : 'h-[350px]'}`}>
-            <h3 className="font-medium text-gray-800 mb-2">Activity Library</h3>
-            
-            {/* Search input */}
-            <div className="relative mb-4">
-              <input
-                type="text"
-                placeholder="Search activities..."
-                className="w-full border border-gray-300 rounded-md py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <div className="absolute left-3 top-2.5 text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              {searchTerm && (
-                <button 
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                  onClick={() => setSearchTerm('')}
+                <button
+                  onClick={() => handleToggle(CURATED_ACTIVITIES.find(c => c.dbName === a.name)!)}
+                  className="w-5 h-5 ml-0.5 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-              )}
-            </div>
-            
-            {isLoading ? (
-              <div className="py-10 flex justify-center">
-                <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
-            ) : Object.keys(groupedActivities).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No activities available</p>
-            ) : (
-              <div>
-                {Object.entries(groupedActivities)
-                  .filter(([category, activities]) => {
-                    // Filter activities based on search term
-                    if (!searchTerm) return true;
-                    
-                    // Check if any activity in this category matches the search term
-                    return activities.some((activity: any) => 
-                      activity.name.toLowerCase().includes(searchTerm.toLowerCase()));
-                  })
-                  .map(([category, activities], index) => {
-                    // Filter activities within each category
-                    const filteredActivities = searchTerm 
-                      ? activities.filter((activity: any) => 
-                          activity.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                      : activities;
-                      
-                    // Only render category if it has activities after filtering
-                    if (filteredActivities.length === 0) return null;
-                    
-                    return (
-                      <ActivityGroup
-                        key={index}
-                        category={category}
-                        activities={filteredActivities}
-                        onSelectActivity={handleSelectActivity}
-                      />
-                    );
-                  })
-                  .filter(Boolean) // Remove null entries
-                }
-                
-                {/* No search results message */}
-                {searchTerm && 
-                 Object.entries(groupedActivities)
-                  .filter(([category, activities]) => {
-                    return activities.some((activity: any) => 
-                      activity.name.toLowerCase().includes(searchTerm.toLowerCase()));
-                  }).length === 0 && (
-                  <p className="text-gray-500 text-center py-4">
-                    No activities found matching "{searchTerm}"
-                  </p>
-                )}
-              </div>
-            )}
+            ))}
           </div>
-          
-          {/* Activity summary */}
-          {scheduledActivities.length > 0 && (
-            <div className={`p-4 bg-blue-50 rounded-lg border border-blue-200 w-full overflow-y-auto ${isMaximized ? 'h-48 flex-shrink-0' : 'mt-4 h-[130px]'}`}>
-              <h3 className="font-medium text-blue-800 mb-2">Activity Summary</h3>
-              <div className="text-xs space-y-2">
-                {scheduledActivities.map((activity) => (
-                  <div key={activity.id} className="flex justify-between items-center">
-                    <div>
-                      <span className="font-medium">{activity.name}</span>
-                    </div>
-                    <div className="text-gray-500">
-                      {activity.hours.toFixed(1)} hours
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-3 pt-2 border-t border-blue-200">
-                <div className="flex justify-between text-sm font-medium">
-                  <span>Total:</span>
-                  <span>
-                    {scheduledActivities.reduce((total, activity) => total + activity.hours, 0).toFixed(1)} hours
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
+      ) : (
+        /* ── Empty state prompt ── */
+        <div className="flex items-start gap-3 bg-gray-50 rounded-xl px-4 py-3 text-xs text-gray-400">
+          <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Select activities your child did today. Duration can be adjusted after adding. This is optional but improves energy analysis accuracy.</span>
+        </div>
+      )}
+
+      {/* ── Category tabs ── */}
+      <div className="flex gap-1.5 flex-wrap">
+        {ALL_TABS.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              activeTab === tab
+                ? 'bg-gray-800 text-white border-gray-800'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            {CATEGORY_ICONS[tab]}
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Activity chip grid ── */}
+      <div className="flex flex-wrap gap-2">
+        {visible.map(activity => {
+          const isSelected = !!findSelected(activity.dbName);
+          return (
+            <button
+              key={activity.dbName}
+              onClick={() => handleToggle(activity)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                isSelected
+                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {isSelected ? (
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${INTENSITY_DOT[activity.intensity]}`} />
+              )}
+              {activity.displayName}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Legend ── */}
+      <div className="flex items-center gap-4 pt-2 border-t border-gray-100">
+        {([['low', 'Sedentary'], ['medium', 'Moderate'], ['high', 'Vigorous']] as const).map(([i, label]) => (
+          <div key={i} className="flex items-center gap-1.5 text-xs text-gray-400">
+            <span className={`w-2 h-2 rounded-full ${INTENSITY_DOT[i]}`} />
+            {label}
+          </div>
+        ))}
       </div>
     </div>
   );
-
-  return (
-    <>
-      {/* Normal view */}
-      {!isMaximized && renderCalendarContent()}
-      
-      {/* Maximized fullscreen view */}
-      <AnimatePresence>
-        {isMaximized && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[2px] cursor-pointer"
-            onClick={handleBackgroundClick}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ type: "spring", damping: 20 }}
-              className="h-full w-full p-6 cursor-auto"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="bg-white rounded-xl shadow-2xl h-full p-6 overflow-hidden">
-                {renderCalendarContent()}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Time selection dialog */}
-      <ActivityTimeDialog
-        activityName={selectedActivityName}
-        isOpen={isTimeDialogOpen}
-        onClose={() => setIsTimeDialogOpen(false)}
-        onAddActivity={handleAddActivity}
-      />
-    </>
-  );
-} 
+}
