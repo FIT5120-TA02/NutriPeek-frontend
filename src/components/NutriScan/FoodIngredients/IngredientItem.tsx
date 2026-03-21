@@ -36,7 +36,9 @@ export default function IngredientItem({
   );
 
   // Extract base name without quantity marker for display purposes
-  const displayName = item.name.replace(/\s*\(×\d+\)$/, '');
+  // USDA names are formatted like "tomato, cherry or grape, raw" — keep only the first segment
+  const rawName = item.name.replace(/\s*\(×\d+\)$/, '');
+  const displayName = rawName.split(',')[0].trim().replace(/^\w/, (c) => c.toUpperCase());
   const quantity = item.quantity || 1;
   const hasQuantity = quantity > 1;
 

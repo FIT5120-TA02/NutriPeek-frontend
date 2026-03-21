@@ -173,7 +173,7 @@ export default function MealResultCard({
             <li key={index} className="flex items-center gap-2 text-sm">
               <span className="min-w-2 w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span>
               <span className="truncate max-w-[calc(100%-3rem)]">
-                {item.name}
+                {item.name.split(',')[0].trim().replace(/^\w/, (c) => c.toUpperCase())}
               </span>
               {item.quantity && item.quantity > 1 && (
                 <span className="text-xs bg-gray-100 px-1.5 rounded-full flex-shrink-0">
