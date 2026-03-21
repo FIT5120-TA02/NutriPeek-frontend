@@ -159,10 +159,6 @@ export const NutriRecommendService = {
       })
     );
 
-    // Store gap results in local storage for future reference
-    // without creating a note - store the adjusted result
-    storageService.setLocalItem<NutrientGapResponse>(STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, adjustedResult);
-
     return {
       missingNutrients: enrichedNutrients,
       totalEnergy
@@ -221,23 +217,22 @@ export const NutriRecommendService = {
       
       // Create a note with the updated nutritional data
       this.saveNutritionalNote(
-        updatedResults, 
-        childProfile, 
+        updatedResults,
+        childProfile,
         selectedFoods,
       );
+      // Re-store the combined result after cleanLocalStorage() wipes it,
+      // so NutriGap and NutriRecommend both load the final score.
+      storageService.setLocalItem<NutrientGapResponse>(STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, updatedResults);
     } catch (error) {
       console.error('Error recalculating nutritional data:', error);
-      
-      // Fallback: create note with existing data if recalculation fails
-      const missingCount = Object.keys(storedResults.nutrient_gaps).filter(
-        key => storedResults.nutrient_gaps[key].current_intake / storedResults.nutrient_gaps[key].recommended_intake < 1
-      ).length;
-      
+
       this.saveNutritionalNote(
-        storedResults, 
-        childProfile, 
+        storedResults,
+        childProfile,
         selectedFoods,
       );
+      storageService.setLocalItem<NutrientGapResponse>(STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, storedResults);
     }
   },
 
@@ -666,7 +661,8 @@ export const NutriRecommendService = {
     });
 
     // Get the current month for seasonal food recommendations
-    const currentMonth = new Date().toLocaleString('en-AU', { month: 'long' }).toLowerCase();
+    // DB stores 3-letter month abbreviations (jan, feb, mar …)
+    const currentMonth = new Date().toLocaleString('en-AU', { month: 'long' }).toLowerCase().slice(0, 3);
     // Use the provided region or get from storage, or default to Australia
     const selectedRegion = region || this.getSelectedRegion() || 'australia';
 
@@ -731,9 +727,40 @@ export const NutriRecommendService = {
             ...nutrient,
             recommendedFoods: foodItems
           };
-        } catch (error) {
-          console.error(`Failed to fetch seasonal recommendations for ${nutrient.name}:`, error);
-          return nutrient;
+        } catch {
+          // Seasonal data unavailable for this region/month — fall back to standard recommendations
+          try {
+            const fallbackFoods = await nutripeekApi.getRecommendedFoods(dbField, RECOMMENDED_FOODS_LIMIT);
+            const fallbackItems: FoodItem[] = fallbackFoods.map((food: FoodRecommendation) => {
+              const completeNutrients: Record<string, number> = {};
+              completeNutrients[nutrient.name] = food.nutrient_value;
+              if (food.nutrients) {
+                Object.entries(food.nutrients).forEach(([dbFieldName, value]) => {
+                  if (missingNutrientFields.has(dbFieldName)) {
+                    const displayName = missingNutrientFields.get(dbFieldName);
+                    if (displayName) completeNutrients[displayName] = value as number;
+                  } else {
+                    const displayName = mapDbFieldToNutrientName(dbFieldName);
+                    if (displayName && missingNutrientsArray.some(n => n.name === displayName)) {
+                      completeNutrients[displayName] = value as number;
+                    }
+                  }
+                });
+              }
+              return {
+                id: food.id,
+                name: food.food_name || food.food_category,
+                category: food.food_category,
+                imageUrl: getFoodImageUrl(food.food_category),
+                nutrients: completeNutrients,
+                selected: false,
+                quantity: 1,
+              };
+            });
+            return { ...nutrient, recommendedFoods: fallbackItems };
+          } catch {
+            return nutrient;
+          }
         }
       })
     );
