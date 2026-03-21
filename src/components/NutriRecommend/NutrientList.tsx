@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import { ExtendedNutrientGap } from './types';
-import InfoPopup from '@/components/ui/InfoPopup';
 import { useEffect, useRef } from 'react';
 
 interface NutrientListProps {
@@ -51,29 +50,17 @@ export default function NutrientList({
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-4 overflow-hidden">
-      <div className="flex items-center mb-3">
-        <h2 className="font-bold text-lg text-gray-800">Missing Nutrients</h2>
-        <InfoPopup 
-          content={recommendationContent}
-          position="bottom"
-          iconSize={18}
-          iconClassName="ml-2 text-gray-400"
-        />
-      </div>
-      
-      {/* Responsive container that switches between horizontal and vertical layout */}
-      <div 
+    <div>
+      {/* Responsive container — scrollable on desktop, horizontal on mobile */}
+      <div
         ref={scrollContainerRef}
-        className="lg:space-y-2 lg:max-h-[700px] lg:overflow-y-auto lg:pr-2 
-                  flex lg:flex-col overflow-x-auto pb-2 -mx-1 px-1 hide-scrollbar"
+        className="space-y-2 flex flex-col"
       >
         {nutrients.map((nutrient) => (
           <motion.div
             key={nutrient.name}
             data-nutrient={nutrient.name}
-            className={`cursor-pointer rounded-lg p-3 transition-all flex-shrink-0 
-                      lg:w-auto w-[280px] mx-1 lg:mx-0 ${
+            className={`cursor-pointer rounded-lg p-3 transition-all ${
               activeNutrient === nutrient.name
                 ? 'bg-green-100 border-l-4 border-green-500'
                 : nutrient.isAdjustedForActivity

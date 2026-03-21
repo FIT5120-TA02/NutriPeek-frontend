@@ -1,19 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { NutrientGapResponse, ActivityResult, ChildEnergyRequirementsResponse } from '../../../api/types';
 import { useNutrition } from '../../../contexts/NutritionContext';
 import { nutripeekApi } from '@/api/nutripeekApi';
 import storageService from '@/libs/StorageService';
 import { ChildProfile } from '@/types/profile';
-import FloatingEmojisLayout from '@/components/layouts/FloatingEmojisLayout';
 import { toast } from 'sonner';
 import { STORAGE_KEYS, STORAGE_DEFAULTS } from '@/types/storage';
 import RecommendedFoodsUtil, { RecommendedFoodsImpact } from '@/utils/RecommendedFoodsUtil';
+import { calculateNutritionScore, getNutritionScoreColorClasses } from '@/utils/NutritionScoreUtils';
+import ChildAvatar from '@/components/ui/ChildAvatar';
 
 // Components
-import ProfileSummary from '@/components/NutriGap/ProfileSummary';
 import AnalysisTabs, { AnalysisType } from '@/components/NutriGap/AnalysisTabs';
 import ImportantNutrientsDashboard from '@/components/NutriGap/ImportantNutrientsDashboard';
 import AllNutrientsView from '@/components/NutriGap/AllNutrientsView';
@@ -23,21 +23,19 @@ import SaveToNotesButton from '@/components/NutriGap/SaveToNotesButton';
 export default function ResultsPage() {
   const router = useRouter();
   const { ingredientIds, clearIngredientIds, selectedChildId } = useNutrition();
-  const [results, setResults] = useState<NutrientGapResponse | null>(null);
-  const [activityResult, setActivityResult] = useState<ActivityResult | null>(null);
-  const [energyRequirements, setEnergyRequirements] = useState<ChildEnergyRequirementsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
-  const [currentTab, setCurrentTab] = useState<AnalysisType>('nutrients');
-  const [showAllNutrients, setShowAllNutrients] = useState(false);
-  const [isActivityEnabled, setIsActivityEnabled] = useState(false);
-  
-  // New state for recommended foods data
+  const [results,              setResults]              = useState<NutrientGapResponse | null>(null);
+  const [activityResult,       setActivityResult]       = useState<ActivityResult | null>(null);
+  const [energyRequirements,   setEnergyRequirements]   = useState<ChildEnergyRequirementsResponse | null>(null);
+  const [loading,              setLoading]              = useState(true);
+  const [error,                setError]                = useState<string | null>(null);
+  const [selectedChild,        setSelectedChild]        = useState<ChildProfile | null>(null);
+  const [currentTab,           setCurrentTab]           = useState<AnalysisType>('nutrients');
+  const [showAllNutrients,     setShowAllNutrients]     = useState(false);
+  const [isActivityEnabled,    setIsActivityEnabled]    = useState(false);
   const [recommendedFoodsData, setRecommendedFoodsData] = useState<RecommendedFoodsImpact>({
     hasRecommendedFoods: false,
     foodItems: [],
-    nutrientComparisons: []
+    nutrientComparisons: [],
   });
 
   useEffect(() => {
@@ -46,127 +44,84 @@ export default function ResultsPage() {
         setLoading(true);
 
         if (ingredientIds.length === 0) {
-          const storedResults = storageService.getLocalItem<NutrientGapResponse>({ key: STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS] });
-          if (storedResults) {
-            setResults(storedResults);
-          } else {
-            setError('No ingredients selected');
-            return;
-          }
+          const stored = storageService.getLocalItem<NutrientGapResponse>({ key: STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS] });
+          if (stored) { setResults(stored); }
+          else { setError('No ingredients selected'); return; }
         }
 
-        const childProfiles = storageService.getLocalItem<ChildProfile[]>({ key: STORAGE_KEYS.CHILDREN_PROFILES, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.CHILDREN_PROFILES] });
-        if (!childProfiles || childProfiles.length === 0) {
-          setError('No child profile found');
-          return;
-        }
+        const profiles = storageService.getLocalItem<ChildProfile[]>({ key: STORAGE_KEYS.CHILDREN_PROFILES, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.CHILDREN_PROFILES] });
+        if (!profiles?.length) { setError('No child profile found'); return; }
 
-        const profileIndex = selectedChildId !== null ? selectedChildId : 0;
-        const childProfile = childProfiles[profileIndex];
-        if (!childProfile) {
-          setError('Selected child profile not found');
-          return;
-        }
+        const profile = profiles[selectedChildId ?? 0];
+        if (!profile) { setError('Selected child profile not found'); return; }
+        setSelectedChild(profile);
 
-        setSelectedChild(childProfile);
-
-        // Fetch nutrient gap if not already loaded from localStorage
         if (ingredientIds.length > 0) {
-
-          // Filter out ingredient IDs that don't start with 'food-'
-          const filteredIds = ingredientIds.filter(id => {
-            if (!id.startsWith('food-')) {
-              return id;
-            }
-          });
-
-          const apiGender = childProfile.gender.toLowerCase() === 'female' ? 'girl' : 'boy';
+          const filteredIds = ingredientIds.filter(id => !id.startsWith('food-'));
           const result = await nutripeekApi.calculateNutrientGap({
-            child_profile: {
-              age: parseInt(childProfile.age, 10),
-              gender: apiGender,
-            },
+            child_profile: { age: parseInt(profile.age, 10), gender: profile.gender.toLowerCase() === 'female' ? 'girl' : 'boy' },
             ingredient_ids: filteredIds,
           });
-
           setResults(result);
-          // Store results for later use
           storageService.setLocalItem<NutrientGapResponse>(STORAGE_KEYS.NUTRIPEEK_GAP_RESULTS, result);
         }
 
-        // Check for activity result in localStorage
-        const storedActivityResult = storageService.getLocalItem({ 
-          key: STORAGE_KEYS.ACTIVITY_RESULT, 
-          defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.ACTIVITY_RESULT] 
-        });
-
-        if (storedActivityResult) {
-          setActivityResult(storedActivityResult);
+        const storedActivity = storageService.getLocalItem({ key: STORAGE_KEYS.ACTIVITY_RESULT, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.ACTIVITY_RESULT] });
+        if (storedActivity) {
+          setActivityResult(storedActivity);
           setIsActivityEnabled(true);
-          
-          // Check for energy requirements based on activity level
-          const storedEnergyRequirements = storageService.getLocalItem({ 
-            key: STORAGE_KEYS.ENERGY_REQUIREMENTS, 
-            defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.ENERGY_REQUIREMENTS]
-          });
-          
-          if (storedEnergyRequirements) {
-            setEnergyRequirements(storedEnergyRequirements);
-          }
+          const storedEnergy = storageService.getLocalItem({ key: STORAGE_KEYS.ENERGY_REQUIREMENTS, defaultValue: STORAGE_DEFAULTS[STORAGE_KEYS.ENERGY_REQUIREMENTS] });
+          if (storedEnergy) setEnergyRequirements(storedEnergy);
         }
-        
-        // Check for recommended foods data
-        const recommendedFoodsData = RecommendedFoodsUtil.getRecommendedFoodsData();
-        setRecommendedFoodsData(recommendedFoodsData);
-        
-      } catch (error) {
-        console.error('Error calculating nutritional gap:', error);
+
+        setRecommendedFoodsData(RecommendedFoodsUtil.getRecommendedFoodsData());
+      } catch {
         setError('Failed to calculate nutritional gap. Please try again.');
       } finally {
         setLoading(false);
       }
     };
-
     fetchResults();
   }, [ingredientIds, selectedChildId]);
 
-  const handleScanAgain = () => {
-    clearIngredientIds();
-    router.push('/NutriScan');
-  };
+  /* ── Score ── */
+  const score = useMemo(() => {
+    if (!results) return 0;
+    const converted = Object.fromEntries(
+      Object.entries(results.nutrient_gaps).map(([k, v]) => [k, { current_intake: v.current_intake, recommended_intake: v.recommended_intake, unit: v.unit }])
+    );
+    return calculateNutritionScore(converted, results.missing_nutrients?.length ?? 0, results.excess_nutrients?.length ?? 0);
+  }, [results]);
 
-  const handleViewRecommendations = () => {
-    router.push('/NutriRecommend');
-  };
+  const scoreColors = getNutritionScoreColorClasses(score);
 
-  const handleTabChange = (tab: AnalysisType) => {
-    setCurrentTab(tab);
-  };
+  /* ── Score label ── */
+  const scoreLabel = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Fair' : 'Needs Attention';
+  const scoreLabelColor = score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-teal-600' : score >= 40 ? 'text-amber-600' : 'text-red-500';
 
+  /* ── Loading / error states ── */
   if (loading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-green-50">
-        <div className="text-center w-full">
-          <div className="w-16 h-16 border-4 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Analyzing nutrition data...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 text-sm">Analysing nutrition data…</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !results) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-green-50">
-        <div className="bg-white p-8 rounded-xl shadow-md max-w-md w-full text-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-8 rounded-2xl shadow-sm max-w-md w-full text-center">
+          <svg className="h-12 w-12 text-red-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Error</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={handleScanAgain}
-            className="px-6 py-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
-          >
+          <h1 className="text-lg font-semibold text-gray-800 mb-2">{error || 'No results found'}</h1>
+          <p className="text-sm text-gray-500 mb-6">Please scan some food items first.</p>
+          <button onClick={() => { clearIngredientIds(); router.push('/NutriScan'); }}
+            className="px-6 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition text-sm font-medium">
             Scan Food
           </button>
         </div>
@@ -174,147 +129,161 @@ export default function ResultsPage() {
     );
   }
 
-  if (!results) {
-    return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-green-50">
-        <div className="bg-white p-8 rounded-xl shadow-md max-w-md w-full text-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-amber-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h1 className="text-2xl font-bold mb-4">No Results Found</h1>
-          <p className="text-gray-600 mb-6">Please scan some food items first.</p>
-          <button
-            onClick={handleScanAgain}
-            className="px-6 py-3 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
-          >
-            Scan Food
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const missingCount = results.missing_nutrients?.length ?? 0;
+  const excessCount  = results.excess_nutrients?.length ?? 0;
 
   return (
-    <FloatingEmojisLayout
-      backgroundClasses="min-h-screen w-full bg-gradient-to-b from-green-50 to-green-100"
-    >
-      <div className="max-w-7xl mx-auto pt-24 pb-16 px-6 lg:px-8 w-full">
-        
-        {/* Title */}
-        <div className="text-center mb-12 w-full">
-          <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
-            Nutritional & Activity Analysis
-          </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Review your child's nutrition and activity levels for personalized recommendations
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 pt-8 md:pt-20 pb-16 space-y-5">
+
+        {/* ── Hero banner ── */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 px-8 py-7 text-white shadow-md">
+          <div className="relative z-10 flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold tracking-widest uppercase opacity-70 mb-1.5">Step 3 — Your Results</p>
+              <h1 className="text-2xl font-bold leading-snug">Nutrition & Activity Report</h1>
+
+              {/* Child info row */}
+              <div className="flex items-center gap-3 mt-3">
+                <ChildAvatar
+                  name={selectedChild?.name || 'Child'}
+                  gender={selectedChild?.gender || 'male'}
+                  avatarNumber={(selectedChild as any)?.avatarNumber || 1}
+                  size={36}
+                />
+                <div>
+                  <p className="font-semibold text-sm">{selectedChild?.name}</p>
+                  <p className="text-xs opacity-75">{selectedChild?.age} years · {selectedChild?.gender}</p>
+                </div>
+              </div>
+
+              {/* Quick stats row */}
+              <div className="flex flex-wrap gap-2.5 mt-4">
+                <div className="bg-white/15 rounded-xl px-3.5 py-2 text-center min-w-[80px]">
+                  <p className="text-lg font-bold">{(results.total_calories ?? 0).toFixed(0)}</p>
+                  <p className="text-[10px] uppercase tracking-wide opacity-80">kJ today</p>
+                </div>
+                <div className="bg-white/15 rounded-xl px-3.5 py-2 text-center min-w-[80px]">
+                  <p className="text-lg font-bold text-red-300">{missingCount}</p>
+                  <p className="text-[10px] uppercase tracking-wide opacity-80">Low nutrients</p>
+                </div>
+                <div className="bg-white/15 rounded-xl px-3.5 py-2 text-center min-w-[80px]">
+                  <p className="text-lg font-bold text-amber-200">{excessCount}</p>
+                  <p className="text-[10px] uppercase tracking-wide opacity-80">Excess nutrients</p>
+                </div>
+                {isActivityEnabled && activityResult && (
+                  <div className="bg-white/15 rounded-xl px-3.5 py-2 text-center min-w-[80px]">
+                    <p className="text-lg font-bold">{activityResult.pal.toFixed(1)}</p>
+                    <p className="text-[10px] uppercase tracking-wide opacity-80">Activity level</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Score circle */}
+            <div className="flex flex-col items-center flex-shrink-0">
+              <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-md">
+                <div className="text-center">
+                  <span className={`text-2xl font-bold ${scoreColors.textColor}`}>{score}</span>
+                  <p className="text-[9px] text-gray-400 leading-none mt-0.5">/ 100</p>
+                </div>
+              </div>
+              <span className={`text-xs font-semibold mt-1.5 ${scoreLabelColor} bg-white/90 px-2 py-0.5 rounded-full`}>{scoreLabel}</span>
+            </div>
+          </div>
+          <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10 pointer-events-none" />
+          <div className="absolute right-10 -bottom-12 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
         </div>
 
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
-          {/* Left Side: Profile Summary */}
-          <div className="lg:col-span-1">
-            <ProfileSummary 
-              profile={selectedChild}
-              totalCalories={results.total_calories || 0}
-              missingNutrients={results.missing_nutrients?.length || 0}
-              excessNutrients={results.excess_nutrients?.length || 0}
-              allNutrients={results.nutrient_gaps}
-              activityPAL={activityResult?.pal}
-              energyRequirements={energyRequirements}
-              onViewRecommendations={handleViewRecommendations}
-            />
-          </div>
+        {/* ── Main content card ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
-          {/* Right Side: Analysis Tabs and Content */}
-          <div className="lg:col-span-2">
-            <AnalysisTabs 
-              currentTab={currentTab} 
-              onTabChange={handleTabChange}
-              isActivityEnabled={isActivityEnabled}
-            >
-              {currentTab === 'nutrients' && (
-                <div className="space-y-8 w-full">
-                  {/* Important Nutrients Dashboard */}
-                  <ImportantNutrientsDashboard 
-                    gaps={results.nutrient_gaps} 
+          {/* Tabs */}
+          <AnalysisTabs
+            currentTab={currentTab}
+            onTabChange={setCurrentTab}
+            isActivityEnabled={isActivityEnabled}
+          >
+            {/* ── Nutrients tab ── */}
+            {currentTab === 'nutrients' && (
+              <div className="px-6 py-5 space-y-6">
+                <ImportantNutrientsDashboard
+                  gaps={results.nutrient_gaps}
+                  nutrientComparisons={recommendedFoodsData.nutrientComparisons}
+                />
+
+                {/* Show all nutrients toggle */}
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={() => setShowAllNutrients(v => !v)}
+                    className="flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-600 border border-gray-200 hover:border-emerald-300 rounded-full px-4 py-2 transition-colors"
+                  >
+                    <svg className={`h-4 w-4 transition-transform ${showAllNutrients ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    {showAllNutrients ? 'Hide detailed breakdown' : 'Show all nutrients'}
+                  </button>
+                </div>
+
+                {showAllNutrients && (
+                  <AllNutrientsView
+                    gaps={results.nutrient_gaps}
+                    energyRequirements={energyRequirements}
                     nutrientComparisons={recommendedFoodsData.nutrientComparisons}
                   />
-                  
-                  {/* Toggle Button for All Nutrients */}
-                  <div className="flex justify-center w-full">
-                    <button
-                      onClick={() => setShowAllNutrients(!showAllNutrients)}
-                      className="px-6 py-3 bg-gray-100 text-gray-800 hover:bg-gray-200 rounded-lg font-medium transition-colors flex items-center gap-2"
-                    >
-                      {showAllNutrients ? (
-                        <>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                          Hide Detailed View
-                        </>
-                      ) : (
-                        <>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                          </svg>
-                          Show All Nutrients
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  
-                  {/* All Nutrients View (Conditional) */}
-                  {showAllNutrients && (
-                    <AllNutrientsView 
-                      gaps={results.nutrient_gaps} 
-                      energyRequirements={energyRequirements}
-                      nutrientComparisons={recommendedFoodsData.nutrientComparisons}
-                    />
-                  )}
-                </div>
-              )}
-              
-              {currentTab === 'activity' && (
-                <ActivityAnalysisView 
+                )}
+              </div>
+            )}
+
+            {/* ── Activity tab ── */}
+            {currentTab === 'activity' && (
+              <div className="px-6 py-5">
+                <ActivityAnalysisView
                   activityResult={activityResult}
                   energyRequirements={energyRequirements}
                 />
-              )}
-            </AnalysisTabs>
+              </div>
+            )}
+          </AnalysisTabs>
+
+          {/* ── CTA row ── */}
+          <div className="border-t border-gray-100 px-6 py-5">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Primary */}
+              <button
+                onClick={() => router.push('/NutriRecommend')}
+                className="flex-1 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                Fill Nutrition Gaps
+              </button>
+
+              {/* Secondary */}
+              <SaveToNotesButton
+                results={results}
+                childProfile={selectedChild}
+                onSuccess={() => { toast.success('Analysis saved to notes.'); router.push('/Note'); }}
+                onError={() => toast.error('Failed to save. Please try again.')}
+                className="flex-1 py-3.5 border-2 border-teal-500 text-teal-600 hover:bg-teal-50 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+              />
+
+              {/* Tertiary */}
+              <button
+                onClick={() => { clearIngredientIds(); router.push('/NutriScan'); }}
+                className="flex-1 py-3.5 border border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Scan Another Meal
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mt-12 w-full">
-
-          <SaveToNotesButton 
-            results={results}
-            childProfile={selectedChild}
-            onSuccess={() => {
-              toast.success("Analysis saved to notes successfully!")
-              router.push('/Note')
-            }}
-            onError={(error) => toast.error("Failed to save analysis to notes. Please try again.")}
-          />
-
-          <button
-            onClick={handleScanAgain}
-            className="px-8 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition text-lg font-semibold flex items-center justify-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Scan Another Food
-          </button>
-        </div>
       </div>
-    </FloatingEmojisLayout>
+    </div>
   );
 }
-
-
-
-

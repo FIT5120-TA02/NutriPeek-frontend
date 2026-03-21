@@ -12,6 +12,7 @@ import NutritionScoreCard from './NutritionScoreCard';
 import storageService from '@/libs/StorageService';
 import { STORAGE_KEYS } from '@/types/storage';
 import { ActivityResult, NutrientGapResponse, ActivityEntry, ChildEnergyRequirementsResponse } from '@/api/types';
+import { useNutrition } from '@/contexts/NutritionContext';
 
 interface NoteDetailPopupProps {
   note: NutritionalNote;
@@ -25,6 +26,7 @@ interface NoteDetailPopupProps {
  */
 export default function NoteDetailPopup({ note, onClose, navbarHeight = '72px' }: NoteDetailPopupProps) {
   const router = useRouter();
+  const { clearIngredientIds } = useNutrition();
   const [showDetails, setShowDetails] = React.useState(false);
   
   // Get data from the note
@@ -89,6 +91,9 @@ export default function NoteDetailPopup({ note, onClose, navbarHeight = '72px' }
 
     // Store energy requirements
     storageService.setLocalItem<ChildEnergyRequirementsResponse>(STORAGE_KEYS.ENERGY_REQUIREMENTS, energyRequirements!);
+
+    // Clear context ingredient IDs so NutriGap/NutriRecommend loads from stored note data
+    clearIngredientIds();
 
     // Navigate to the appropriate page
     if (isForRecommendations) {

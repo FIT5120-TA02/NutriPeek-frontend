@@ -85,11 +85,7 @@ export default function RecommendedFoods({
   };
     
   return (
-    <div className="bg-white rounded-xl shadow-md p-4">
-      <h2 className="font-bold text-lg text-gray-800 mb-3">
-        {activeNutrient ? `Recommended Foods for ${activeNutrient}` : 'Select a nutrient'}
-      </h2>
-
+    <div>
       {/* Nutrition Information Banner */}
       <Banner
         id="recommended-foods-nutrition-info"
@@ -121,7 +117,7 @@ export default function RecommendedFoods({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-2 gap-3 max-h-[700px] overflow-y-auto pr-2"
+            className="grid grid-cols-2 gap-3 pr-2"
           >
             {activeNutrientData.recommendedFoods.map((food) => {
               const topNutrients = getFoodNutrientImprovements(food);
