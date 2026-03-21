@@ -1,12 +1,15 @@
-name: Frontend CI/CD Deploy
+name: Frontend CI
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,24 +26,3 @@ jobs:
 
       - name: Build Next.js app
         run: npm run build
-
-      - name: Upload to EC2 via SCP
-        uses: appleboy/scp-action@v0.1.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          source: ".next,public,package.json,next.config.js"
-          target: "~/main-project-frontend"
-
-      - name: Restart PM2 on EC2 via SSH
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            cd ~/main-project-frontend
-            npm install --omit=dev
-            pm2 restart frontend || pm2 start "npm start" --name frontend
-            
